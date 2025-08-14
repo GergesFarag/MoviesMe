@@ -6,9 +6,33 @@
       "use": "@vercel/node" 
     }
   ],
-  "routes": [
+    "routes": [
     {
-      "src": "/(.*)",      
+      "src": "/api-docs",
+      "dest": "api/app.ts"   
+    },
+    {
+      "src": "/api/auth(.*)",
+      "dest": "api/app.ts"  
+    },
+    {
+      "src": "/api/admin(.*)",
+      "dest": "api/app.ts"  
+    },
+    {
+      "src": "/api/user(.*)",
+      "dest": "api/app.ts"   
+    },
+    {
+      "src": "/api/story(.*)",
+      "dest": "api/app.ts"   
+    },
+    {
+      "src": "/api/models(.*)",
+      "dest": "api/app.ts"   
+    },
+    {
+      "src": "/(.*)",
       "dest": "api/app.ts"  
     }
   ]
