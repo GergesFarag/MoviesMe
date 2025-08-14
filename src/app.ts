@@ -13,8 +13,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerDoc from "./swagger";
 import storyRouter from "./Routes/story.routes";
 import modelsRouter from "./Routes/models.routes";
-import connectDB from "./Config/db";
-const PORT = process.env.PORT_NUMBER || 3000;
+
 const app = express();
 app.use(express.json());
 dotenv.config({ quiet: true });
@@ -43,18 +42,5 @@ app.use((req, res, next) => {
 });
  
 app.use(errorHandler);
-
-(async () => {
-  await connectDB();
-  const server = app.listen(PORT, () => {
-    console.log(`Sever is running on : http://localhost:${PORT}/`);
-  });
-  process.on("unhandledRejection", (error) => {
-    console.error("Unhandled Rejection:", error);
-    server.close(() => {
-      process.exit(1);
-    });
-  });
-})();
 
 export default app;

@@ -3,14 +3,14 @@
   "name": "ttom-project-api",
   "builds": [
     {
-      "src": "./app.ts",
+      "src": "/api/app.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "app"
+      "dest": "/api/app.ts"
     }
   ],
   "env": {
