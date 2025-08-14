@@ -5,7 +5,7 @@
     { "src": "api/app.ts", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "api/app.ts" }
+    { "src": "/(.*)", "dest": "/api/app.ts" }
   ],
   "env": {
     "NODE_ENV": "production"
