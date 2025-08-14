@@ -3,38 +3,14 @@
   "name": "ttom-project-api",
   "builds": [
     {
-      "src": "api/app.ts",
+      "src": "./src/index.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api-docs(.*)",
-      "dest": "/api/app.ts"
-    },
-    {
-      "src": "/api/v1/auth(.*)",
-      "dest": "/api/app.ts"
-    },
-    {
-      "src": "/api/v1/admin(.*)",
-      "dest": "/api/app.ts"
-    },
-    {
-      "src": "/api/v1/user(.*)",
-      "dest": "/api/app.ts"
-    },
-    {
-      "src": "/api/v1/story(.*)",
-      "dest": "/api/app.ts"
-    },
-    {
-      "src": "/api/v1/models(.*)",
-      "dest": "/api/app.ts"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/api/app.ts"
+      "dest": "./src/index.ts"
     }
   ],
   "env": {
