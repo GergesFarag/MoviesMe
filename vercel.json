@@ -1,39 +1,48 @@
 {
   "version": 2,
+  "name": "ttom-project-api",
   "builds": [
     {
-      "src": "api/*.ts",    
-      "use": "@vercel/node" 
+      "src": "api/app.ts",
+      "use": "@vercel/node"
     }
   ],
-    "routes": [
+  "routes": [
     {
-      "src": "/api-docs",
-      "dest": "api/app.ts"   
+      "src": "/api-docs(.*)",
+      "dest": "/api/app.ts"
     },
     {
-      "src": "/api/auth(.*)",
-      "dest": "api/app.ts"  
+      "src": "/api/v1/auth(.*)",
+      "dest": "/api/app.ts"
     },
     {
-      "src": "/api/admin(.*)",
-      "dest": "api/app.ts"  
+      "src": "/api/v1/admin(.*)",
+      "dest": "/api/app.ts"
     },
     {
-      "src": "/api/user(.*)",
-      "dest": "api/app.ts"   
+      "src": "/api/v1/user(.*)",
+      "dest": "/api/app.ts"
     },
     {
-      "src": "/api/story(.*)",
-      "dest": "api/app.ts"   
+      "src": "/api/v1/story(.*)",
+      "dest": "/api/app.ts"
     },
     {
-      "src": "/api/models(.*)",
-      "dest": "api/app.ts"   
+      "src": "/api/v1/models(.*)",
+      "dest": "/api/app.ts"
     },
     {
       "src": "/(.*)",
-      "dest": "api/app.ts"  
+      "dest": "/api/app.ts"
     }
-  ]
+  ],
+  "functions": {
+    "api/app.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
