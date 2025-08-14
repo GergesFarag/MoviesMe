@@ -1,0 +1,12 @@
+import { Router } from "express";
+import authController from "../Controllers/auth.controller";
+import { firebaseAuth } from "../Middlewares/auth.middleware";
+const authRouter = Router();
+authRouter.post("/gmailLogin", firebaseAuth , authController.gmailLogin);
+authRouter.post("/phoneLogin" , firebaseAuth , authController.phoneLogin);
+authRouter.post("/login" , firebaseAuth , authController.login);
+authRouter.post("/register", firebaseAuth , authController.register);
+authRouter.post("/forgotPassword", authController.forgotPassword);
+authRouter.post("/refreshToken", authController.refreshToken);
+export default authRouter;
+ 
