@@ -12,6 +12,7 @@ const modelSchema = new mongoose.Schema<IAiModel>({
     isCharacterEffect: { type: Boolean, default: false ,select: false },
     isAITool: { type: Boolean, default: false , select: false },
     isAI3DTool: { type: Boolean, default: false , select: false },
+    isMarketingTool: { type: Boolean, default: false , select: false },
 })
 
 const Model = mongoose.model<IAiModel>("Model", modelSchema);

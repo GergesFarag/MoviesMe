@@ -5,10 +5,11 @@ import catchError from "../Utils/Errors/catchError";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } = req.query;
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
     const models = await Model.find({ isVideo: true })
       .select("-__v")
-      .skip(((page) - 1) * (limit))
+      .skip((page - 1) * limit)
       .limit(limit);
     if (!models) {
       throw new AppError("No models found", 404);
@@ -27,10 +28,11 @@ const modelsController = {
   }),
 
   getImageModels: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } = req.query;
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
     const models = await Model.find({ isVideo: false })
       .select("-__v")
-      .skip(((page) - 1) * (limit))
+      .skip((page - 1) * limit)
       .limit(limit);
     if (!models) {
       throw new AppError("No models found", 404);
@@ -49,10 +51,11 @@ const modelsController = {
   }),
 
   getTrendingModels: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } = req.query;
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
     const models = await Model.find({ isTrending: true })
       .select("-__v")
-      .skip(((page) - 1) * (limit))
+      .skip((page - 1) * limit)
       .limit(limit);
     if (!models) {
       throw new AppError("No models found", 404);
@@ -70,10 +73,11 @@ const modelsController = {
     });
   }),
   getCharacterEffects: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } = req.query;
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
     const models = await Model.find({ isCharacterEffect: true })
       .select("-__v")
-      .skip(((page) - 1) * (limit))
+      .skip((page - 1) * limit)
       .limit(limit);
     if (!models) {
       throw new AppError("No models found", 404);
@@ -91,10 +95,11 @@ const modelsController = {
     });
   }),
   getAITools: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } = req.query;
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
     const models = await Model.find({ isAITool: true })
       .select("-__v")
-      .skip(((page) - 1) * (limit))
+      .skip((page - 1) * limit)
       .limit(limit);
     if (!models) {
       throw new AppError("No models found", 404);
@@ -112,10 +117,11 @@ const modelsController = {
     });
   }),
   getAI3DTools: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } = req.query;
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
     const models = await Model.find({ isAI3DTool: true })
       .select("-__v")
-      .skip(((page) - 1) * (limit))
+      .skip((page - 1) * limit)
       .limit(limit);
     if (!models) {
       throw new AppError("No models found", 404);
@@ -132,7 +138,28 @@ const modelsController = {
       },
     });
   }),
-
+  getMarketingTools: catchError(async (req, res) => {
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
+    const models = await Model.find({ isMarketingTool: true })
+      .select("-__v")
+      .skip((page - 1) * limit)
+      .limit(limit);
+    if (!models) {
+      throw new AppError("No models found", 404);
+    }
+    res.status(200).json({
+      message: "Models retrieved successfully",
+      data: {
+        models,
+        paginationData: {
+          page: Number(page),
+          limit: Number(limit),
+          total: await Model.countDocuments({ isMarketingTool: true }),
+        },
+      },
+    });
+  }),
   addModel: catchError(async (req, res) => {
     const newModel = new Model(req.body);
     await newModel.save();

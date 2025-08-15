@@ -9,4 +9,5 @@ export default interface IAiModel {
   isCharacterEffect?:boolean;
   isAITool?: boolean;
   isAI3DTool?: boolean;
+  isMarketingTool?: boolean;
 }

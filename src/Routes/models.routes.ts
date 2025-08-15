@@ -6,6 +6,7 @@ modelsRouter.get("/imageEffects" , modelsController.getImageModels);
 modelsRouter.get("/characterEffects" , modelsController.getCharacterEffects);
 modelsRouter.get("/aiTools" , modelsController.getAITools);
 modelsRouter.get("/ai3dTools" , modelsController.getAI3DTools);
+modelsRouter.get("/marketingTools" , modelsController.getMarketingTools);
 modelsRouter.get("/trending" , modelsController.getTrendingModels);
 modelsRouter
 .route("/:id")
