@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import catchError from "../Utils/Errors/catchError";
 import { firebaseAdmin } from "../Config/firebase";
-import AppError from "../Utils/Errors/AppError";
+import AppError, { HTTP_STATUS_CODE, HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import User from "../Models/user.model";
 import {
   createAccessToken,
@@ -166,12 +166,12 @@ const authController = {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      throw new AppError("Refresh token is required", 400);
+      throw new AppError("Refresh token is required",  HTTP_STATUS_CODE.UNAUTHORIZED);
     }
 
     const decoded = verifyRefreshToken(refreshToken);
     if (!decoded) {
-      throw new AppError("Invalid refresh token", 401);
+      throw new AppError("Invalid refresh token",  HTTP_STATUS_CODE.UNAUTHORIZED);
     }
 
     const newAccessToken = createAccessToken(decoded);

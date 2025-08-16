@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { firebaseAdmin } from "../Config/firebase";
-import AppError from "../Utils/Errors/AppError";
+import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import { verifyAccessToken } from "../Utils/tokenHelpers";
 
@@ -14,11 +14,11 @@ export const firebaseAuth = catchError(
       token = req.headers.authorization.split(" ")[1];
     }
     if (!token) {
-      next(new AppError("Authentication token is required", 401));
+      next(new AppError("Authentication token is required", HTTP_STATUS_CODE.UNAUTHORIZED));
     }
     const decoded = await firebaseAdmin.auth().verifyIdToken(token || "");
     if (!decoded) {
-      next(new AppError("Invalid authentication token", 401));
+      next(new AppError("Invalid authentication token", HTTP_STATUS_CODE.UNAUTHORIZED));
     }
     //@ts-ignore
     req.user = decoded;
