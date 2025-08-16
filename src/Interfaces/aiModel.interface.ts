@@ -6,7 +6,9 @@ export default interface IAiModel {
   credits: number;
   isNewModel: boolean;
   isTrending: boolean;
-  isCharacterEffect?:boolean;
+  isVideoEffect?: boolean;
+  isImageEffect?: boolean;
+  isCharacterEffect?: boolean;
   isAITool?: boolean;
   isAI3DTool?: boolean;
   isMarketingTool?: boolean;

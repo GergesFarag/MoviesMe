@@ -8,6 +8,8 @@ const modelSchema = new mongoose.Schema<IAiModel>({
     isVideo: { type: Boolean, required: true },
     credits: { type: Number, required: true },
     isNewModel: { type: Boolean, required: true , default: true },
+    isVideoEffect: { type: Boolean, default: false , select: false },
+    isImageEffect: { type: Boolean, default: false , select: false },
     isTrending: { type: Boolean, required: true , default: false },
     isCharacterEffect: { type: Boolean, default: false ,select: false },
     isAITool: { type: Boolean, default: false , select: false },

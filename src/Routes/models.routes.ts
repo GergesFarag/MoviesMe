@@ -8,9 +8,9 @@ modelsRouter.get("/aiTools" , modelsController.getAITools);
 modelsRouter.get("/ai3dTools" , modelsController.getAI3DTools);
 modelsRouter.get("/marketingTools" , modelsController.getMarketingTools);
 modelsRouter.get("/trending" , modelsController.getTrendingModels);
+modelsRouter.post("/", modelsController.addModel);
 modelsRouter
 .route("/:id")
 .patch(modelsController.updateModel)
 .delete(modelsController.deleteModel);
-modelsRouter.post("/", modelsController.addModel);
 export default modelsRouter;
