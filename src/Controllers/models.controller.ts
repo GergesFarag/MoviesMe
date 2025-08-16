@@ -7,7 +7,13 @@ const modelsController = {
   getVideoModels: catchError(async (req, res) => {
     const { limit = 5, page = 1 }: { limit?: number; page?: number } =
       req.query;
-    const models = await Model.find({ isVideo: true })
+    const models = await Model.find({
+      isVideo: true,
+      isCharacterEffect: false,
+      isAI3DTool: false,
+      isAITool: false,
+      isMarketingTool: false,
+    })
       .select("-__v")
       .skip((page - 1) * limit)
       .limit(limit);
@@ -21,7 +27,13 @@ const modelsController = {
         paginationData: {
           page: Number(page),
           limit: Number(limit),
-          total: await Model.countDocuments({ isVideo: true }),
+          total: await Model.countDocuments({
+            isVideo: true,
+            isCharacterEffect: false,
+            isAI3DTool: false,
+            isAITool: false,
+            isMarketingTool: false
+          }),
         },
       },
     });
