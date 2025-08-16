@@ -23,6 +23,7 @@ const userSchema = new Schema<IUser>({
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
   firebaseUid: { type: String, unique: true },
+  userLocation: { type: String, default: "" }
 });
 
 const User = model<IUser>("User", userSchema);
