@@ -2,6 +2,7 @@ import { deleteModel } from "mongoose";
 import Model from "../Models/aiModel.model";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
+import IAiModel from "../Interfaces/aiModel.interface";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -9,10 +10,86 @@ const modelsController = {
       req.query;
     const models = await Model.find({
       isVideo: true,
-      isCharacterEffect: false,
-      isAI3DTool: false,
-      isAITool: false,
-      isMarketingTool: false,
+      $and: [
+        {
+          $or: [
+            { isCharacterEffect: false },
+            { isCharacterEffect: { $exists: false } },
+          ],
+        },
+        { $or: [{ isAI3DTool: false }, { isAI3DTool: { $exists: false } }] },
+        { $or: [{ isAITool: false }, { isAITool: { $exists: false } }] },
+        {
+          $or: [
+            { isMarketingTool: false },
+            { isMarketingTool: { $exists: false } },
+          ],
+        },
+      ],
+    })
+      .select("-__v")
+      .skip((page - 1) * limit)
+      .limit(limit);
+    if (!models) {
+      throw new AppError("No models found", 404);
+    }
+    res.status(200).json({
+      message: "Models retrieved successfully",
+      data: {
+        models: models,
+        paginationData: {
+          page: Number(page),
+          limit: Number(limit),
+          total: await Model.countDocuments({
+            isVideo: true,
+            $and: [
+              {
+                $or: [
+                  { isCharacterEffect: false },
+                  { isCharacterEffect: { $exists: false } },
+                ],
+              },
+              {
+                $or: [
+                  { isAI3DTool: false },
+                  { isAI3DTool: { $exists: false } },
+                ],
+              },
+              { $or: [{ isAITool: false }, { isAITool: { $exists: false } }] },
+              {
+                $or: [
+                  { isMarketingTool: false },
+                  { isMarketingTool: { $exists: false } },
+                ],
+              },
+            ],
+          }),
+        },
+      },
+    });
+  }),
+
+  getImageModels: catchError(async (req, res) => {
+    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
+      req.query;
+    const models = await Model.find({
+      isVideo: false,
+      $and: [
+        {
+          $or: [
+            { isCharacterEffect: false },
+            { isCharacterEffect: { $exists: false } },
+          ],
+        },
+        { $or: [{ isAI3DTool: false }, { isAI3DTool: { $exists: false } }] },
+        { $or: [{ isAITool: false }, { isAITool: { $exists: false } }] },
+        {
+          $or: [
+            { isMarketingTool: false },
+            { isMarketingTool: { $exists: false } },
+          ],
+        },
+      ],
     })
       .select("-__v")
       .skip((page - 1) * limit)
@@ -28,35 +105,29 @@ const modelsController = {
           page: Number(page),
           limit: Number(limit),
           total: await Model.countDocuments({
-            isVideo: true,
-            isCharacterEffect: false,
-            isAI3DTool: false,
-            isAITool: false,
-            isMarketingTool: false
+            isVideo: false,
+            $and: [
+              {
+                $or: [
+                  { isCharacterEffect: false },
+                  { isCharacterEffect: { $exists: false } },
+                ],
+              },
+              {
+                $or: [
+                  { isAI3DTool: false },
+                  { isAI3DTool: { $exists: false } },
+                ],
+              },
+              { $or: [{ isAITool: false }, { isAITool: { $exists: false } }] },
+              {
+                $or: [
+                  { isMarketingTool: false },
+                  { isMarketingTool: { $exists: false } },
+                ],
+              },
+            ],
           }),
-        },
-      },
-    });
-  }),
-
-  getImageModels: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
-    const models = await Model.find({ isVideo: false })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
-    res.status(200).json({
-      message: "Models retrieved successfully",
-      data: {
-        models,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments({ isVideo: false }),
         },
       },
     });
