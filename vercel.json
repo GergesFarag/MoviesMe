@@ -5,6 +5,7 @@
     { "src": "api/app.ts", "use": "@vercel/node" }
   ],
   "routes": [
+    {"src" : "/api-docs" , "dest": "/src/swagger.ts"},
     { "src": "/(.*)", "dest": "/api/app.ts" }
   ],
   "env": {
