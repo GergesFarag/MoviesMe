@@ -1,16 +1,23 @@
-import swaggerJsDoc from "swagger-jsdoc"
+import swaggerJsDoc from "swagger-jsdoc";
 const swaggerDoc = swaggerJsDoc({
   definition: {
     openapi: "3.0.0",
     info: {
       title: "MOVIX API DOCUMENTATION",
       version: "1.0.0",
-      description: "A Text to Movie API that allows users to convert text into movie",
+      description:
+        "A Text to Movie API that allows users to convert text into movie",
     },
+    servers: [
+      {
+        url:
+          process.env.NODE_ENV === "production"
+            ? "https://tto-v.vercel.app"
+            : "http://localhost:3000",
+      },
+    ],
   },
-  apis: [
-    `${__dirname}/swagger.yaml`,
-  ],
-})
+  apis: [`${__dirname}/swagger.yaml`],
+});
 
-export default swaggerDoc
+export default swaggerDoc;

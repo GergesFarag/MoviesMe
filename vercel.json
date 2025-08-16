@@ -5,9 +5,13 @@
     { "src": "api/app.ts", "use": "@vercel/node" }
   ],
   "routes": [
-    {"src" : "api/app.ts" , "dest": "/src/swagger.ts"},
     { "src": "/(.*)", "dest": "/api/app.ts" }
   ],
+  "functions": {
+    "api/app.ts": {
+      "includeFiles": "**"
+    }
+  },
   "env": {
     "NODE_ENV": "production"
   }
