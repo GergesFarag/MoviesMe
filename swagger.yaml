@@ -12,7 +12,7 @@ info:
 servers:
   - url: http://localhost:3000/api/v1
     description: Development server
-  - url: https://api.ttomproject.com/api/v1
+  - url: https://tto-v.vercel.app
     description: Production server
 
 components:
