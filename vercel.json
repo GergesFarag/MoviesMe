@@ -7,11 +7,6 @@
   "routes": [
     { "src": "/(.*)", "dest": "/api/app.ts" }
   ],
-  "functions": {
-    "api/app.ts": {
-      "includeFiles": "**"
-    }
-  },
   "env": {
     "NODE_ENV": "production"
   }

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import app from "../src/app";
 import connectDB from "../src/Config/db";
 import swaggerUi from "swagger-ui-express";
-import swaggerDoc from "./swagger";
+import swaggerDoc from "../src/swagger";
 
 let isConnected = false;
 
