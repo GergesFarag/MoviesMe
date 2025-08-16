@@ -30,12 +30,12 @@ app.get("/" , (req, res) => {
 const API_VERSION = process.env.API_VERSION || "/v1";
 const prefix = process.env.API_PREFIX || "/api";
 const basePath = `${prefix}${API_VERSION}`;
-app.use(`${basePath}/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter); 
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
+app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use((req, res, next) => {
   next(new AppError("Not Found Route", 404));

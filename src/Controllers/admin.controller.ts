@@ -53,9 +53,8 @@ const adminController = {
     if (user.isAdmin) {
       throw new AppError("Cannot delete an admin user", 403);
     }
-    const deletedUser = await User.updateOne(
+    const deletedUser = await User.findOneAndDelete(
       { _id: userId },
-      { isActive: false }
     );
     const firebaseReponse: any = await firebaseAdmin
       .auth()

@@ -37,7 +37,6 @@ export const authMiddle = catchError(
     if (!token) {
       next(new AppError("Authentication token is required", 401));
     }
-    console.log(`Token:${token}`);
     const decoded = verifyAccessToken(token as string);
     if (!decoded) {
       next(new AppError("Invalid authentication access token", 401));
