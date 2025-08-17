@@ -13,6 +13,8 @@ import { loginResponse } from "../Interfaces/response.interface";
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
+    console.log("GONE HERE : ", req.user);
+    //@ts-ignore
     const { uid, email } = req.user;
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
@@ -29,6 +31,7 @@ const authController = {
     const responseUser: loginResponse["data"]["user"] = {
       id: String(existingUser._id),
       username: existingUser.username as string,
+      credits: existingUser.credits || 10,
       isAdmin: existingUser.isAdmin,
     };
     const accessToken = createAccessToken(responseUser);
@@ -38,7 +41,7 @@ const authController = {
       data: {
         user: responseUser,
         accessToken,
-        refreshToken
+        refreshToken,
       },
     } as loginResponse);
   }),
@@ -106,12 +109,18 @@ const authController = {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      throw new AppError("Refresh token is required",  HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "Refresh token is required",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
 
     const decoded = verifyRefreshToken(refreshToken);
     if (!decoded) {
-      throw new AppError("Invalid refresh token",  HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "Invalid refresh token",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
 
     const newAccessToken = createAccessToken(decoded);
