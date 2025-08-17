@@ -14,8 +14,6 @@ const authController = {
   login: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
     const { uid, email } = req.user;
-    //@ts-ignore
-    console.log("DATA FROM LOGIN:" , req.user);
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
       existingUser = await User.create({
