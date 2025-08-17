@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import catchError from "../Utils/Errors/catchError";
 import { firebaseAdmin } from "../Config/firebase";
-import AppError, { HTTP_STATUS_CODE, HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
+import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import User from "../Models/user.model";
 import {
   createAccessToken,
@@ -11,14 +11,16 @@ import {
 import { loginResponse } from "../Interfaces/response.interface";
 
 const authController = {
-  gmailLogin: catchError(async (req: Request, res: Response) => {
+  login: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
     const { uid, email } = req.user;
+    //@ts-ignore
+    console.log("DATA FROM LOGIN:" , req.user);
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
       existingUser = await User.create({
         username: email?.split("@")[0] || "Anonymous",
-        email: email,
+        email: email || "",
         firebaseUid: uid,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -42,66 +44,6 @@ const authController = {
       },
     } as loginResponse);
   }),
-
-  phoneLogin: catchError(async (req: Request, res: Response) => {
-    //@ts-ignore
-    const { uid, phone_number } = req.user;
-    const existingUser = await User.findOne({ firebaseUid: uid });
-    const responseUser: loginResponse["data"]["user"] = {
-      id: String(existingUser?._id) ?? "",
-      username: phone_number as string,
-      isAdmin: false,
-    };
-
-    if (!existingUser) {
-      User.create({
-        username: phone_number as string,
-        firebaseUid: uid,
-        phoneNumber: phone_number as string,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isAdmin: false,
-        isActive: true,
-      });
-    }
-    const accessToken = createAccessToken(responseUser);
-    const refreshToken = createRefreshToken(responseUser);
-    res.status(200).json({
-      message: "User loggedIn successfully",
-      data: {
-        user: responseUser,
-        accessToken,
-        refreshToken
-      },
-    } as loginResponse);
-  }),
-
-  login: catchError(async (req: Request, res: Response) => {
-    //@ts-ignore
-    const { uid, email } = req.user;
-    const existingUser = await User.findOne({ firebaseUid: uid });
-    if (!existingUser) {
-      throw new AppError("User not found", 404);
-    }
-    const responseUser: loginResponse["data"]["user"] = {
-      id: String(existingUser?._id) ?? "",
-      username: email?.split("@")[0] || "Anonymous",
-      isAdmin: existingUser?.isAdmin || false,
-    };
-
-    const accessToken = createAccessToken(responseUser);
-    const refreshToken = createRefreshToken(responseUser);
-
-    res.status(200).json({
-      message: "User logged in successfully",
-      data: {
-        user: responseUser,
-        accessToken,
-        refreshToken
-      },
-    } as loginResponse);
-  }),
-
   register: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
     const { uid, email } = req.user;
@@ -127,7 +69,7 @@ const authController = {
 
     const responseUser: loginResponse["data"]["user"] = {
       id: String(newUser._id),
-      username: newUser.email.split("@")[0] || "Anonymous",
+      username: newUser.email!.split("@")[0] || "",
       isAdmin: newUser.isAdmin,
     };
     const accessToken = createAccessToken(responseUser);

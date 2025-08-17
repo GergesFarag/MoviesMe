@@ -1,20 +1,21 @@
 import { ObjectId } from "mongoose";
 
-export interface IUser extends Document {
+export interface IUser {
   username: string;
-  email: string;
-  age?: number;
-  phoneNumber?: string;
-  firebaseUid:string;
   isAdmin: boolean;
+  isActive: boolean;
+  firebaseUid:string;
+  phoneNumber?: string;
+  email?: string;
+  favs?: ObjectId[];
+  dob?: Date;
+  age?: number;
   createdAt?: Date;
   updatedAt?: Date;
-  isActive: boolean;
   videos?: ObjectId[];
   stories?: ObjectId[];
   userLocation?: string;
   gender?: string;
-  dob: Date;
   profilePicture?: string;
-  favs: ObjectId[];
+  credits?: number;
 }

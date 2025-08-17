@@ -3,7 +3,7 @@ import { loginResponse } from "../Interfaces/response.interface";
 import AppError, { HTTP_STATUS_CODE } from "./Errors/AppError";
 
 const createAccessToken = (userData: loginResponse["data"]["user"]): string => {
-  const expiry = process.env.ACCESS_TOKEN_EXPIRY || "30s";
+  const expiry = process.env.ACCESS_TOKEN_EXPIRY || "5h";
   const secret = process.env.ACCESS_TOKEN_SECRET;
   
   if (!secret) {
@@ -52,7 +52,6 @@ const verifyAccessToken = (token: string) => {
       throw new AppError("ACCESS_TOKEN_SECRET is not defined", HTTP_STATUS_CODE.UNAUTHORIZED);
     }
     const decoded = jwt.verify(token, secret);
-    console.log("DECODED:", decoded);
     return decoded;
   } catch (error) {
     throw new AppError("Invalid Access token", HTTP_STATUS_CODE.UNAUTHORIZED);

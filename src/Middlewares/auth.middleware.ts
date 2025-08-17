@@ -11,9 +11,9 @@ export const firebaseAuth = catchError(
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer ")
     ) {
-      token = req.headers.authorization.split(" ")[1];
+      token = req.headers.authorization.split(" ")[1]; 
     }
-    if (!token) {
+    if (!token) { 
       next(new AppError("Authentication token is required", HTTP_STATUS_CODE.UNAUTHORIZED));
     }
     const decoded = await firebaseAdmin.auth().verifyIdToken(token || "");
