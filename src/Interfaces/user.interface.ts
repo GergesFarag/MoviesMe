@@ -15,7 +15,7 @@ export interface IUser {
   videos?: ObjectId[];
   stories?: ObjectId[];
   userLocation?: string;
-  gender?: string;
+  isMale?: boolean;
   profilePicture?: string;
   credits?: number;
 }
