@@ -2,7 +2,7 @@ import { model, Schema } from "mongoose";
 import { IUser } from "../Interfaces/user.interface";
 
 const userSchema = new Schema<IUser>({
-  username: { type: String, required: true , select: true },
+  username: { type: String, required: true, select: true },
   email: {
     type: String,
     unique: true,
@@ -12,19 +12,19 @@ const userSchema = new Schema<IUser>({
       },
       message: (data) => `${data.value} is not a valid email!`,
     },
-     select: true
+    select: true,
   },
-  phoneNumber : {
+  phoneNumber: {
     type: String,
-    select: true
+    select: true,
   },
   age: { type: Number, min: 12, select: true },
-  credits: { type: Number, default: 10 , select: true },
-  userLocation: { type: String, default: "" , select: true },
-  dob : { type: Date, default: null , select: true },
-  isMale: { type: Boolean, default: false , select: true },
+  credits: { type: Number, default: 10, select: true },
+  userLocation: { type: String, default: "", select: true },
+  dob: { type: Date, default: null, select: true },
+  isMale: { type: Boolean, default: false, select: true },
   profilePicture: { type: String, default: "", select: true },
-  videos: [{ type: String }], 
+  videos: [{ type: String }],
   isActive: { type: Boolean, default: true },
   stories: [{ type: Schema.Types.ObjectId, ref: "Story" }],
   isAdmin: { type: Boolean, default: false },
@@ -36,4 +36,4 @@ const userSchema = new Schema<IUser>({
 
 const User = model<IUser>("User", userSchema);
 export default User;
-export {  IUser };
+export { IUser };
