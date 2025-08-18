@@ -47,7 +47,7 @@ const authController = {
   }),
   register: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
-    const { uid, email, phoneNumber} = req.user;
+    const { uid, email} = req.user;
 
     if (!email) {
       throw new AppError("Email is required", 400);
@@ -60,7 +60,7 @@ const authController = {
 
     const newUser = await User.create({
       email,
-      username: email.split("@")[0] || phoneNumber || null,
+      username: email.split("@")[0] || null,
       firebaseUid: uid || "",
       createdAt: new Date(),
       updatedAt: new Date(),
