@@ -5,7 +5,6 @@ const userSchema = new Schema<IUser>({
   username: { type: String, select: true },
   email: {
     type: String,
-    unique: true,
     select: true,
   },
   phoneNumber: {
