@@ -15,12 +15,12 @@ const authController = {
     //@ts-ignore
     console.log("GONE HERE : ", req.user);
     //@ts-ignore
-    const { uid, email } = req.user;
+    const { uid, email , phoneNumber} = req.user;
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
       existingUser = await User.create({
-        username: email?.split("@")[0] || "Anonymous",
-        email: email || "",
+        username: email?.split("@")[0] || phoneNumber || null,
+        email: email || null,
         firebaseUid: uid,
         createdAt: new Date(),
         updatedAt: new Date(),

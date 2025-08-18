@@ -5,17 +5,17 @@ export interface IUser {
   isAdmin: boolean;
   isActive: boolean;
   firebaseUid:string;
-  phoneNumber?: string;
-  email?: string;
+  phoneNumber?: string|null;
+  email?: string|null;
   favs?: ObjectId[];
-  dob?: Date;
-  age?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  dob?: Date|null;
+  age?: number|null;
+  createdAt?: Date|null;
+  updatedAt?: Date|null;
   videos?: ObjectId[];
   stories?: ObjectId[];
-  userLocation?: string;
-  isMale?: boolean;
-  profilePicture?: string;
-  credits?: number;
+  userLocation?: string|null;
+  isMale?: boolean|null;
+  profilePicture?: string|null;
+  credits?: number|null;
 }

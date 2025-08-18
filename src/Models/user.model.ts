@@ -6,12 +6,6 @@ const userSchema = new Schema<IUser>({
   email: {
     type: String,
     unique: true,
-    validate: {
-      validator: (v: string) => {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      },
-      message: (data) => `${data.value} is not a valid email!`,
-    },
     select: true,
   },
   phoneNumber: {
@@ -20,10 +14,10 @@ const userSchema = new Schema<IUser>({
   },
   age: { type: Number, min: 12, select: true },
   credits: { type: Number, default: 10, select: true },
-  userLocation: { type: String, default: "", select: true },
-  dob: { type: Date, default: null, select: true }, 
-  isMale: { type: Boolean, default: false, select: true },
-  profilePicture: { type: String, default: "", select: true },
+  userLocation: { type: String, default: null, select: true },
+  dob: { type: Date, default: null, select: true },
+  isMale: { type: Boolean, default: null, select: true },
+  profilePicture: { type: String, default: null, select: true },
   videos: [{ type: String }],
   isActive: { type: Boolean, default: true },
   stories: [{ type: Schema.Types.ObjectId, ref: "Story" }],

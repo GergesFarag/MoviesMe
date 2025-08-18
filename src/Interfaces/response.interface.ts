@@ -1,3 +1,5 @@
+import { IUser } from "./user.interface";
+
 export interface loginResponse {
   message: string;
   data: {
@@ -11,9 +13,9 @@ export interface loginResponse {
     refreshToken: string;
   };
 }
-export interface userProfileResponse {
-  messsage:string;
-  deta : {
+export interface userProfileResponse{
+  message: string;
+  data: {
     
-  }
+  };
 }
