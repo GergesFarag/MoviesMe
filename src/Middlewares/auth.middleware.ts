@@ -46,3 +46,12 @@ export const authMiddle = catchError(
     next();
   }
 );
+export const isAdmin = catchError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    if (!req.user || !req.user.isAdmin) {
+      return next(new AppError("Unauthorized", 403));
+    }
+    next();
+  }
+);

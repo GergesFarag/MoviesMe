@@ -83,5 +83,6 @@ const adminController = {
       .status(200)
       .json({ message: "User updated successfully", data: updatedUser });
   }),
+  
 };
 export default adminController;

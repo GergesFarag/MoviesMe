@@ -13,13 +13,11 @@ import { loginResponse } from "../Interfaces/response.interface";
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
-    console.log("GONE HERE : ", req.user);
-    //@ts-ignore
-    const { uid, email , phoneNumber} = req.user;
+    const { uid, email , phone_number} = req.user;
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
       existingUser = await User.create({
-        username: email?.split("@")[0] || phoneNumber || null,
+        username: email?.split("@")[0] || phone_number || null,
         email: email || null,
         firebaseUid: uid,
         createdAt: new Date(),
@@ -45,6 +43,11 @@ const authController = {
       },
     } as loginResponse);
   }),
+
+
+
+
+
   register: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
     const { uid, email} = req.user;
@@ -52,21 +55,26 @@ const authController = {
     if (!email) {
       throw new AppError("Email is required", 400);
     }
-
+    
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new AppError("User already exists", 409);
     }
 
-    const newUser = await User.create({
-      email,
-      username: email.split("@")[0] || null,
-      firebaseUid: uid || "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true,
-      isAdmin: false,
-    });
+    let newUser;
+    try{
+      newUser = await User.create({
+        email,
+        username: email.split("@")[0] || null,
+        firebaseUid: uid || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+        isAdmin: false,
+      });
+    } catch (error) {
+      throw new AppError("Failed to create user", 500);
+    }
 
     const responseUser: loginResponse["data"]["user"] = {
       id: String(newUser._id),
@@ -87,6 +95,9 @@ const authController = {
     } as loginResponse);
   }),
 
+
+
+
   forgotPassword: catchError(async (req: Request, res: Response) => {
     const { email } = req.body;
 
@@ -105,6 +116,7 @@ const authController = {
       data: { resetLink },
     });
   }),
+
 
   refreshToken: catchError(async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
