@@ -47,7 +47,7 @@ const authController = {
   }),
   register: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
-    const { uid, email } = req.user;
+    const { uid, email, phoneNumber} = req.user;
 
     if (!email) {
       throw new AppError("Email is required", 400);
@@ -60,7 +60,7 @@ const authController = {
 
     const newUser = await User.create({
       email,
-      username: email.split("@")[0] || "Anonymous",
+      username: email.split("@")[0] || phoneNumber || null,
       firebaseUid: uid || "",
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -70,7 +70,8 @@ const authController = {
 
     const responseUser: loginResponse["data"]["user"] = {
       id: String(newUser._id),
-      username: newUser.email!.split("@")[0] || "",
+      username: newUser.username as string,
+      credits: newUser.credits || 10,
       isAdmin: newUser.isAdmin,
     };
     const accessToken = createAccessToken(responseUser);
