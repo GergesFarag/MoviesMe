@@ -28,7 +28,10 @@ const userController = {
       }
     });
     await user.save();
-    res.status(200).json({ message: "User profile updated successfully" });
+    res.status(200).json({ message: "User profile updated successfully"  , data : {
+      ...user,
+      ...updatedData
+    }});
   }),
 };
 
