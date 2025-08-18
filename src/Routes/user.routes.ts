@@ -6,6 +6,6 @@ const userRouter = Router();
 userRouter
   .route("/")
   .get(authMiddle, userController.getProfile)
-  .put(authMiddle, userController.updateProfile);
+  .patch(authMiddle, userController.updateProfile);
 
 export default userRouter;
