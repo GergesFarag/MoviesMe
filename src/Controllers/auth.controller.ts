@@ -13,7 +13,7 @@ import { loginResponse } from "../Interfaces/response.interface";
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
-    const { uid, email , phone_number} = req.user;
+    const { uid, email, phone_number } = req.user;
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
       existingUser = await User.create({
@@ -45,9 +45,6 @@ const authController = {
   }),
 
 
-
-
-
   register: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
     const { uid, email} = req.user;
@@ -55,7 +52,7 @@ const authController = {
     if (!email) {
       throw new AppError("Email is required", 400);
     }
-    
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new AppError("User already exists", 409);
@@ -95,9 +92,7 @@ const authController = {
     } as loginResponse);
   }),
 
-
-
-
+  
   forgotPassword: catchError(async (req: Request, res: Response) => {
     const { email } = req.body;
 

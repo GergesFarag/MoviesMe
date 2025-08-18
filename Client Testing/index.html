@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login with Gmail</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f3f3f3;
+        display: flex;
+        height: 100vh;
+        justify-content: center;
+        align-items: center;
+      }
+      .card {
+        background: #fff;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 300px;
+      }
+      button {
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 0.7rem 1.2rem;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        width: 100%;
+      }
+      button:hover {
+        background: #357ae8;
+      }
+      .message {
+        color: green;
+        margin-top: 1rem;
+      }
+      .error-message {
+        color: red;
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Login with Gmail</h2>
+
+      <!-- Gmail Login Button -->
+      <button id="gmail-login-btn">Login with Gmail</button>
+
+      <div class="message" id="success-message"></div>
+      <div class="error-message" id="error-message"></div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+      import {
+        getAuth,
+        signInWithPopup,
+        GoogleAuthProvider,
+      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAVdx4hQAviTmiE7_vVmoaSyb3lx1hachY",
+        authDomain: "ttov-a9677.firebaseapp.com",
+        projectId: "ttov-a9677",
+        appId: "1:57747989938:web:e4af38b054fd30014130ab",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+
+      // Gmail Login Function
+      document.getElementById('gmail-login-btn').addEventListener('click', function () {
+        const provider = new GoogleAuthProvider();
+
+        signInWithPopup(auth, provider)
+          .then(async (result) => {
+            const user = result.user;
+            console.log('User:', user);
+
+            // Get ID token
+            const idToken = await user.getIdToken();
+
+            console.log('ID Token:', idToken);
+          })
+          .catch((error) => {
+            console.error('Error during login:', error);
+            document.getElementById('error-message').textContent =
+              'Login failed. Please try again.';
+          });
+      });
+    </script>
+  </body>
+</html>

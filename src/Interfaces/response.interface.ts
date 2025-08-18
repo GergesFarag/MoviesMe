@@ -13,9 +13,17 @@ export interface loginResponse {
     refreshToken: string;
   };
 }
-export interface userProfileResponse{
+
+export type UserProfileResponseDataKeys = 
+  | "username"
+  | "email"
+  | "phoneNumber"
+  | "credits"
+  | "userLocation"
+  | "dob"
+  | "isMale"
+  | "profilePicture";
+export interface userProfileResponse {
   message: string;
-  data: {
-    
-  };
+  data: Record<UserProfileResponseDataKeys, any>;
 }

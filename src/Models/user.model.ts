@@ -3,12 +3,13 @@ import { IUser } from "../Interfaces/user.interface";
 
 const userSchema = new Schema<IUser>({
   username: { type: String, select: true },
-  email: {
-    type: String,
+  email: { 
+    type: String, 
     select: true,
   },
   phoneNumber: {
     type: String,
+    default: null,
     select: true, 
   },
   age: { type: Number, min: 12, select: true },
