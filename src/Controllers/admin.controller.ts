@@ -53,18 +53,12 @@ const adminController = {
     if (user.isAdmin) {
       throw new AppError("Cannot delete an admin user", 403);
     }
-    const deletedUser = await User.findOneAndDelete(
-      { _id: userId },
-    );
-    const firebaseReponse: any = await firebaseAdmin
-      .auth()
-      .deleteUser(user?.firebaseUid || "");
-    if (
-      firebaseReponse instanceof FirebaseAppError &&
-      firebaseReponse.code === "auth/user-not-found"
-    ) {
+    try {
+      await firebaseAdmin.auth().deleteUser(user?.firebaseUid);
+    } catch (error) {
       throw new AppError("Failed to delete user from Firebase", 500);
     }
+    const deletedUser = await User.findOneAndDelete({ _id: userId });
     res
       .status(200)
       .json({ message: "User deleted successfully", data: deletedUser });
@@ -83,6 +77,5 @@ const adminController = {
       .status(200)
       .json({ message: "User updated successfully", data: updatedUser });
   }),
-  
 };
 export default adminController;

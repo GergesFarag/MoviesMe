@@ -27,7 +27,9 @@ const userSchema = new Schema<IUser>({
   firebaseUid: { type: String, unique: true },
   favs: [{ type: Schema.Types.ObjectId, ref: "Model" }],
 });
-
+userSchema.on("delete" , (doc) => {
+  console.log("User deleted:", doc);
+})
 const User = model<IUser>("User", userSchema);
 export default User;
 export { IUser };
