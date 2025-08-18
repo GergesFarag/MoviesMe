@@ -18,20 +18,26 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", 404);
     }
+
     const updatedData = {
       ...req.body,
     };
-    
+
+    // Update fields in the user document
     Object.keys(updatedData).forEach((key) => {
       if (key in user && key in updatedData) {
         (user as any)[key] = updatedData[key as keyof typeof updatedData];
       }
     });
     await user.save();
-    res.status(200).json({ message: "User profile updated successfully"  , data : {
-      ...user,
-      ...updatedData
-    }});
+
+    // Optionally, you can fetch the updated user document again, though it's not always necessary
+    // const updatedUser = await User.findById(id);
+
+    res.status(200).json({
+      message: "User profile updated successfully",
+      data: user, // Return the updated user document
+    });
   }),
 };
 

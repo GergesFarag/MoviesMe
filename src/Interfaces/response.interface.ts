@@ -11,3 +11,9 @@ export interface loginResponse {
     refreshToken: string;
   };
 }
+export interface userProfileResponse {
+  messsage:string;
+  deta : {
+    
+  }
+}
