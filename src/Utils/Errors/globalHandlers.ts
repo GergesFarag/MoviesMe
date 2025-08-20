@@ -18,6 +18,9 @@ const handleValidationErrorDB = (err: any): AppError => {
 const handleNotFoundError = (err: any): AppError => {
   return new AppError("Not Found Route", HTTP_STATUS_CODE.NOT_FOUND);
 };
+const handleUnAuthorizedAccess = (err: any): AppError => {
+  return new AppError("Unauthorized Access", HTTP_STATUS_CODE.UNAUTHORIZED);
+};
 const sendErrorDev = (err: AppError, res: Response) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -28,6 +31,7 @@ const sendErrorDev = (err: AppError, res: Response) => {
 };
 const sendErrorProd = (err: AppError, res: Response) => {
   if (err.isOperational) {
+    console.log("Error From is Operational", err.message);
     res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
@@ -46,7 +50,6 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.log("ERROR HANDLER CALLED");
   err.statusCode = err.statusCode || HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR;
   err.status = err.status || "error";
   if (process.env.NODE_ENV === "development") {
@@ -60,9 +63,11 @@ export const errorHandler = (
       error = handleDuplicateFieldsDB(error);
     if (error.name === "ValidationError")
       error = handleValidationErrorDB(error);
-    if(error.statusCode === HTTP_STATUS_CODE.NOT_FOUND) {
+    if (error.statusCode === HTTP_STATUS_CODE.NOT_FOUND)
       error = handleNotFoundError(error);
-    }
+    if (error.statusCode === HTTP_STATUS_CODE.UNAUTHORIZED)
+      error = handleUnAuthorizedAccess(error);
+
     sendErrorProd(error, res);
   }
 };

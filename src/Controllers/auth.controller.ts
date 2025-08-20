@@ -19,6 +19,7 @@ const authController = {
       existingUser = await User.create({
         username: email?.split("@")[0] || phone_number || null,
         email: email || null,
+        phoneNumber: phone_number || null,
         firebaseUid: uid,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -69,7 +70,7 @@ const authController = {
         updatedAt: new Date(),
         isActive: true,
         isAdmin: false,
-        credits: 10
+        credits: 10,
       });
     } catch (error) {
       throw new AppError("Failed to create user", 500);
