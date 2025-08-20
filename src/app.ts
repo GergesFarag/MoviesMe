@@ -30,6 +30,17 @@ app.get("/" , (req, res) => {
 const API_VERSION = process.env.API_VERSION || "/v1";
 const prefix = process.env.API_PREFIX || "/api";
 const basePath = `${prefix}${API_VERSION}`;
+app.use((req, res, next) => {
+  console.log('Incoming request:', {
+    method: req.method,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl,
+    path: req.path,
+    timestamp: new Date().toISOString()
+  });
+  next();
+});
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter); 
@@ -37,7 +48,7 @@ app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
-app.use("*" , (req, res, next) => {
+app.all("*", (req, res, next) => {
   next(new AppError("Not Found Route", 404));
 });
  
