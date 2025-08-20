@@ -48,7 +48,8 @@ app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
-app.all("*", (req, res, next) => {
+app.use(/\/(.*)/, (req, res, next) => {
+  console.log('404 middleware triggered for:', req.originalUrl);
   next(new AppError("Not Found Route", 404));
 });
  
