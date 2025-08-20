@@ -7,11 +7,11 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "nodemon",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "build": "tsc",
+  "start": "npm run build && node dist/index.js",
+  "dev": "nodemon",
+  "test": "echo \"Error: no test specified\" && exit 1"
+},
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
