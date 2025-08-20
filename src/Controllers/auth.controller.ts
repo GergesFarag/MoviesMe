@@ -24,6 +24,7 @@ const authController = {
         updatedAt: new Date(),
         isActive: true,
         isAdmin: false,
+        credits: 10
       });
     }
     const responseUser: loginResponse["data"]["user"] = {
@@ -68,6 +69,7 @@ const authController = {
         updatedAt: new Date(),
         isActive: true,
         isAdmin: false,
+        credits: 10
       });
     } catch (error) {
       throw new AppError("Failed to create user", 500);
