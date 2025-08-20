@@ -37,7 +37,7 @@ app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
-app.use((req, res, next) => {
+app.use("*" , (req, res, next) => {
   next(new AppError("Not Found Route", 404));
 });
  
