@@ -12,7 +12,7 @@ const swaggerDoc = swaggerJsDoc({
       {
         url:
           process.env.NODE_ENV === "production"
-            ? "https://tto-v.vercel.app"
+            ? "https://ttov.onrender.com/"
             : "http://localhost:3000",
       },
     ],
