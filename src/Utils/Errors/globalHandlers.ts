@@ -43,6 +43,7 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
+  console.log("ERROR HANDLER CALLED");
   err.statusCode = err.statusCode || HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR;
   err.status = err.status || "error";
   if (process.env.NODE_ENV === "development") {
