@@ -15,6 +15,9 @@ const handleValidationErrorDB = (err: any): AppError => {
   const message = `Invalid input data: ${errors.join(". ")}`;
   return new AppError(message, HTTP_STATUS_CODE.BAD_REQUEST);
 };
+const handleNotFoundError = (err: any): AppError => {
+  return new AppError("Not Found Route", HTTP_STATUS_CODE.NOT_FOUND);
+};
 const sendErrorDev = (err: AppError, res: Response) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -51,11 +54,15 @@ export const errorHandler = (
     sendErrorDev(err, res);
   } else if (process.env.NODE_ENV === "production") {
     let error = { ...err };
+    console.log(error);
     if (error.name === "CastError") error = handleCastErrorDB(error);
     if (error.statusCode === HTTP_STATUS_CODE.DB_DUPLICATE)
       error = handleDuplicateFieldsDB(error);
     if (error.name === "ValidationError")
       error = handleValidationErrorDB(error);
+    if(error.statusCode === HTTP_STATUS_CODE.NOT_FOUND) {
+      error = handleNotFoundError(error);
+    }
     sendErrorProd(error, res);
   }
 };
