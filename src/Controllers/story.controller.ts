@@ -115,11 +115,11 @@ const storyController = {
     console.log("Generation Data Got : ", generationData);
     res.status(200).json({
       message: "Generation data fetched successfully",
-      data: generationData,
+      data: {...generationData},
     });
   }),
 
- updateGenerationData: catchError(async (req:Request , res:Response) => {
+  updateGenerationData: catchError(async (req:Request , res:Response) => {
   const {...updatingKeys} = req.body;
   const generationData = await GenerationInfo.findOneAndUpdate(
     {},
@@ -133,6 +133,6 @@ const storyController = {
     message: "Generation data updated successfully",
     data: generationData,
   });
- })
+  })
 };
 export default storyController;
