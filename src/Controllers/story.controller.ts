@@ -111,7 +111,7 @@ const storyController = {
   ),
 
   getGenerationData: catchError(async (req: Request, res: Response) => {
-    const generationData = await GenerationInfo.find();
+    const generationData = await GenerationInfo.findOne({});
     console.log("Generation Data Got : ", generationData);
     res.status(200).json({
       message: "Generation data fetched successfully",
