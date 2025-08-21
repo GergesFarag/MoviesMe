@@ -17,7 +17,7 @@ const swaggerDoc = swaggerJsDoc({
       },
     ],
   },
-  apis: [`${__dirname}/swagger.yaml`],
+  apis: [`/swagger.yaml`],
 });
 
 export default swaggerDoc;
