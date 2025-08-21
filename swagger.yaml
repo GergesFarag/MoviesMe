@@ -8,7 +8,7 @@ info:
     email: support@ttomproject.com
   license:
     name: ISC
-    
+
 components:
   securitySchemes:
     BearerAuth:
@@ -29,7 +29,7 @@ paths:
       summary: Welcome message
       description: Returns a welcome message for the API
       responses:
-        '200':
+        "200":
           description: Welcome message
           content:
             text/plain:
@@ -62,7 +62,7 @@ paths:
                 - email
                 - password
       responses:
-        '200':
+        "200":
           description: Successful login
           content:
             application/json:
@@ -71,120 +71,6 @@ paths:
                 properties:
                   success:
                     type: boolean
-    patch:
-      tags:
-        - User
-      summary: Update user profile
-      description: Update the current user's profile information
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                age:
-                  type: number
-                phoneNumber:
-                  type: string
-                userLocation:
-                  type: string
-                gender:
-                  type: string
-                  enum: [male, female, other]
-                profilePicture:
-                  type: string
-                  format: uri
-      responses:
-        '200':
-          description: Profile updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-        '400':
-          description: Invalid input data
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                  error:
-                    type: object
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                  error:
-                    type: object
-                - username
-                - email
-                - password
-                - dob
-      responses:
-        '201':
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: object
-        '400':
-          description: Invalid input data
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                  error:
-                    type: object
-        '409':
-          description: User already exists
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                  error:
-                    type: object
 
   /auth/gmailLogin:
     post:
@@ -207,7 +93,7 @@ paths:
               required:
                 - idToken
       responses:
-        '200':
+        "200":
           description: Successful Gmail login
           content:
             application/json:
@@ -220,7 +106,7 @@ paths:
                     type: string
                   data:
                     type: object
-        '400':
+        "400":
           description: Invalid token
           content:
             application/json:
@@ -258,7 +144,7 @@ paths:
                 - phoneNumber
                 - verificationCode
       responses:
-        '200':
+        "200":
           description: Successful phone login
           content:
             application/json:
@@ -271,7 +157,7 @@ paths:
                     type: string
                   data:
                     type: object
-        '400':
+        "400":
           description: Invalid phone number or verification code
           content:
             application/json:
@@ -290,47 +176,6 @@ paths:
     post:
       tags:
         - Authentication
-                    /story/generationData:
-                      get:
-                        tags:
-                          - Stories
-                        summary: Get story generation data
-                        description: Retrieve generation data for stories
-                        responses:
-                          '200':
-                            description: Generation data retrieved successfully
-                            content:
-                              application/json:
-                                schema:
-                                  type: object
-                                  properties:
-                                    success:
-                                      type: boolean
-                                    data:
-                                      type: object
-                      put:
-                        tags:
-                          - Stories
-                        summary: Update story generation data
-                        description: Update generation data for stories
-                        requestBody:
-                          required: true
-                          content:
-                            application/json:
-                              schema:
-                                type: object
-                        responses:
-                          '200':
-                            description: Generation data updated successfully
-                            content:
-                              application/json:
-                                schema:
-                                  type: object
-                                  properties:
-                                    success:
-                                      type: boolean
-                                    data:
-                                      type: object
       summary: Request password reset
       description: Send password reset email to user
       requestBody:
@@ -346,7 +191,7 @@ paths:
               required:
                 - email
       responses:
-        '200':
+        "200":
           description: Password reset email sent
           content:
             application/json:
@@ -359,7 +204,7 @@ paths:
                     type: string
                   data:
                     type: object
-        '404':
+        "404":
           description: User not found
           content:
             application/json:
@@ -392,7 +237,7 @@ paths:
               required:
                 - refreshToken
       responses:
-        '200':
+        "200":
           description: Token refreshed successfully
           content:
             application/json:
@@ -405,7 +250,7 @@ paths:
                     type: string
                   refreshToken:
                     type: string
-        '401':
+        "401":
           description: Invalid refresh token
           content:
             application/json:
@@ -430,7 +275,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: User profile retrieved successfully
           content:
             application/json:
@@ -441,7 +286,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -455,7 +300,7 @@ paths:
                     type: string
                   error:
                     type: object
-                
+
     put:
       tags:
         - User
@@ -485,7 +330,7 @@ paths:
                   type: string
                   format: uri
       responses:
-        '200':
+        "200":
           description: Profile updated successfully
           content:
             application/json:
@@ -496,7 +341,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '400':
+        "400":
           description: Invalid input data
           content:
             application/json:
@@ -510,7 +355,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -548,7 +393,7 @@ paths:
             default: 10
           description: Number of stories per page
       responses:
-        '200':
+        "200":
           description: Stories retrieved successfully
           content:
             application/json:
@@ -570,7 +415,7 @@ paths:
                         type: integer
                       totalItems:
                         type: integer
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -584,7 +429,7 @@ paths:
                     type: string
                   error:
                     type: object
-                
+
     post:
       tags:
         - Stories
@@ -622,7 +467,7 @@ paths:
                 - title
                 - scenes
       responses:
-        '201':
+        "201":
           description: Story created successfully
           content:
             application/json:
@@ -633,7 +478,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '400':
+        "400":
           description: Invalid input data
           content:
             application/json:
@@ -647,7 +492,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -678,7 +523,7 @@ paths:
             type: string
           description: The story ID
       responses:
-        '200':
+        "200":
           description: Story retrieved successfully
           content:
             application/json:
@@ -689,7 +534,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '404':
+        "404":
           description: Story not found
           content:
             application/json:
@@ -703,7 +548,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -717,7 +562,7 @@ paths:
                     type: string
                   error:
                     type: object
-                
+
     delete:
       tags:
         - Stories
@@ -733,7 +578,7 @@ paths:
             type: string
           description: The story ID
       responses:
-        '200':
+        "200":
           description: Story deleted successfully
           content:
             application/json:
@@ -746,7 +591,7 @@ paths:
                     type: string
                   data:
                     type: object
-        '404':
+        "404":
           description: Story not found
           content:
             application/json:
@@ -760,7 +605,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -783,7 +628,7 @@ paths:
       summary: Get video effect models
       description: Retrieve all AI models for video effects
       responses:
-        '200':
+        "200":
           description: Video effect models retrieved successfully
           content:
             application/json:
@@ -804,7 +649,7 @@ paths:
       summary: Get image effect models
       description: Retrieve all AI models for image effects
       responses:
-        '200':
+        "200":
           description: Image effect models retrieved successfully
           content:
             application/json:
@@ -825,7 +670,7 @@ paths:
       summary: Get character effect models
       description: Retrieve all AI models for character effects
       responses:
-        '200':
+        "200":
           description: Character effect models retrieved successfully
           content:
             application/json:
@@ -846,7 +691,7 @@ paths:
       summary: Get AI tools
       description: Retrieve all AI tools and utilities
       responses:
-        '200':
+        "200":
           description: AI tools retrieved successfully
           content:
             application/json:
@@ -867,7 +712,7 @@ paths:
       summary: Get AI 3D tools
       description: Retrieve all AI 3D modeling tools
       responses:
-        '200':
+        "200":
           description: AI 3D tools retrieved successfully
           content:
             application/json:
@@ -888,7 +733,7 @@ paths:
       summary: Get marketing tools
       description: Retrieve all AI marketing tools
       responses:
-        '200':
+        "200":
           description: Marketing tools retrieved successfully
           content:
             application/json:
@@ -909,7 +754,7 @@ paths:
       summary: Get trending models
       description: Retrieve all trending AI models
       responses:
-        '200':
+        "200":
           description: Trending models retrieved successfully
           content:
             application/json:
@@ -967,7 +812,7 @@ paths:
                 - isNewModel
                 - isTrending
       responses:
-        '201':
+        "201":
           description: AI model created successfully
           content:
             application/json:
@@ -978,7 +823,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '400':
+        "400":
           description: Invalid input data
           content:
             application/json:
@@ -1036,7 +881,7 @@ paths:
                 isAI3DTool:
                   type: boolean
       responses:
-        '200':
+        "200":
           description: AI model updated successfully
           content:
             application/json:
@@ -1047,7 +892,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '404':
+        "404":
           description: AI model not found
           content:
             application/json:
@@ -1061,7 +906,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '400':
+        "400":
           description: Invalid input data
           content:
             application/json:
@@ -1075,7 +920,7 @@ paths:
                     type: string
                   error:
                     type: object
-                
+
     delete:
       tags:
         - AI Models
@@ -1089,7 +934,7 @@ paths:
             type: string
           description: The AI model ID
       responses:
-        '200':
+        "200":
           description: AI model deleted successfully
           content:
             application/json:
@@ -1102,7 +947,7 @@ paths:
                     type: string
                   data:
                     type: object
-        '404':
+        "404":
           description: AI model not found
           content:
             application/json:
@@ -1145,7 +990,7 @@ paths:
             type: boolean
           description: Filter by user active status
       responses:
-        '200':
+        "200":
           description: Users retrieved successfully
           content:
             application/json:
@@ -1167,7 +1012,7 @@ paths:
                         type: integer
                       totalItems:
                         type: integer
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -1181,7 +1026,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '403':
+        "403":
           description: Forbidden - Admin access required
           content:
             application/json:
@@ -1195,7 +1040,7 @@ paths:
                     type: string
                   error:
                     type: object
-                
+
     post:
       tags:
         - Admin
@@ -1235,7 +1080,7 @@ paths:
                 - password
                 - dob
       responses:
-        '201':
+        "201":
           description: User created successfully
           content:
             application/json:
@@ -1246,7 +1091,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '400':
+        "400":
           description: Invalid input data
           content:
             application/json:
@@ -1260,7 +1105,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -1274,7 +1119,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '403':
+        "403":
           description: Forbidden - Admin access required
           content:
             application/json:
@@ -1305,7 +1150,7 @@ paths:
             type: string
           description: The user ID
       responses:
-        '200':
+        "200":
           description: User retrieved successfully
           content:
             application/json:
@@ -1316,7 +1161,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '404':
+        "404":
           description: User not found
           content:
             application/json:
@@ -1330,7 +1175,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -1344,7 +1189,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '403':
+        "403":
           description: Forbidden - Admin access required
           content:
             application/json:
@@ -1358,7 +1203,7 @@ paths:
                     type: string
                   error:
                     type: object
-                
+
     put:
       tags:
         - Admin
@@ -1402,7 +1247,7 @@ paths:
                   type: string
                   format: uri
       responses:
-        '200':
+        "200":
           description: User updated successfully
           content:
             application/json:
@@ -1413,7 +1258,7 @@ paths:
                     type: boolean
                   data:
                     type: object
-        '404':
+        "404":
           description: User not found
           content:
             application/json:
@@ -1427,7 +1272,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '400':
+        "400":
           description: Invalid input data
           content:
             application/json:
@@ -1441,7 +1286,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -1455,7 +1300,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '403':
+        "403":
           description: Forbidden - Admin access required
           content:
             application/json:
@@ -1469,7 +1314,7 @@ paths:
                     type: string
                   error:
                     type: object
-                
+
     delete:
       tags:
         - Admin
@@ -1485,7 +1330,7 @@ paths:
             type: string
           description: The user ID
       responses:
-        '200':
+        "200":
           description: User deleted successfully
           content:
             application/json:
@@ -1498,7 +1343,7 @@ paths:
                     type: string
                   data:
                     type: object
-        '404':
+        "404":
           description: User not found
           content:
             application/json:
@@ -1512,7 +1357,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
@@ -1526,7 +1371,7 @@ paths:
                     type: string
                   error:
                     type: object
-        '403':
+        "403":
           description: Forbidden - Admin access required
           content:
             application/json:
