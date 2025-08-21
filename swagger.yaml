@@ -71,12 +71,48 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  message:
-                    type: string
+    patch:
+      tags:
+        - User
+      summary: Update user profile
+      description: Update the current user's profile information
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                age:
+                  type: number
+                phoneNumber:
+                  type: string
+                userLocation:
+                  type: string
+                gender:
+                  type: string
+                  enum: [male, female, other]
+                profilePicture:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
                   data:
                     type: object
         '400':
-          description: Invalid credentials
+          description: Invalid input data
           content:
             application/json:
               schema:
@@ -103,42 +139,6 @@ paths:
                     type: string
                   error:
                     type: object
-
-  /auth/register:
-    post:
-      tags:
-        - Authentication
-      summary: Register a new user
-      description: Create a new user account with Firebase authentication
-      security:
-        - FirebaseAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                age:
-                  type: number
-                phoneNumber:
-                  type: string
-                userLocation:
-                  type: string
-                gender:
-                  type: string
-                  enum: [male, female, other]
-                dob:
-                  type: string
-                  format: date
-              required:
                 - username
                 - email
                 - password
@@ -290,6 +290,47 @@ paths:
     post:
       tags:
         - Authentication
+                    /story/generationData:
+                      get:
+                        tags:
+                          - Stories
+                        summary: Get story generation data
+                        description: Retrieve generation data for stories
+                        responses:
+                          '200':
+                            description: Generation data retrieved successfully
+                            content:
+                              application/json:
+                                schema:
+                                  type: object
+                                  properties:
+                                    success:
+                                      type: boolean
+                                    data:
+                                      type: object
+                      put:
+                        tags:
+                          - Stories
+                        summary: Update story generation data
+                        description: Update generation data for stories
+                        requestBody:
+                          required: true
+                          content:
+                            application/json:
+                              schema:
+                                type: object
+                        responses:
+                          '200':
+                            description: Generation data updated successfully
+                            content:
+                              application/json:
+                                schema:
+                                  type: object
+                                  properties:
+                                    success:
+                                      type: boolean
+                                    data:
+                                      type: object
       summary: Request password reset
       description: Send password reset email to user
       requestBody:
@@ -828,6 +869,27 @@ paths:
       responses:
         '200':
           description: AI 3D tools retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /models/marketingTools:
+    get:
+      tags:
+        - AI Models
+      summary: Get marketing tools
+      description: Retrieve all AI marketing tools
+      responses:
+        '200':
+          description: Marketing tools retrieved successfully
           content:
             application/json:
               schema:
