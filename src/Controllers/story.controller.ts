@@ -6,6 +6,7 @@ import { openAICalling } from "../Utils/openAI_calling";
 import AppError from "../Utils/Errors/AppError";
 import mongoose, { Types } from "mongoose";
 import { IScene } from "../Interfaces/scene.interface";
+import GenerationInfo from "../Models/generationInfo.model";
 
 const storyController = {
   getAllStories: catchError(
@@ -69,7 +70,7 @@ const storyController = {
       }
       res.status(201).json({
         message: "Story Added Successfully",
-        data: {story}
+        data: { story },
       });
     }
   ),
@@ -108,5 +109,30 @@ const storyController = {
       res.status(200).json({ message: "Story deleted successfully" });
     }
   ),
+
+  getGenerationData: catchError(async (req: Request, res: Response) => {
+    const generationData = await GenerationInfo.find();
+    console.log("Generation Data Got : ", generationData);
+    res.status(200).json({
+      message: "Generation data fetched successfully",
+      data: generationData,
+    });
+  }),
+
+ updateGenerationData: catchError(async (req:Request , res:Response) => {
+  const {...updatingKeys} = req.body;
+  const generationData = await GenerationInfo.findOneAndUpdate(
+    {},
+    { $set: updatingKeys },
+    { new: true }
+  );
+  if (!generationData) {
+    throw new AppError("Failed to update generation data", 500);
+  }
+  res.status(200).json({
+    message: "Generation data updated successfully",
+    data: generationData,
+  });
+ })
 };
 export default storyController;
