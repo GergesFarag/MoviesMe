@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
-import { loginResponse } from "../Interfaces/response.interface";
-import AppError, { HTTP_STATUS_CODE } from "./Errors/AppError";
+import { loginResponse } from "../../Interfaces/response.interface";
+import AppError, { HTTP_STATUS_CODE } from "../Errors/AppError";
 
 const createAccessToken = (userData: loginResponse["data"]["user"]): string => {
   const expiry = process.env.ACCESS_TOKEN_EXPIRY || "5h";

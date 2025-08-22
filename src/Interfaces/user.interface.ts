@@ -13,6 +13,7 @@ export interface IUser {
   createdAt?: Date|null;
   updatedAt?: Date|null;
   videos?: ObjectId[];
+  images?: ObjectId[];
   stories?: ObjectId[];
   userLocation?: string|null;
   isMale?: boolean|null;

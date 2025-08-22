@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import catchError from "../Utils/Errors/catchError";
 import Story from "../Models/story.model";
 import User from "../Models/user.model";
-import { openAICalling } from "../Utils/openAI_calling";
+import { openAICalling } from "../Utils/APIs/openAI_calling";
 import AppError from "../Utils/Errors/AppError";
 import mongoose, { Types } from "mongoose";
 import { IScene } from "../Interfaces/scene.interface";

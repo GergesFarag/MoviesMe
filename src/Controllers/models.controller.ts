@@ -3,6 +3,10 @@ import Model from "../Models/aiModel.model";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import IAiModel from "../Interfaces/aiModel.interface";
+import { runModel } from "../Utils/APIs/wavespeed_calling";
+import { filterModelType } from "../Utils/Format/filterModelType";
+import { cloudUpload } from "../Utils/APIs/cloudinary";
+import { UploadApiResponse } from "cloudinary";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -198,6 +202,39 @@ const modelsController = {
     res
       .status(200)
       .json({ message: "Model updated successfully", data: model });
+  }),
+
+  applyModel: catchError(async (req, res) => {
+    const { modelId } = req.body;
+    const image = req.file;
+    if (!modelId || !image) {
+      throw new AppError("Model ID and image are required", 400);
+    }
+    const fieldsWithSelectFalse = Object.keys(Model.schema.paths)
+      .filter((path) => Model.schema.paths[path].options.select === false)
+      .map((path) => `+${path}`);
+
+    const model = await Model.findById(modelId)
+      .select(fieldsWithSelectFalse.join(" "))
+      .lean();
+    if (!model) {
+      throw new AppError("Model not found", 404);
+    }
+    //filter model to its category based on boolean fields
+    const modelType = filterModelType(model);
+    //upload the streams into cloudinary
+    const imageUrl = (await cloudUpload(image.buffer)) as UploadApiResponse;
+    //check if imageUrl is valid
+    if (!imageUrl || !imageUrl.url) {
+      throw new AppError("Image upload failed", 500);
+    }
+    //calling Wavespeed API
+    const modelResult = await runModel(model.name, modelType, {
+      image: imageUrl.url,
+    });
+    res
+      .status(200)
+      .json({ message: "Effect applied successfully", data: modelResult });
   }),
 };
 export default modelsController;

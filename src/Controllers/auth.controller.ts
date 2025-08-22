@@ -7,7 +7,7 @@ import {
   createAccessToken,
   createRefreshToken,
   verifyRefreshToken,
-} from "../Utils/tokenHelpers";
+} from "../Utils/Auth/tokenHelpers";
 import { loginResponse } from "../Interfaces/response.interface";
 
 const authController = {
