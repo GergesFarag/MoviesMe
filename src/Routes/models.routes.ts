@@ -10,6 +10,7 @@ modelsRouter.get("/aiTools" , modelsController.getAITools);
 modelsRouter.get("/ai3dTools" , modelsController.getAI3DTools);
 modelsRouter.get("/marketingTools" , modelsController.getMarketingTools);
 modelsRouter.get("/trending" , modelsController.getTrendingModels);
+modelsRouter.get("/jobStatus/:id" , modelsController.getJobStatus);
 modelsRouter.post("/applyModel" , upload.single('payload[image]') ,modelsController.applyModel);
 modelsRouter.post("/", modelsController.addModel);
 modelsRouter

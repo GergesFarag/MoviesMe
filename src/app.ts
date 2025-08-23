@@ -30,17 +30,6 @@ app.get("/" , (req, res) => {
 const API_VERSION = process.env.API_VERSION || "/v1";
 const prefix = process.env.API_PREFIX || "/api";
 const basePath = `${prefix}${API_VERSION}`;
-app.use((req, res, next) => {
-  console.log('Incoming request:', {
-    method: req.method,
-    url: req.url,
-    originalUrl: req.originalUrl,
-    baseUrl: req.baseUrl,
-    path: req.path,
-    timestamp: new Date().toISOString()
-  });
-  next();
-});
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter); 

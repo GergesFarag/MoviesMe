@@ -7,6 +7,7 @@ import { runModel } from "../Utils/APIs/wavespeed_calling";
 import { filterModelType } from "../Utils/Format/filterModelType";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
+import modelQueue, { taskQueue } from "../Queues/model.queue";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -228,13 +229,56 @@ const modelsController = {
     if (!imageUrl || !imageUrl.url) {
       throw new AppError("Image upload failed", 500);
     }
-    //calling Wavespeed API
-    const modelResult = await runModel(model.name, modelType, {
-      image: imageUrl.url,
+    const job = await taskQueue.add(
+      {
+        modelName: model.name,
+        type: modelType,
+        data: { image: imageUrl.url },
+      },
+      {
+        jobId: `model_${modelId}_${Date.now()}`,
+      }
+    );
+    res.status(202).json({
+      message: "Model processing started",
+      jobId: job.id,
     });
-    res
-      .status(200)
-      .json({ message: "Effect applied successfully", data: modelResult });
+  }),
+
+  getJobStatus: catchError(async (req, res) => {
+    const { id } = req.params;
+
+    const job = await taskQueue.getJob(id);
+
+    if (!job) {
+      throw new AppError("Job not found", 404);
+    }
+    const progress = job.progress();
+    const result = job.returnvalue;
+    const failedReason = job.failedReason;
+    const customStatus = job.data.status || "unknown";
+    const customProgress = job.data.progress || progress;
+    const customData = {
+      requestId: job.data.requestId,
+      resultUrl: job.data.resultUrl,
+      error: job.data.error,
+      apiStatus: job.data.apiStatus,
+      startedAt: job.data.startedAt,
+      completedAt: job.data.completedAt,
+      failedAt: job.data.failedAt,
+    };
+    res.json({
+      jobId: id,
+      status: customStatus,
+      progress: customProgress,
+      result: {
+        success: result ? true : false,
+        data: result,
+      },
+      failedReason,
+      timestamp: job.timestamp,
+      customData,
+    });
   }),
 };
 export default modelsController;
