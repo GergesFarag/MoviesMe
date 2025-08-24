@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import cors from "cors";
 import adminRouter from "./Routes/admin.routes";
-import { errorHandler } from "./Utils/Errors/globalHandlers";
+import ErrorHandler from "./Middlewares/error.middleware";
 import AppError from "./Utils/Errors/AppError";
 import userRouter from "./Routes/user.routes";
 import swaggerUi from "swagger-ui-express";
@@ -42,6 +42,6 @@ app.use(/\/(.*)/, (req, res, next) => {
   next(new AppError("Not Found Route", 404));
 });
  
-app.use(errorHandler);
+app.use(ErrorHandler);
 
 export default app;

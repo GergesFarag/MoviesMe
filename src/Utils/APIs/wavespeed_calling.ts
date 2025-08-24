@@ -1,9 +1,20 @@
-import Bull, { Job } from "bull";
-import taskQueue from "../../Queues/model.queue";
+import Bull from "bull";
 import AppError from "../Errors/AppError";
 import { formatModelName } from "../Format/modelNames";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
+
+const updateJobProgress = async (
+  job: Bull.Job,
+  progress: number,
+  status: string,
+  additionalData: object = {}
+) => {
+  if (job) {
+    await job.progress(progress);
+    await job.update({ status, ...additionalData });
+  }
+};
 
 export const runModel = async (
   modelName: string,
@@ -13,15 +24,18 @@ export const runModel = async (
 ) => {
   if (!WAVESPEED_API_KEY) {
     throw new AppError(
-      "Your API_KEY is not set, you can check it in Access Keys"
+      "Your API key is missing. Please check your Access Keys in the environment variables."
     );
   }
+
   const formattedModel = formatModelName(modelName, type);
-  if (job) {
-    await job.progress(10);
-    await job.update({ status: "initializing" });
-  }
   console.log("MODEL NAME:", formattedModel);
+
+  if (job) {
+    await updateJobProgress(job, 10, "Initializing model processing...");
+    await new Promise((res) => setTimeout((res), 4000)); // Simulate initialization delay
+  }
+
   const url = `https://api.wavespeed.ai/api/v3/${formattedModel}`;
   const headers = {
     "Content-Type": "application/json",
@@ -34,9 +48,10 @@ export const runModel = async (
 
   try {
     if (job) {
-      await job.progress(30);
-      await job.update({ status: "submitting_to_api" });
+      await updateJobProgress(job, 30, "Submitting model data...");
+      await new Promise((res) => setTimeout((res), 2000)); // Simulate submit delay
     }
+
     const response = await fetch(url, {
       method: "POST",
       headers: headers,
@@ -46,17 +61,15 @@ export const runModel = async (
     if (response.ok) {
       const result = await response.json();
       const requestId = result.data.id;
-      if (job) {
-        await job.progress(40);
-        await job.update({ status: "waiting_for_processing", requestId });
-      }
+
       console.log(`Task submitted successfully. Request ID: ${requestId}`);
 
+      if (job) {
+        await updateJobProgress(job, 50, "Waiting for prediction results...", { requestId });
+      }
+
       while (true) {
-        if (job) {
-          await job.update({ status: "checking_status" });
-        }
-        const response = await fetch(
+        const statusResponse = await fetch(
           `https://api.wavespeed.ai/api/v3/predictions/${requestId}/result`,
           {
             headers: {
@@ -64,60 +77,62 @@ export const runModel = async (
             },
           }
         );
-        if (job) {
-          await job.progress(40);
-          await job.update({ status: "waiting_for_response", requestId });
-        }
-        const result = await response.json();
-        if (response.ok) {
+
+        if (statusResponse.ok) {
+          const result = await statusResponse.json();
           const data = result.data;
           const status = data.status;
 
+          if (job) {
+            await updateJobProgress(job, 70, "Processing is almost done...", { requestId });
+          }
+
           if (status === "completed") {
             const resultUrl = data.outputs[0];
-            console.log("Task completed. URL:", resultUrl);
+            console.log("Task completed successfully. Result URL:", resultUrl);
+
             if (job) {
-              await job.progress(100);
-              await job.update({ status: "completed", resultUrl });
+              await updateJobProgress(job, 100, "Model processing completed.", { resultUrl });
             }
             return resultUrl;
           } else if (status === "failed") {
             if (job) {
-              await job.progress(0);
-              await job.update({ status: "failed", error: data.error });
+              await updateJobProgress(job, 0, "Model processing failed.", { error: data.error });
             }
             console.error("Task failed:", data.error);
-
             return null;
           } else {
-            console.log("Task still processing. Status:", status);
-            if (job) {
-              let progress = 50;
-              if (status === "processing") progress = 60;
-              if (status === "almost_done") progress = 80;
-
-              await job.progress(progress);
-              await job.update({ status: "processing", apiStatus: status });
-            }
+            console.log("Task still processing. Current status:", status);
           }
         } else {
-          console.error("Error:", response.status, JSON.stringify(result));
+          console.error(
+            "Error with status check:",
+            statusResponse.status,
+            await statusResponse.text()
+          );
+
           if (job) {
-            await job.progress(0);
-            await job.update({ status: "api_error", error: response.status });
+            await updateJobProgress(job, 0, "API error while checking status.", {
+              error: statusResponse.status,
+            });
           }
-          throw new AppError("Wavespeed API request failed", 500);
+
+          throw new AppError("Wavespeed API request failed during status check", 500);
         }
-        await new Promise((resolve) => setTimeout(resolve, 0.5 * 1000));
+
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Wait before re-checking
       }
     } else {
-      console.error(`Error: ${response.status}, ${await response.text()}`);
+      console.error(`Error submitting task: ${response.status}, ${await response.text()}`);
+      if (job) {
+        await updateJobProgress(job, 0, "Error submitting task.", {
+          error: response.status,
+        });
+      }
     }
   } catch (error) {
     if (job) {
-      await job.progress(0);
-      await job.update({
-        status: "errored",
+      await updateJobProgress(job, 0, "An error occurred during model processing.", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
