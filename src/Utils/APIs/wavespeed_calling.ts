@@ -23,6 +23,7 @@ export const runModel = async (
   data: any,
   job?: Bull.Job
 ) => {
+  console.log("data" , data);
   if (!WAVESPEED_API_KEY) {
     throw new AppError(
       "Your API key is missing. Please check your Access Keys in the environment variables."
@@ -46,13 +47,12 @@ export const runModel = async (
   const payload = {
     ...data,
   };
-
   try {
     if (job) {
       await updateJobProgress(job, 30, "Submitting model data...");
       await new Promise((res) => setTimeout((res), 2000)); // Simulate submit delay
     }
-
+    
     const response = await fetch(url, {
       method: "POST",
       headers: headers,

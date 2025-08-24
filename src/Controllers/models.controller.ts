@@ -206,7 +206,8 @@ const modelsController = {
   }),
 
   applyModel: catchError(async (req, res) => {
-    const { modelId , ...rest } = req.body;
+    const { modelId } = req.body;
+    const {...rest} = req.body.payload;
     const image = req.file;
     if (!modelId || !image) {
       throw new AppError("Model ID and image are required", 400);
