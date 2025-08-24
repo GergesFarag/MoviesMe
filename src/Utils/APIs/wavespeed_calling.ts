@@ -65,7 +65,7 @@ export const runModel = async (
       console.log(`Task submitted successfully. Request ID: ${requestId}`);
 
       if (job) {
-        await updateJobProgress(job, 50, "Waiting for prediction results...", { requestId });
+        await updateJobProgress(job, 50, "Waiting..", { requestId });
       }
 
       while (true) {
@@ -84,7 +84,7 @@ export const runModel = async (
           const status = data.status;
 
           if (job) {
-            await updateJobProgress(job, 70, "Processing is almost done...", { requestId });
+            await updateJobProgress(job, 70, "Processing...", { requestId });
           }
 
           if (status === "completed") {

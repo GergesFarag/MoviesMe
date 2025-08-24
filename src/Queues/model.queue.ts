@@ -1,14 +1,14 @@
 import Queue from "bull";
 import { runModel } from "../Utils/APIs/wavespeed_calling";
-const redisPort = process.env.REDIS_PORT
-  ? parseInt(process.env.REDIS_PORT, 10)
+const redisPort = process.env.REDIS_PORT as string
+  ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
 
 export const taskQueue = new Queue("modelProcessing", {
   redis: {
-    host: process.env.REDIS_HOST || "127.0.0.1",
+    host: process.env.REDIS_HOST as string,
     port: redisPort,
-    password: process.env.REDIS_PASSWORD || undefined,
+    password: process.env.REDIS_PASSWORD as string || undefined,
   },
   defaultJobOptions: {
     attempts: 3,
