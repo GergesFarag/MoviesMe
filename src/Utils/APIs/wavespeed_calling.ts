@@ -34,7 +34,7 @@ export const runModel = async (
 
   if (job) {
     await updateJobProgress(job, 10, "Initializing model processing...");
-    await new Promise((res) => setTimeout((res), 4000)); // Simulate initialization delay
+    await new Promise((res) => setTimeout((res), 4000));
   }
 
   const url = `https://api.wavespeed.ai/api/v3/${formattedModel}`;

@@ -206,7 +206,7 @@ const modelsController = {
   }),
 
   applyModel: catchError(async (req, res) => {
-    const { modelId } = req.body;
+    const { modelId , ...rest } = req.body;
     const image = req.file;
     if (!modelId || !image) {
       throw new AppError("Model ID and image are required", 400);
@@ -233,7 +233,7 @@ const modelsController = {
       {
         modelName: model.name,
         type: modelType,
-        data: { image: imageUrl.url },
+        data: { image: imageUrl.url, ...rest },
       },
       {
         jobId: `model_${modelId}_${Date.now()}`,
