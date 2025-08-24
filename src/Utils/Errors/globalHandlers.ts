@@ -21,7 +21,7 @@ export const handleNotFoundError = (err: any): AppError => {
 export const handleUnAuthorizedAccess = (err: any): AppError => {
   return new AppError("Unauthorized Access", HTTP_STATUS_CODE.UNAUTHORIZED);
 };
-export const handleUnknownError = (err: AppError, res: Response) => {
+export const handleUnknownError = (err: any, res: Response) => {
   return new AppError(err.message, err.statusCode);
 };
 export const sendErrorDev = (err: AppError, res: Response) => {

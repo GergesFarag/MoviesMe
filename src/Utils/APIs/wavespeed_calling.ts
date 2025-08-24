@@ -1,6 +1,7 @@
 import Bull from "bull";
 import AppError from "../Errors/AppError";
 import { formatModelName } from "../Format/modelNames";
+import { sendNotificationToAllUsers } from "../Notifications/notifications";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
@@ -94,12 +95,14 @@ export const runModel = async (
             if (job) {
               await updateJobProgress(job, 100, "Model processing completed.", { resultUrl });
             }
+            sendNotificationToAllUsers("Model Processing Completed", `Your video generated successfully`);
             return resultUrl;
           } else if (status === "failed") {
             if (job) {
               await updateJobProgress(job, 0, "Model processing failed.", { error: data.error });
             }
             console.error("Task failed:", data.error);
+            sendNotificationToAllUsers("Model Processing Failed", `Your video failed to generate`);
             return null;
           } else {
             console.log("Task still processing. Current status:", status);
