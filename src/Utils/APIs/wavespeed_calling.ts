@@ -92,9 +92,6 @@ export const runModel = async (
             const resultUrl = data.outputs[0];
             console.log("Task completed successfully. Result URL:", resultUrl);
 
-            if (job) {
-              await updateJobProgress(job, 100, "Model processing completed.", { resultUrl });
-            }
             sendNotificationToAllUsers("Model Processing Completed", `Your video generated successfully`);
             return resultUrl;
           } else if (status === "failed") {
