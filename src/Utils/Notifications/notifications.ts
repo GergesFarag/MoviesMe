@@ -1,7 +1,10 @@
 import { firebaseAdmin } from "../../Config/firebase";
-export const sendNotificationToAllUsers = async (title:string, body:string) => {
+export const sendNotificationToAllUsers = async (
+  title: string,
+  body: string
+) => {
   const message = {
-    topic: 'Video Generation',
+    topic: "Video Generation",
     notification: {
       title: title,
       body: body,
@@ -10,8 +13,8 @@ export const sendNotificationToAllUsers = async (title:string, body:string) => {
 
   try {
     const response = await firebaseAdmin.messaging().send(message);
-    console.log('Successfully sent message:', response);
+    console.log("Successfully sent message:", response);
   } catch (error) {
-    console.error('Error sending message:', error);
+    console.error("Error sending message:", error);
   }
-}
+};

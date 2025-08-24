@@ -48,7 +48,12 @@ const storyController = {
       if (!response) {
         throw new AppError("Failed to generate story", 500);
       }
-
+      if (!response.scenes) {
+        res.status(200).json({
+          message: "Failed to generate story",
+          data: response,
+        });
+      }
       const story = await Story.create({
         title: response.title,
         userId: id as Types.ObjectId,
