@@ -27,6 +27,7 @@ const userSchema = new Schema<IUser>({
   firebaseUid: { type: String, unique: true },
   favs: [{ type: Schema.Types.ObjectId, ref: "Model" }],
   images: [{ type: Schema.Types.ObjectId }],
+  FCMToken: { type: String, default: null},
 });
 userSchema.on("delete" , (doc) => {
   console.log("User deleted:", doc);

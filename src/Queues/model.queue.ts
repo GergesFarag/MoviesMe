@@ -22,7 +22,7 @@ export const taskQueue = new Queue("modelProcessing", {
 
 taskQueue.process(async (job) => {
   try {
-    const { modelName, type, data } = job.data;
+    const { modelName, type, data, FCM } = job.data;
     console.log(`Processing job ${job.id} for model ${modelName}`);
     await job.progress(0);
     await job.update({
@@ -32,7 +32,7 @@ taskQueue.process(async (job) => {
       type,
     });
 
-    const result = await runModel(modelName, type, data, job);
+    const result = await runModel(modelName, type, data, FCM, job);
     await job.update({
       completedAt: new Date(),
       status: "success",

@@ -140,6 +140,23 @@ const authController = {
       data: { accessToken: newAccessToken },
     });
   }),
+
+  addFcmToken: catchError(async (req: Request, res: Response) => {
+    const { FCMToken } = req.body;
+
+    if (!FCMToken) {
+      throw new AppError("FCM token is required", 400);
+    }
+    //@ts-ignore
+    const user = await User.findOneAndUpdate({ _id: req.user.id }, { FCMToken }, { new: true });
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+    res.status(200).json({
+      message: "FCM token added successfully",
+      data: { fcmToken: user.FCMToken },
+    });
+  }),
 };
 
 export default authController;

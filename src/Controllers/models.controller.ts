@@ -8,6 +8,7 @@ import { filterModelType } from "../Utils/Format/filterModelType";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import modelQueue, { taskQueue } from "../Queues/model.queue";
+import User from "../Models/user.model";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -207,7 +208,12 @@ const modelsController = {
 
   applyModel: catchError(async (req, res) => {
     const { modelId } = req.body;
-    const {...rest} = req.body.payload;
+    const { ...rest } = req.body.payload;
+    //@ts-ignore
+    const user = await User.findById(req.user.id).select("+FCMToken");
+    if(!user || !user.FCMToken){
+      throw new AppError("FCM Token not found", 404);
+    }
     const image = req.file;
     if (!modelId || !image) {
       throw new AppError("Model ID and image are required", 400);
@@ -235,6 +241,7 @@ const modelsController = {
         modelName: model.name,
         type: modelType,
         data: { image: imageUrl.url, ...rest },
+        FCM: user.FCMToken
       },
       {
         jobId: `model_${modelId}_${Date.now()}`,

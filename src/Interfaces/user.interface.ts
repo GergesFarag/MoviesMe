@@ -19,4 +19,5 @@ export interface IUser {
   isMale?: boolean|null;
   profilePicture?: string|null;
   credits?: number|null;
+  FCMToken?: string|null;
 }

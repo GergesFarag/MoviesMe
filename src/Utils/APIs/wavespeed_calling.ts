@@ -4,8 +4,6 @@ import { formatModelName } from "../Format/modelNames";
 import { sendNotificationToClient } from "../Notifications/notifications";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
-const clientFCMToken = "fGLbKAuVTSW1y1hC8Y7NP7:APA91bGpHZoLm2DCnbFQtolT1iPxnYhX83kXusUN5S1qX2fI1j0mpqGin0kUohGBVOFZu3-OvXMB94FOLuc_mQQi3JBJ114Qp86P0B_-7oy_X612i7QtNx0";
-
 const updateJobProgress = async (
   job: Bull.Job,
   progress: number,
@@ -22,9 +20,10 @@ export const runModel = async (
   modelName: string,
   type: string,
   data: any,
+  FCM: string,
   job?: Bull.Job
 ) => {
-  console.log("data" , data);
+  console.log("data", data);
   if (!WAVESPEED_API_KEY) {
     throw new AppError(
       "Your API key is missing. Please check your Access Keys in the environment variables."
@@ -52,7 +51,7 @@ export const runModel = async (
     await updateJobProgress(job, 70, "Getting Dummy Data...");
     await new Promise((res) => setTimeout((res), 5000));
   }
-  await sendNotificationToClient(clientFCMToken , "Model Processing Completed", `Your video generated successfully`);
+  await sendNotificationToClient(FCM , "Model Processing Completed", `Your video generated successfully`);
   // try {
   //   if (job) {
   //     await updateJobProgress(job, 30, "Submitting model data...");
