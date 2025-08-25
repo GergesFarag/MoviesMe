@@ -1,9 +1,10 @@
 import Bull from "bull";
 import AppError from "../Errors/AppError";
 import { formatModelName } from "../Format/modelNames";
-import { sendNotificationToAllUsers } from "../Notifications/notifications";
+import { sendNotificationToClient } from "../Notifications/notifications";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
+const clientFCMToken = "dYPpsv5_QHOIxdE8Hqu20B:APA91bEf6gAmAAPA9CTGcSHEj4ZauRKKfOFOuH3hIsHVtV5SMuR_uIeIHFYSFuNaUCbtbqBc5kSGBfmoPeJLcybrdXpI_oncyD1M1HMIVj7dw4LEH6C68";
 
 const updateJobProgress = async (
   job: Bull.Job,
@@ -92,14 +93,14 @@ export const runModel = async (
             const resultUrl = data.outputs[0];
             console.log("Task completed successfully. Result URL:", resultUrl);
 
-            sendNotificationToAllUsers("Model Processing Completed", `Your video generated successfully`);
+            sendNotificationToClient(clientFCMToken , "Model Processing Completed", `Your video generated successfully`);
             return resultUrl;
           } else if (status === "failed") {
             if (job) {
               await updateJobProgress(job, 0, "Model processing failed.", { error: data.error });
             }
             console.error("Task failed:", data.error);
-            sendNotificationToAllUsers("Model Processing Failed", `Your video failed to generate`);
+            sendNotificationToClient(clientFCMToken,"Model Processing Failed", `Your video failed to generate`);
             return null;
           } else {
             console.log("Task still processing. Current status:", status);

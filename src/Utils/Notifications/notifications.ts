@@ -1,10 +1,12 @@
 import { firebaseAdmin } from "../../Config/firebase";
-export const sendNotificationToAllUsers = async (
+
+export const sendNotificationToClient = async (
+  fcmToken: string,
   title: string,
   body: string
 ) => {
   const message = {
-    topic: "Video Generation",
+    token: fcmToken, 
     notification: {
       title: title,
       body: body,
