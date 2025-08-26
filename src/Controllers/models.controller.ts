@@ -207,17 +207,25 @@ const modelsController = {
   }),
 
   applyModel: catchError(async (req, res) => {
-    const { modelId } = req.body;
-    const { ...rest } = req.body.payload;
+    const { modelId, payload } = req.body;
+    const { ...rest } = payload;
+    
     //@ts-ignore
     const user = await User.findById(req.user.id).select("+FCMToken");
-    if(!user || !user.FCMToken){
+    if (!user || !user.FCMToken) {
       throw new AppError("FCM Token not found", 404);
     }
     const image = req.file;
     if (!modelId || !image) {
       throw new AppError("Model ID and image are required", 400);
     }
+
+    const imageUrl = (await cloudUpload(image.buffer)) as UploadApiResponse;
+
+    if (!imageUrl || !imageUrl.url) {
+      throw new AppError("Image upload failed", 500);
+    }
+
     const fieldsWithSelectFalse = Object.keys(Model.schema.paths)
       .filter((path) => Model.schema.paths[path].options.select === false)
       .map((path) => `+${path}`);
@@ -225,28 +233,21 @@ const modelsController = {
     const model = await Model.findById(modelId)
       .select(fieldsWithSelectFalse.join(" "))
       .lean();
+
     if (!model) {
-      throw new AppError("Model not found", 404);
+      throw new AppError("Model data not found", 404);
     }
-    //filter model to its category based on boolean fields
-    const modelType = filterModelType(model);
-    //upload the streams into cloudinary
-    const imageUrl = (await cloudUpload(image.buffer)) as UploadApiResponse;
-    //check if imageUrl is valid
-    if (!imageUrl || !imageUrl.url) {
-      throw new AppError("Image upload failed", 500);
-    }
-    const job = await taskQueue.add(
-      {
-        modelName: model.name,
-        type: modelType,
-        data: { image: imageUrl.url, ...rest },
-        FCM: user.FCMToken
-      },
-      {
-        jobId: `model_${modelId}_${Date.now()}`,
-      }
-    );
+
+    const jobData = {
+      modelData: model,
+      userId: user.id,
+      data: { image: imageUrl.url, ...rest },
+      FCM: user.FCMToken,
+    };
+    const job = await taskQueue.add(jobData, {
+      jobId: `model_${modelId}_${Date.now()}`,
+    });
+
     res.status(202).json({
       message: "Model processing started",
       jobId: job.id,
@@ -261,20 +262,13 @@ const modelsController = {
     if (!job) {
       throw new AppError("Job not found", 404);
     }
+
     const progress = job.progress();
     const result = job.returnvalue;
     const failedReason = job.failedReason;
     const customStatus = job.data.status || "unknown";
     const customProgress = job.data.progress || progress;
-    const customData = {
-      requestId: job.data.requestId,
-      resultUrl: job.data.resultUrl,
-      error: job.data.error,
-      apiStatus: job.data.apiStatus,
-      startedAt: job.data.startedAt,
-      completedAt: job.data.completedAt,
-      failedAt: job.data.failedAt,
-    };
+
     res.json({
       jobId: id,
       status: customStatus,
@@ -285,7 +279,6 @@ const modelsController = {
       },
       failedReason,
       timestamp: job.timestamp,
-      customData,
     });
   }),
 };

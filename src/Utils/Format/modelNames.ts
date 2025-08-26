@@ -1,5 +1,3 @@
 export const formatModelName = (name: string, type: string) => {
-  return `${type.toLowerCase().replace(/\s+/g, "-")}/${name
-    .toLowerCase()
-    .replace(/\s+/g, "-")}`;
+  return `${type.replace(/\s+/g, "-")}/${name.replace(/\s+/g, "-")}`;
 };

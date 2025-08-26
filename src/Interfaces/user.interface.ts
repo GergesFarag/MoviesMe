@@ -1,4 +1,5 @@
 import { ObjectId } from "mongoose";
+import { IVideo } from "./video.interface";
 
 export interface IUser {
   username: string;
@@ -12,7 +13,7 @@ export interface IUser {
   age?: number|null;
   createdAt?: Date|null;
   updatedAt?: Date|null;
-  videos?: ObjectId[];
+  videos?: IVideo[];
   images?: ObjectId[];
   stories?: ObjectId[];
   userLocation?: string|null;

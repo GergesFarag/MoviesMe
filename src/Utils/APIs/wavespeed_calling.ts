@@ -1,9 +1,10 @@
-import Bull from "bull";
-import AppError from "../Errors/AppError";
 import { formatModelName } from "../Format/modelNames";
 import { sendNotificationToClient } from "../Notifications/notifications";
+import AppError from "../Errors/AppError";
+import Bull from "bull";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
+
 const updateJobProgress = async (
   job: Bull.Job,
   progress: number,
@@ -16,48 +17,68 @@ const updateJobProgress = async (
   }
 };
 
-export const runModel = async (
+const processModelData = async (
   modelName: string,
-  type: string,
-  data: any,
-  FCM: string,
-  job?: Bull.Job
+  modelType: string,
+  data: any
 ) => {
-  console.log("data", data);
-  if (!WAVESPEED_API_KEY) {
-    throw new AppError(
-      "Your API key is missing. Please check your Access Keys in the environment variables."
-    );
-  }
-
-  const formattedModel = formatModelName(modelName, type);
-  console.log("MODEL NAME:", formattedModel);
-
-  if (job) {
-    await updateJobProgress(job, 10, "Initializing model processing...");
-    await new Promise((res) => setTimeout((res), 4000));
-  }
-
+  const formattedModel = formatModelName(modelName, modelType);
   const url = `https://api.wavespeed.ai/api/v3/${formattedModel}`;
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${WAVESPEED_API_KEY}`,
   };
 
-  const payload = {
-    ...data,
-  };
+  return { formattedModel, url, headers };
+};
+
+export const runModel = async (
+  modelName: string,
+  modelType: string,
+  data: any,
+  FCM: string,
+  job?: Bull.Job
+) => {
+  if (!WAVESPEED_API_KEY) {
+    throw new AppError(
+      "Your API key is missing. Please check your Access Keys in the environment variables."
+    );
+  }
+
+  const { formattedModel, url, headers } = await processModelData(
+    modelName,
+    modelType,
+    data
+  );
+
+  if (job) {
+    await updateJobProgress(job, 10, "Initializing model processing...");
+    await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
+  }
+
   if (job) {
     await updateJobProgress(job, 70, "Getting Dummy Data...");
-    await new Promise((res) => setTimeout((res), 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000)); // simulate delay
   }
-  await sendNotificationToClient(FCM , "Model Processing Completed", `Your video generated successfully`);
+
+  await sendNotificationToClient(
+    FCM,
+    "Model Processing Completed",
+    `Your video generated successfully`
+  );
+
+  if (job) {
+    await updateJobProgress(job, 100, "Success");
+  }
+
+  return "Dummy Result";
+
   // try {
   //   if (job) {
   //     await updateJobProgress(job, 30, "Submitting model data...");
   //     await new Promise((res) => setTimeout((res), 2000)); // Simulate submit delay
   //   }
-    
+
   //   const response = await fetch(url, {
   //     method: "POST",
   //     headers: headers,

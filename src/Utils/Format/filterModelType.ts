@@ -21,3 +21,15 @@ export const filterModelType = (model:IAiModel):string => {
   }
   return "unknown";
 }
+export const modelTypeMapper = {
+  "videoEffects" : "video-effects",
+  "imageEffects" : "image-effects",
+  "characterEffects" : "character-effects",
+  "ai3dTools" : "wavespeed-ai",
+  "aiTools" : "wavespeed-ai",
+  "scenarioMarketing" : "scenario-marketing"
+}
+export const reverseModelTypeMapper = Object.fromEntries(
+  Object.entries(modelTypeMapper).map(([key, value]) => [value, key])
+);
+export type ModelType = keyof typeof modelTypeMapper;

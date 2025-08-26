@@ -25,7 +25,7 @@ const authController = {
         updatedAt: new Date(),
         isActive: true,
         isAdmin: false,
-        credits: 10
+        credits: 10,
       });
     }
     const responseUser: loginResponse["data"]["user"] = {
@@ -46,10 +46,9 @@ const authController = {
     } as loginResponse);
   }),
 
-
   register: catchError(async (req: Request, res: Response) => {
     //@ts-ignore
-    const { uid, email} = req.user;
+    const { uid, email } = req.user;
 
     if (!email) {
       throw new AppError("Email is required", 400);
@@ -61,7 +60,7 @@ const authController = {
     }
 
     let newUser;
-    try{
+    try {
       newUser = await User.create({
         email,
         username: email.split("@")[0] || null,
@@ -95,7 +94,6 @@ const authController = {
     } as loginResponse);
   }),
 
-  
   forgotPassword: catchError(async (req: Request, res: Response) => {
     const { email } = req.body;
 
@@ -114,7 +112,6 @@ const authController = {
       data: { resetLink },
     });
   }),
-
 
   refreshToken: catchError(async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
@@ -148,9 +145,16 @@ const authController = {
       throw new AppError("FCM token is required", 400);
     }
     //@ts-ignore
-    const user = await User.findOneAndUpdate({ _id: req.user.id }, { FCMToken }, { new: true });
+    const user = await User.findById(req.user.id).select("+FCMToken");
     if (!user) {
       throw new AppError("User not found", 404);
+    }
+    if (!user.FCMToken) {
+      user.FCMToken = FCMToken;
+      await user.save();
+    } else {
+      user.FCMToken = FCMToken;
+      await user.save();
     }
     res.status(200).json({
       message: "FCM token added successfully",

@@ -1,16 +1,17 @@
 import { model, Schema } from "mongoose";
 import { IUser } from "../Interfaces/user.interface";
+import videoSchema from "./video.model";
 
 const userSchema = new Schema<IUser>({
   username: { type: String, select: true },
-  email: { 
-    type: String, 
+  email: {
+    type: String,
     select: true,
   },
   phoneNumber: {
     type: String,
     default: null,
-    select: true, 
+    select: true,
   },
   age: { type: Number, min: 12, select: true },
   credits: { type: Number, default: 10, select: true },
@@ -18,7 +19,10 @@ const userSchema = new Schema<IUser>({
   dob: { type: Date, default: null, select: true },
   isMale: { type: Boolean, default: null, select: true },
   profilePicture: { type: String, default: null, select: true },
-  videos: [{ type: String }],
+  videos: {
+    type: [videoSchema],
+    default: [],
+  },
   isActive: { type: Boolean, default: true },
   stories: [{ type: Schema.Types.ObjectId, ref: "Story" }],
   isAdmin: { type: Boolean, default: false },
@@ -27,11 +31,11 @@ const userSchema = new Schema<IUser>({
   firebaseUid: { type: String, unique: true },
   favs: [{ type: Schema.Types.ObjectId, ref: "Model" }],
   images: [{ type: Schema.Types.ObjectId }],
-  FCMToken: { type: String, default: null},
+  FCMToken: { type: String, default: null },
 });
-userSchema.on("delete" , (doc) => {
+userSchema.on("delete", (doc) => {
   console.log("User deleted:", doc);
-})
+});
 const User = model<IUser>("User", userSchema);
 export default User;
 export { IUser };

@@ -1,6 +1,11 @@
 import Queue from "bull";
 import { runModel } from "../Utils/APIs/wavespeed_calling";
-const redisPort = process.env.REDIS_PORT as string
+import User from "../Models/user.model";
+import AppError from "../Utils/Errors/AppError";
+import { filterModelType } from "../Utils/Format/filterModelType";
+import Model from "../Models/aiModel.model";
+import IAiModel from "../Interfaces/aiModel.interface";
+const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
 
@@ -8,58 +13,67 @@ export const taskQueue = new Queue("modelProcessing", {
   redis: {
     host: process.env.REDIS_HOST as string,
     port: redisPort,
-    password: process.env.REDIS_PASSWORD as string || undefined,
+    password: (process.env.REDIS_PASSWORD as string) || undefined,
   },
   defaultJobOptions: {
     attempts: 3,
-    backoff: {
-      type: "exponential",
-      delay: 5000,
-    },
     timeout: 300000,
   },
 });
 
 taskQueue.process(async (job) => {
   try {
-    const { modelName, type, data, FCM } = job.data;
-    console.log(`Processing job ${job.id} for model ${modelName}`);
-    await job.progress(0);
-    await job.update({
-      status: "starting",
-      startedAt: new Date(),
-      modelName,
-      type,
-    });
+    console.log("Job data received:", job.data);
 
-    const result = await runModel(modelName, type, data, FCM, job);
-    await job.update({
-      completedAt: new Date(),
-      status: "success",
-    });
-    job.progress(100);
-    return { success: true, result };
+    const { modelData, userId, data, FCM } = job.data;
+
+    if (!modelData) {
+      throw new AppError("Model Data not found", 404);
+    }
+    const modelType = filterModelType(modelData as IAiModel);
+    if (!modelType) {
+      throw new AppError("Invalid model type", 400);
+    }
+
+    const result = await runModel(modelData.name, modelType, data, FCM, job);
+
+    return {
+      result,
+      userId,
+      modelType: modelType === "bytedance" ? "image-effects" : modelType,
+      resultURL: data.image,
+      modelName: modelData.name,
+      isVideo: modelData.isVideo,
+      modelThumbnail: modelData.thumbnail,
+    };
   } catch (error) {
     console.error(`Job ${job.id} failed:`, error);
-    await job.update({
-      state: "failed",
-      error: error instanceof Error ? error.message : "Unknown error",
-      failedAt: new Date(),
-    });
     throw error;
   }
 });
 
-taskQueue.on("completed", (job, result) => {
-  console.log(`Job ${job.id} completed with result:`, result);
+taskQueue.on("completed", async (job, result: any) => {
+  try {
+    const user = await User.findById(result.userId);
+    if (!user) return;
+
+    user.videos?.push({
+      URL: result.resultURL,
+      modelType: result.modelType,
+      modelName: result.modelName,
+      isVideo: result.isVideo,
+      modelThumbnail: result.modelThumbnail,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await user.save();
+  } catch (err) {
+    console.error("Failed to save video to user", err);
+  }
 });
 
-taskQueue.on("failed", (job, error) => {
-  console.error(`Job ${job.id} failed with error:`, error.message);
-});
-
-taskQueue.on("stalled", (job) => {
-  console.warn(`Job ${job.id} stalled`);
+taskQueue.on("failed", (job, err) => {
+  console.error(`Job ${job.id} failed:`, err);
 });
 
 export default taskQueue;
