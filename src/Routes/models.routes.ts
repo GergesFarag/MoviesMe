@@ -10,7 +10,6 @@ modelsRouter.get("/aiTools", modelsController.getAITools);
 modelsRouter.get("/ai3dTools", modelsController.getAI3DTools);
 modelsRouter.get("/marketingTools", modelsController.getMarketingTools);
 modelsRouter.get("/trending", modelsController.getTrendingModels);
-modelsRouter.get("/jobStatus/:id", modelsController.getJobStatus);
 modelsRouter.post(
   "/applyModel",
   authMiddle,
@@ -18,6 +17,7 @@ modelsRouter.post(
   modelsController.applyModel
 );
 modelsRouter.post("/", modelsController.addModel);
+modelsRouter.get("/jobStatus/:id", modelsController.getJobStatus);
 modelsRouter
   .route("/:id")
   .patch(modelsController.updateModel)
