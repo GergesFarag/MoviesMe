@@ -265,6 +265,135 @@ paths:
                   error:
                     type: object
 
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Register a new user account using Firebase
+      security:
+        - FirebaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                age:
+                  type: number
+                phoneNumber:
+                  type: string
+                userLocation:
+                  type: string
+                gender:
+                  type: string
+                  enum: [male, female, other]
+                dob:
+                  type: string
+                  format: date
+              required:
+                - username
+                - email
+                - password
+                - dob
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "400":
+          description: Invalid input data or user already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /auth/fcmToken:
+    post:
+      tags:
+        - Authentication
+      summary: Add FCM token
+      description: Add Firebase Cloud Messaging token for push notifications
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fcmToken:
+                  type: string
+                  description: Firebase Cloud Messaging token
+              required:
+                - fcmToken
+      responses:
+        "200":
+          description: FCM token added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "400":
+          description: Invalid FCM token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
   # User routes
   /user:
     get:
@@ -354,6 +483,41 @@ paths:
                   message:
                     type: string
                   error:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /user/lib:
+    get:
+      tags:
+        - User
+      summary: Get user library
+      description: Retrieve the current user's library/collection
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User library retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
                     type: object
         "401":
           description: Unauthorized
@@ -607,6 +771,83 @@ paths:
                     type: object
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /story/generationData:
+    get:
+      tags:
+        - Stories
+      summary: Get generation data
+      description: Retrieve generation data for stories
+      responses:
+        "200":
+          description: Generation data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        "404":
+          description: Generation data not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+    put:
+      tags:
+        - Stories
+      summary: Update generation data
+      description: Update generation data for stories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  description: Generation data to update
+      responses:
+        "200":
+          description: Generation data updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "400":
+          description: Invalid input data
           content:
             application/json:
               schema:
@@ -961,6 +1202,115 @@ paths:
                     type: string
                   error:
                     type: object
+
+  /models/applyModel:
+    post:
+      tags:
+        - AI Models
+      summary: Apply an AI model to an image
+      description: Apply a selected AI model to an uploaded image and return the result.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                modelId:
+                  type: string
+                  description: The ID of the AI model to apply
+                payload[image]:
+                  type: string
+                  format: binary
+                  description: The image file to process
+              required:
+                - modelId
+                - payload[image]
+      responses:
+        "200":
+          description: Effect applied successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "400":
+          description: Model ID and image are required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: Model not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "500":
+          description: Image upload failed or internal error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /models/jobStatus/{id}:
+    get:
+      tags:
+        - AI Models
+      summary: Get job status
+      description: Retrieve the status of a model processing job by job ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The job ID
+      responses:
+        "200":
+          description: Job status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
 
   # Admin routes
   /admin/users:

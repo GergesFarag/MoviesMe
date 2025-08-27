@@ -67,7 +67,6 @@ const modelsController = {
       },
     });
   }),
-
   getTrendingModels: catchError(async (req, res) => {
     const { limit = 5, page = 1 }: { limit?: number; page?: number } =
       req.query;
@@ -185,7 +184,6 @@ const modelsController = {
       .status(201)
       .json({ message: "Model added successfully", data: newModel });
   }),
-
   deleteModel: catchError(async (req, res) => {
     const { id } = req.params;
     const deletedModel = await Model.findByIdAndDelete(id);
@@ -196,7 +194,6 @@ const modelsController = {
       .status(200)
       .json({ message: "Model deleted successfully", data: deletedModel });
   }),
-
   updateModel: catchError(async (req, res) => {
     const { id } = req.params;
     const existingModel = await Model.findById(id);
@@ -209,7 +206,6 @@ const modelsController = {
       .status(200)
       .json({ message: "Model updated successfully", data: model });
   }),
-
   applyModel: catchError(async (req, res) => {
     const { modelId, payload } = req.body;
     const { ...rest } = payload;
@@ -276,7 +272,6 @@ const modelsController = {
       jobId: job.id,
     });
   }),
-
   getJobStatus: catchError(async (req, res) => {
     const { id } = req.params;
 

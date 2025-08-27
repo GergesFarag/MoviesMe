@@ -8,7 +8,7 @@ export interface IItem {
   modelThumbnail:string;
   jobId:string;
   status:jobStatus;
-  isFav?:boolean;
+  isFav:boolean;
   duration:number;
   createdAt: Date;
   updatedAt: Date;
