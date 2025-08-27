@@ -1,3 +1,4 @@
+import { IItem } from "../Interfaces/item.interface";
 import {
   userProfileResponse,
   UserProfileResponseDataKeys,
@@ -78,23 +79,21 @@ const userController = {
 
     let filteringArr = modelType.split(",").map((item) => item.trim());
     filteringArr = filteringArr.map((type) => {
-      return modelTypeMapper[type as ModelType] || type;
+      return modelTypeMapper[type as ModelType];
     });
-    console.log("FilteringArr" , filteringArr);
     const user = await User.findById(userId).lean();
 
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
-    let userLib: any[] = [];
-    let paginatedItems: any[] = [];
+    let userLib: IItem[] = [];
+    let paginatedItems: IItem[] = [];
     if (user.items) {
-      userLib = user?.items?.filter(
-        (item) =>
-          filteringArr.includes(item.modelType!) && item.status === status
-      );
+      userLib = user?.items?.filter((item:IItem) => {
+        return item.status === status && filteringArr.find((type) => type === item.modelType);
+      });
       paginatedItems = paginator(userLib, page, limit);
-      paginatedItems = paginatedItems?.map((item: any) => {
+      paginatedItems = paginatedItems?.map((item: IItem) => {
         return {
           ...item,
           modelType:

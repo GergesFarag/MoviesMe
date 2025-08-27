@@ -54,6 +54,7 @@ taskQueue.process(async (job) => {
     throw error;
   }
 });
+
 taskQueue.on("completed", async (job, result: any) => {
   try {
     await Job.findOneAndUpdate(
@@ -62,8 +63,6 @@ taskQueue.on("completed", async (job, result: any) => {
     );
 
     const user = await User.findById(result.userId);
-    console.log("USER", user);
-
     if (!user) return;
 
     const updatedItems = user?.items?.map((item) => {

@@ -236,42 +236,59 @@ const modelsController = {
     if (!model) {
       throw new AppError("Model data not found", 404);
     }
+
     const jobData = {
       modelData: model,
       userId: user.id,
       data: { image: imageUrl.url, ...rest },
       FCM: user.FCMToken,
     };
+
+    const modelType = filterModelType(model);
+
+    const itemData = {
+      URL: imageUrl.url,
+      modelType: modelType,
+      jobId: "pendingJob", 
+      status: "pending",
+      modelName: model.name,
+      isVideo: model.isVideo,
+      modelThumbnail: model.thumbnail,
+      duration: 0,
+    };
+
+    await User.findByIdAndUpdate(user.id, {
+      $push: { items: itemData },
+    });
+
     const job = await taskQueue.add(jobData, {
       jobId: `model_${modelId}_${Date.now()}`,
     });
-    const modelType = reverseModelTypeMapper[filterModelType(model)];
-    await User.findByIdAndUpdate(user.id, {
-      $push: {
-        items: {
-          URL: imageUrl.url,
-          modelType: modelType,
-          jobId: job.id,
-          status: "pending",
-          modelName: model.name,
-          isVideo: model.isVideo,
-          modelThumbnail: model.thumbnail,
-          duration: 0,
-        },
-      },
-    });
+
+    if (!job || !job.id) {
+      throw new AppError("Job creation failed", 500);
+    }
+
+    await User.findOneAndUpdate(
+      { _id: user.id, "items.jobId": "pendingJob" },
+      { $set: { "items.$.jobId": job.id } }
+    );
+
     const createdJob = await Job.create({
       jobId: job.id,
       userId: user.id,
       modelId: modelId,
       status: "pending",
     });
+
     await User.findByIdAndUpdate(user.id, { $push: { jobs: createdJob._id } });
+
     res.status(202).json({
       message: "Model processing started",
       jobId: job.id,
     });
   }),
+
   getJobStatus: catchError(async (req, res) => {
     const { id } = req.params;
 
