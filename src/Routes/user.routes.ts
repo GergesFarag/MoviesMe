@@ -7,5 +7,5 @@ userRouter
   .route("/")
   .get(authMiddle, userController.getProfile)
   .patch(authMiddle, userController.updateProfile);
-userRouter.route("/videos").get(authMiddle, userController.getUserVideos);
+userRouter.route("/lib").get(authMiddle, userController.getUserLibrary);
 export default userRouter;

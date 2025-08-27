@@ -1,6 +1,6 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 import { IUser } from "../Interfaces/user.interface";
-import videoSchema from "./video.model";
+import itemSchema from "./item.model";
 
 const userSchema = new Schema<IUser>({
   username: { type: String, select: true },
@@ -19,8 +19,8 @@ const userSchema = new Schema<IUser>({
   dob: { type: Date, default: null, select: true },
   isMale: { type: Boolean, default: null, select: true },
   profilePicture: { type: String, default: null, select: true },
-  videos: {
-    type: [videoSchema],
+  items: {
+    type: [itemSchema],
     default: [],
   },
   isActive: { type: Boolean, default: true },
@@ -29,8 +29,8 @@ const userSchema = new Schema<IUser>({
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
   firebaseUid: { type: String, unique: true },
+  jobs: [{ type: Schema.Types.ObjectId, ref: "Job" }],
   favs: [{ type: Schema.Types.ObjectId, ref: "Model" }],
-  images: [{ type: Schema.Types.ObjectId }],
   FCMToken: { type: String, default: null },
 });
 userSchema.on("delete", (doc) => {

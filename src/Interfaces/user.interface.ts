@@ -1,5 +1,5 @@
 import { ObjectId } from "mongoose";
-import { IVideo } from "./video.interface";
+import { IItem } from "./item.interface";
 
 export interface IUser {
   username: string;
@@ -13,8 +13,8 @@ export interface IUser {
   age?: number|null;
   createdAt?: Date|null;
   updatedAt?: Date|null;
-  videos?: IVideo[];
-  images?: ObjectId[];
+  items?: IItem[];
+  jobs?: ObjectId[];
   stories?: ObjectId[];
   userLocation?: string|null;
   isMale?: boolean|null;

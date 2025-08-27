@@ -3,13 +3,14 @@ import {
   UserProfileResponseDataKeys,
 } from "../Interfaces/response.interface";
 import User, { IUser } from "../Models/user.model";
-import AppError from "../Utils/Errors/AppError";
+import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import {
   ModelType,
   modelTypeMapper,
   reverseModelTypeMapper,
 } from "../Utils/Format/filterModelType";
+import paginator from "../Utils/Pagination/paginator";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -55,46 +56,63 @@ const userController = {
     } as userProfileResponse);
   }),
 
-  getUserVideos: catchError(async (req, res) => {
+  getUserLibrary: catchError(async (req, res) => {
     const userId = req.user!.id;
     const modelType = req.query.modelType as string;
     const limit = req.query.limit
       ? parseInt(req.query.limit as string, 10)
       : 20;
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const status = req.query.status as string;
+
+    if (isNaN(page) || page <= 0) {
+      throw new AppError("Invalid page number", 400);
+    }
+    if (isNaN(limit) || limit <= 0) {
+      throw new AppError("Invalid limit", 400);
+    }
+
     if (!modelType) {
       throw new AppError("Model type is required", 400);
     }
+
     let filteringArr = modelType.split(",").map((item) => item.trim());
     filteringArr = filteringArr.map((type) => {
       return modelTypeMapper[type as ModelType] || type;
     });
-    const user = await User.findById(userId)
-      .lean()
-      .skip((page - 1) * limit)
-      .limit(limit);
-    let userVideos = user?.videos?.filter((video) =>
-      filteringArr.includes(video.modelType)
-    );
-    userVideos = userVideos?.map((video) => {
-      return {
-        ...video,
-        modelType:
-          reverseModelTypeMapper[
-            video.modelType as keyof typeof reverseModelTypeMapper
-          ] || video.modelType,
-      };
-    });
+    console.log("FilteringArr" , filteringArr);
+    const user = await User.findById(userId).lean();
+
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
+    let userLib: any[] = [];
+    let paginatedItems: any[] = [];
+    if (user.items) {
+      userLib = user?.items?.filter(
+        (item) =>
+          filteringArr.includes(item.modelType!) && item.status === status
+      );
+      paginatedItems = paginator(userLib, page, limit);
+      paginatedItems = paginatedItems?.map((item: any) => {
+        return {
+          ...item,
+          modelType:
+            reverseModelTypeMapper[
+              item.modelType as keyof typeof reverseModelTypeMapper
+            ] || item.modelType,
+        };
+      });
+    }
+
     res.status(200).json({
-      message: "User videos retrieved successfully",
+      message: "User items retrieved successfully",
       data: {
-        videos: userVideos,
+        items: paginatedItems,
         paginationData: {
           page,
           limit,
+          total: userLib?.length || 0,
         },
       },
     });

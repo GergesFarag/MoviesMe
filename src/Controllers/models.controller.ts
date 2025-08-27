@@ -4,11 +4,15 @@ import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { runModel } from "../Utils/APIs/wavespeed_calling";
-import { filterModelType } from "../Utils/Format/filterModelType";
+import {
+  filterModelType,
+  reverseModelTypeMapper,
+} from "../Utils/Format/filterModelType";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import modelQueue, { taskQueue } from "../Queues/model.queue";
 import User from "../Models/user.model";
+import Job from "../Models/job.model";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -209,7 +213,7 @@ const modelsController = {
   applyModel: catchError(async (req, res) => {
     const { modelId, payload } = req.body;
     const { ...rest } = payload;
-    
+
     const user = await User.findById(req.user!.id).select("+FCMToken");
     if (!user || !user.FCMToken) {
       throw new AppError("FCM Token not found", 404);
@@ -236,7 +240,6 @@ const modelsController = {
     if (!model) {
       throw new AppError("Model data not found", 404);
     }
-
     const jobData = {
       modelData: model,
       userId: user.id,
@@ -246,7 +249,28 @@ const modelsController = {
     const job = await taskQueue.add(jobData, {
       jobId: `model_${modelId}_${Date.now()}`,
     });
-
+    const modelType = reverseModelTypeMapper[filterModelType(model)];
+    await User.findByIdAndUpdate(user.id, {
+      $push: {
+        items: {
+          URL: imageUrl.url,
+          modelType: modelType,
+          jobId: job.id,
+          status: "pending",
+          modelName: model.name,
+          isVideo: model.isVideo,
+          modelThumbnail: model.thumbnail,
+          duration: 0,
+        },
+      },
+    });
+    const createdJob = await Job.create({
+      jobId: job.id,
+      userId: user.id,
+      modelId: modelId,
+      status: "pending",
+    });
+    await User.findByIdAndUpdate(user.id, { $push: { jobs: createdJob._id } });
     res.status(202).json({
       message: "Model processing started",
       jobId: job.id,

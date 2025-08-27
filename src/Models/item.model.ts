@@ -1,15 +1,13 @@
 import mongoose from "mongoose";
-
-const videoSchema = new mongoose.Schema(
+const itemSchema = new mongoose.Schema(
   {
     URL: {
       type: String,
-      required: [true, "Video URL is required"],
+      required: [true, "Item URL is required"],
       trim: true,
     },
     modelType: {
       type: String,
-      required: [true, "Model type is required"],
       trim: true,
     },
     modelName: {
@@ -21,6 +19,25 @@ const videoSchema = new mongoose.Schema(
       type: Boolean,
       required: [true, "isVideo flag is required"],
       default: true,
+    },
+    isFav: {
+      type: Boolean,
+      default: false,
+    },
+    duration: {
+      type: Number,
+      required: [true, "Item duration is required"],
+    },
+    jobId: {
+      type: String,
+      required: [true, "Job ID is required"],
+      trim: true,
+    },
+    status: {
+      type: String,
+      required: [true, "Item status is required"],
+      enum: ["pending", "completed", "failed"],
+      default: "pending",
     },
     modelThumbnail: {
       type: String,
@@ -43,4 +60,4 @@ const videoSchema = new mongoose.Schema(
     _id: true,
   }
 );
-export default videoSchema;
+export default itemSchema;
