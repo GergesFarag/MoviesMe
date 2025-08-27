@@ -1,41 +1,56 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import AppError, { DB_ERROR_CODE } from "../Utils/Errors/AppError";
 import {
   handleCastErrorDB,
   handleDuplicateFieldsDB,
-  handleNotFoundError,
-  handleUnAuthorizedAccess,
-  handleUnknownError,
   handleValidationErrorDB,
+  handleJWTError,
+  handleJWTExpiredError,
+  handleUnknownError,
   sendErrorDev,
   sendErrorProd,
 } from "../Utils/Errors/globalHandlers";
-import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 
-const errorHandler = (
-  err: AppError,
+const globalErrorHandler = (
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  err.statusCode = err.statusCode || HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR;
-  err.status = err.status || "error";
+  let error = { ...err };
+  error.message = err.message;
+
+  console.error("Error:", err);
+
+  if (err.name === "CastError") {
+    error = handleCastErrorDB(error);
+  }
+
+  if (err.code === DB_ERROR_CODE.DUPLICATE_KEY) {
+    error = handleDuplicateFieldsDB(error);
+  }
+
+  if (err.name === "ValidationError") {
+    error = handleValidationErrorDB(error);
+  }
+
+  if (err.name === "JsonWebTokenError") {
+    error = handleJWTError();
+  }
+
+  if (err.name === "TokenExpiredError") {
+    error = handleJWTExpiredError();
+  }
+
+  if (!(error instanceof AppError)) {
+    error = handleUnknownError(error);
+  }
+
   if (process.env.NODE_ENV === "development") {
-    console.log("DEV ERROR 💥", err);
-    sendErrorDev(err, res);
-  } else if (process.env.NODE_ENV === "production") {
-    let error = { ...err };
-    console.log(error);
-    if (error.name === "CastError") error = handleCastErrorDB(error);
-    if (error.statusCode === HTTP_STATUS_CODE.DB_DUPLICATE)
-      error = handleDuplicateFieldsDB(error);
-    if (error.name === "ValidationError")
-      error = handleValidationErrorDB(error);
-    if (error.statusCode === HTTP_STATUS_CODE.NOT_FOUND)
-      error = handleNotFoundError(error);
-    if (error.statusCode === HTTP_STATUS_CODE.UNAUTHORIZED)
-      error = handleUnAuthorizedAccess(error);
-    else error = handleUnknownError(error, res);
+    sendErrorDev(error, res);
+  } else {
     sendErrorProd(error, res);
   }
 };
-export default errorHandler;
+
+export default globalErrorHandler;

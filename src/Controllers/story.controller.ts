@@ -11,8 +11,7 @@ import GenerationInfo from "../Models/generationInfo.model";
 const storyController = {
   getAllStories: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      //@ts-ignore
-      const { id } = req.user;
+      const { id } = req.user!;
       const stories = await Story.where("userId").equals(id);
       if (!stories || stories.length === 0) {
         res
@@ -27,8 +26,7 @@ const storyController = {
 
   getStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      //@ts-ignore
-      const { id } = req.user;
+      const { id } = req.user!;
       const { storyID } = req.params;
 
       res.status(200).json({ story: storyID });
@@ -37,8 +35,7 @@ const storyController = {
 
   addStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      //@ts-ignore
-      const { id } = req.user;
+      const { id } = req.user!;
       const { prompt } = req.body;
       if (!prompt) {
         throw new AppError("Prompt is required", 400);
@@ -82,8 +79,7 @@ const storyController = {
 
   deleteStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      //@ts-ignore
-      const { id } = req.user;
+      const { id } = req.user!;
       const { storyID } = req.params;
 
       if (!mongoose.Types.ObjectId.isValid(storyID)) {
@@ -119,24 +115,24 @@ const storyController = {
     const generationData = await GenerationInfo.findOne().lean();
     res.status(200).json({
       message: "Generation data fetched successfully",
-      data: {...generationData},
+      data: { ...generationData },
     });
   }),
 
-  updateGenerationData: catchError(async (req:Request , res:Response) => {
-  const {...updatingKeys} = req.body;
-  const generationData = await GenerationInfo.findOneAndUpdate(
-    {},
-    { $set: updatingKeys },
-    { new: true }
-  );
-  if (!generationData) {
-    throw new AppError("Failed to update generation data", 500);
-  }
-  res.status(200).json({
-    message: "Generation data updated successfully",
-    data: generationData,
-  });
-  })
+  updateGenerationData: catchError(async (req: Request, res: Response) => {
+    const { ...updatingKeys } = req.body;
+    const generationData = await GenerationInfo.findOneAndUpdate(
+      {},
+      { $set: updatingKeys },
+      { new: true }
+    );
+    if (!generationData) {
+      throw new AppError("Failed to update generation data", 500);
+    }
+    res.status(200).json({
+      message: "Generation data updated successfully",
+      data: generationData,
+    });
+  }),
 };
 export default storyController;

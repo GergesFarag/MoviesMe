@@ -24,8 +24,7 @@ const fieldsToSelect: UserProfileResponseDataKeys[] = [
 
 const userController = {
   getProfile: catchError(async (req, res) => {
-    //@ts-ignore
-    const user = await User.findById(req.user.id).select(fieldsToSelect);
+    const user = await User.findById(req.user!.id).select(fieldsToSelect);
     res.status(200).json({
       message: "User profile retrieved successfully",
       data: user,
@@ -33,8 +32,7 @@ const userController = {
   }),
 
   updateProfile: catchError(async (req, res) => {
-    //@ts-ignore
-    const { id } = req.user;
+    const { id } = req.user!;
     const user = await User.findById(id).select(fieldsToSelect);
     if (!user) {
       throw new AppError("User not found", 404);
@@ -58,8 +56,7 @@ const userController = {
   }),
 
   getUserVideos: catchError(async (req, res) => {
-    //@ts-ignore
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const modelType = req.query.modelType as string;
     const limit = req.query.limit
       ? parseInt(req.query.limit as string, 10)

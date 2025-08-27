@@ -7,15 +7,27 @@ export enum HTTP_STATUS_CODE {
     UNAUTHORIZED = 401,
     FORBIDDEN = 403,
     NOT_FOUND = 404,
+    METHOD_NOT_ALLOWED = 405,
     CONFLICT = 409,
-    DB_DUPLICATE = 11000,
-    INTERNAL_SERVER_ERROR = 500
+    UNPROCESSABLE_ENTITY = 422,
+    TOO_MANY_REQUESTS = 429,
+    INTERNAL_SERVER_ERROR = 500,
+    BAD_GATEWAY = 502,
+    SERVICE_UNAVAILABLE = 503
 }
+
+export enum DB_ERROR_CODE {
+    DUPLICATE_KEY = 11000,
+    VALIDATION_ERROR = 11001,
+    CAST_ERROR = 16755
+}
+
 class AppError extends Error {
     statusCode: number;
     status: string;
     isOperational: boolean;
     message: string;
+    
     constructor(
         message: string,
         statusCode: number = HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR,
@@ -30,4 +42,5 @@ class AppError extends Error {
         Error.captureStackTrace(this, this.constructor);
     }
 }
+
 export default AppError;

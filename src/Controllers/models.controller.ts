@@ -210,8 +210,7 @@ const modelsController = {
     const { modelId, payload } = req.body;
     const { ...rest } = payload;
     
-    //@ts-ignore
-    const user = await User.findById(req.user.id).select("+FCMToken");
+    const user = await User.findById(req.user!.id).select("+FCMToken");
     if (!user || !user.FCMToken) {
       throw new AppError("FCM Token not found", 404);
     }

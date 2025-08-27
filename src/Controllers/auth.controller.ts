@@ -12,8 +12,7 @@ import { loginResponse } from "../Interfaces/response.interface";
 
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
-    //@ts-ignore
-    const { uid, email, phone_number } = req.user;
+    const { uid, email, phone_number } = req.user!;
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
       existingUser = await User.create({
@@ -47,8 +46,7 @@ const authController = {
   }),
 
   register: catchError(async (req: Request, res: Response) => {
-    //@ts-ignore
-    const { uid, email } = req.user;
+    const { uid, email } = req.user!;
 
     if (!email) {
       throw new AppError("Email is required", 400);
@@ -142,12 +140,11 @@ const authController = {
     const { FCMToken } = req.body;
 
     if (!FCMToken) {
-      throw new AppError("FCM token is required", 400);
+      throw new AppError("FCM token is required", HTTP_STATUS_CODE.UNAUTHORIZED);
     }
-    //@ts-ignore
-    const user = await User.findById(req.user.id).select("+FCMToken");
+    const user = await User.findById(req.user!.id).select("+FCMToken");
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
     if (!user.FCMToken) {
       user.FCMToken = FCMToken;
