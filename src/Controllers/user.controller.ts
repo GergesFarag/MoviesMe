@@ -48,6 +48,9 @@ const userController = {
         imageHash
       )) as UploadApiResponse;
       req.body.profilePicture = result.secure_url;
+    };
+    if (profilePicture == null) {
+      req.body.profilePicture = null;
     }
     const user = await User.findById(id).select(fieldsToSelect);
 
