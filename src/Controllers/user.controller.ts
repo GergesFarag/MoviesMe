@@ -180,7 +180,7 @@ const userController = {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
 
-    const favorites = user.favs || [];
+    const favorites = user.items?.filter(item => item.isFav === true);
     res.status(HTTP_STATUS_CODE.OK).json({
       message: "User favorites retrieved successfully",
       data: {
