@@ -8,9 +8,6 @@ userRouter
   .get(authMiddle, userController.getProfile)
   .patch(authMiddle, userController.updateProfile);
 userRouter.route("/lib").get(authMiddle, userController.getUserLibrary);
-userRouter
-  .route("/fav")
-  .get(authMiddle, userController.getUserFavorites)
-  .post(authMiddle, userController.toggleFav);
-
+userRouter.route("/fav").post(authMiddle, userController.toggleFav);
+userRouter.route("/lib/:itemId").delete(authMiddle, userController.deleteItem);
 export default userRouter;

@@ -1,14 +1,12 @@
 import Model from "../Models/aiModel.model";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
-import {
-  filterModelType,
-} from "../Utils/Format/filterModelType";
+import { filterModelType } from "../Utils/Format/filterModelType";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { taskQueue } from "../Queues/model.queue";
 import User from "../Models/user.model";
-import Job from "../Models/job.model";;
+import Job from "../Models/job.model";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -271,20 +269,21 @@ const modelsController = {
     );
 
     const createdJob = await Job.create({
-      jobId: job.id,
+      jobId: job.opts.jobId,
       userId: user.id,
       modelId: modelId,
       status: "pending",
     });
 
-    await User.findByIdAndUpdate(user.id, { $push: { jobs: createdJob._id } });
+    await User.findByIdAndUpdate(user.id, {
+      $push: { jobs: { _id: createdJob._id, jobId: createdJob.jobId } },
+    });
 
     res.status(202).json({
       message: "Model processing started",
       jobId: job.id,
     });
   }),
-  
   getJobStatus: catchError(async (req, res) => {
     const { id } = req.params;
 

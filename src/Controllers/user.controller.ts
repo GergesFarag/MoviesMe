@@ -13,6 +13,7 @@ import {
   reverseModelTypeMapper,
 } from "../Utils/Format/filterModelType";
 import paginator from "../Utils/Pagination/paginator";
+import Job from "../Models/job.model";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -93,7 +94,7 @@ const userController = {
     if (user.items) {
       userLib = user?.items?.filter((item: any) => {
         return (
-          (status as string === "all" ? true : item.status === status) &&
+          ((status as string) === "all" ? true : item.status === status) &&
           filteringArr.find((type) => type === item.modelType)
         );
       });
@@ -152,35 +153,30 @@ const userController = {
     });
   }),
 
-  getUserFavorites: catchError(async (req, res) => {
-    const userId = req.user?.id;
+  deleteItem: catchError(async (req, res) => {
+    const userId = req.user!.id;
+    const itemId = req.params.itemId;
 
-    if (!userId) {
-      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+    if (!itemId) {
+      throw new AppError("Item ID is required", 400);
     }
 
-    const user = await User.findById(userId).lean();
-
+    const user = await User.findById(userId);
     if (!user) {
-      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+      throw new AppError("User not found", 404);
     }
-
-    const favorites = user.items?.filter((item) => item.isFav === true);
-    const mappedFavs = favorites?.map(
-      (item) =>
-        ({
-          ...item,
-          modelType:
-            reverseModelTypeMapper[
-              item.modelType as keyof typeof reverseModelTypeMapper
-            ] || item.modelType,
-        })
-    );
-
+    const item = user.items?.find((item) => item._id.toString() === itemId);
+    if (!item) {
+      throw new AppError("Item not found", 404);
+    }
+    user.items = user?.items?.filter((item) => item._id.toString() !== itemId);
+    user.jobs = user?.jobs?.filter((j) => j.jobId !== item.jobId);
+    await Job.findOneAndDelete({ jobId: item.jobId });
+    await user!.save();
     res.status(HTTP_STATUS_CODE.OK).json({
-      message: "User favorites retrieved successfully",
+      message: "User item deleted successfully",
       data: {
-        userFavs: mappedFavs,
+        userItems: user!.items,
       },
     });
   }),

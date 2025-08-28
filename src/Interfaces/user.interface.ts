@@ -13,7 +13,7 @@ export interface IUser {
   createdAt?: Date|null;
   updatedAt?: Date|null;
   items?: IItem[];
-  jobs?: ObjectId[];
+  jobs?: {_id:ObjectId , jobId:string}[];
   stories?: ObjectId[];
   userLocation?: string|null;
   isMale?: boolean|null;
