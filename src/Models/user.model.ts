@@ -30,12 +30,6 @@ const userSchema = new Schema<IUser>({
   updatedAt: { type: Date, default: Date.now() },
   firebaseUid: { type: String, unique: true },
   jobs: [{ type: Schema.Types.ObjectId, ref: "Job" }],
-  favs: [
-    {
-      type: String,
-      default: [],
-    },
-  ],
   FCMToken: { type: String, default: null },
 });
 userSchema.on("delete", (doc) => {

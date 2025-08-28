@@ -1,3 +1,4 @@
+import { stat } from "fs";
 import { IItem } from "../Interfaces/item.interface";
 import {
   userProfileResponse,
@@ -92,7 +93,7 @@ const userController = {
     if (user.items) {
       userLib = user?.items?.filter((item: any) => {
         return (
-          item.status === status &&
+          (status as string === "all" ? true : item.status === status) &&
           filteringArr.find((type) => type === item.modelType)
         );
       });
@@ -127,44 +128,28 @@ const userController = {
 
   toggleFav: catchError(async (req, res) => {
     const userId = req.user!.id;
-    const jobId = req.body.jobId;
+    const itemId = req.body.itemId;
 
-    if (!jobId) {
-      throw new AppError("Job ID is required", 400);
+    if (!itemId) {
+      throw new AppError("Item ID is required", 400);
     }
 
     const user = await User.findById(userId);
     if (!user) {
       throw new AppError("User not found", 404);
     }
-
-    if (!user.favs) {
-      user.favs = [];
-    }
-
-    if (user.favs.includes(jobId)) {
-      user.favs = user.favs.filter((favId) => favId.toString() !== jobId);
-      const item = user.items?.find((item) => item.jobId?.toString() === jobId);
-      item!.isFav = false;
-      await user.save();
-      res.status(HTTP_STATUS_CODE.OK).json({
-        message: "Item removed from favorites successfully",
-        data: {
-          userFavs: user.favs,
-        },
-      });
-    } else {
-      user.favs.push(jobId);
-      const item = user.items?.find((item) => item.jobId?.toString() === jobId);
-      item!.isFav = true;
-      await user.save();
-      res.status(HTTP_STATUS_CODE.CREATED).json({
-        message: "Item added to favorites successfully",
-        data: {
-          userFavs: user.favs,
-        },
-      });
-    }
+    user.items?.map((item) => {
+      if (item._id.toString() === itemId) {
+        item.isFav = !item.isFav;
+      }
+    });
+    await user.save();
+    res.status(HTTP_STATUS_CODE.OK).json({
+      message: "User favorites updated successfully",
+      data: {
+        userFavs: user.items?.filter((item) => item.isFav === true),
+      },
+    });
   }),
 
   getUserFavorites: catchError(async (req, res) => {
@@ -180,11 +165,22 @@ const userController = {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
 
-    const favorites = user.items?.filter(item => item.isFav === true);
+    const favorites = user.items?.filter((item) => item.isFav === true);
+    const mappedFavs = favorites?.map(
+      (item) =>
+        ({
+          ...item,
+          modelType:
+            reverseModelTypeMapper[
+              item.modelType as keyof typeof reverseModelTypeMapper
+            ] || item.modelType,
+        })
+    );
+
     res.status(HTTP_STATUS_CODE.OK).json({
       message: "User favorites retrieved successfully",
       data: {
-        userFavs: favorites,
+        userFavs: mappedFavs,
       },
     });
   }),

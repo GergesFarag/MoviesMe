@@ -284,6 +284,7 @@ const modelsController = {
       jobId: job.id,
     });
   }),
+  
   getJobStatus: catchError(async (req, res) => {
     const { id } = req.params;
 
