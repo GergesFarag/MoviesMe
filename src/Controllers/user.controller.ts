@@ -14,6 +14,9 @@ import {
 } from "../Utils/Format/filterModelType";
 import paginator from "../Utils/Pagination/paginator";
 import Job from "../Models/job.model";
+import cloudinary from "../Config/cloudinary";
+import { UploadApiResponse } from "cloudinary";
+import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -37,7 +40,17 @@ const userController = {
 
   updateProfile: catchError(async (req, res) => {
     const { id } = req.user!;
+    const profilePicture = req.file;
+    if (profilePicture) {
+      const imageHash = generateImageHash(profilePicture.buffer);
+      const result = (await cloudUpload(
+        profilePicture.buffer,
+        imageHash
+      )) as UploadApiResponse;
+      req.body.profilePicture = result.secure_url;
+    }
     const user = await User.findById(id).select(fieldsToSelect);
+
     if (!user) {
       throw new AppError("User not found", 404);
     }
