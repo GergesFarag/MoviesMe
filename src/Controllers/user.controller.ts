@@ -65,7 +65,7 @@ const userController = {
       : 20;
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
     const status = req.query.status as string;
-
+    const isFav = req.query.isFav;
     if (isNaN(page) || page <= 0) {
       throw new AppError("Invalid page number", 400);
     }
@@ -86,7 +86,8 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
-    let userLib: IItem[] = [];
+
+    let userLib: IItem[] = user.items || [];
     let paginatedItems: IItem[] = [];
     if (user.items) {
       userLib = user?.items?.filter((item: any) => {
@@ -95,6 +96,10 @@ const userController = {
           filteringArr.find((type) => type === item.modelType)
         );
       });
+      if (isFav !== undefined) {
+        const favStatus = isFav === "true";
+        userLib = userLib.filter((item) => item.isFav === favStatus);
+      }
       paginatedItems = paginator(userLib, page, limit);
       paginatedItems = paginatedItems?.map((item: IItem) => {
         return {
@@ -139,9 +144,7 @@ const userController = {
 
     if (user.favs.includes(jobId)) {
       user.favs = user.favs.filter((favId) => favId.toString() !== jobId);
-      const item = user.items?.find(
-        (item) => item.jobId?.toString() === jobId
-      );
+      const item = user.items?.find((item) => item.jobId?.toString() === jobId);
       item!.isFav = false;
       await user.save();
       res.status(HTTP_STATUS_CODE.OK).json({
@@ -152,9 +155,7 @@ const userController = {
       });
     } else {
       user.favs.push(jobId);
-      const item = user.items?.find(
-        (item) => item.jobId?.toString() === jobId
-      );
+      const item = user.items?.find((item) => item.jobId?.toString() === jobId);
       item!.isFav = true;
       await user.save();
       res.status(HTTP_STATUS_CODE.CREATED).json({
@@ -186,7 +187,7 @@ const userController = {
         userFavs: favorites,
       },
     });
-  })
+  }),
 };
 
 export default userController;
