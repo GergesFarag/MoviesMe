@@ -8,7 +8,7 @@ export interface IUser {
   firebaseUid:string;
   phoneNumber?: string|null;
   email?: string|null;
-  favs?: ObjectId[];
+  favs?: String[];
   dob?: Date|null;
   age?: number|null;
   createdAt?: Date|null;

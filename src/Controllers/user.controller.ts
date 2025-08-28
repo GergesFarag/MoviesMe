@@ -89,8 +89,11 @@ const userController = {
     let userLib: IItem[] = [];
     let paginatedItems: IItem[] = [];
     if (user.items) {
-      userLib = user?.items?.filter((item:IItem) => {
-        return item.status === status && filteringArr.find((type) => type === item.modelType);
+      userLib = user?.items?.filter((item: any) => {
+        return (
+          item.status === status &&
+          filteringArr.find((type) => type === item.modelType)
+        );
       });
       paginatedItems = paginator(userLib, page, limit);
       paginatedItems = paginatedItems?.map((item: IItem) => {
@@ -116,6 +119,74 @@ const userController = {
       },
     });
   }),
+
+  toggleFav: catchError(async (req, res) => {
+    const userId = req.user!.id;
+    const jobId = req.body.jobId;
+
+    if (!jobId) {
+      throw new AppError("Job ID is required", 400);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    if (!user.favs) {
+      user.favs = [];
+    }
+
+    if (user.favs.includes(jobId)) {
+      user.favs = user.favs.filter((favId) => favId.toString() !== jobId);
+      const item = user.items?.find(
+        (item) => item.jobId?.toString() === jobId
+      );
+      item!.isFav = false;
+      await user.save();
+      res.status(HTTP_STATUS_CODE.OK).json({
+        message: "Item removed from favorites successfully",
+        data: {
+          userFavs: user.favs,
+        },
+      });
+    } else {
+      user.favs.push(jobId);
+      const item = user.items?.find(
+        (item) => item.jobId?.toString() === jobId
+      );
+      item!.isFav = true;
+      await user.save();
+      res.status(HTTP_STATUS_CODE.CREATED).json({
+        message: "Item added to favorites successfully",
+        data: {
+          userFavs: user.favs,
+        },
+      });
+    }
+  }),
+
+  getUserFavorites: catchError(async (req, res) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+    }
+
+    const user = await User.findById(userId).lean();
+
+    if (!user) {
+      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+    }
+
+    const favorites = user.favs || [];
+    res.status(HTTP_STATUS_CODE.OK).json({
+      message: "User favorites retrieved successfully",
+      data: {
+        userFavs: favorites,
+      },
+    });
+  })
 };
 
 export default userController;

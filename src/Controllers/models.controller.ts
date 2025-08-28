@@ -1,18 +1,14 @@
-import { deleteModel, ObjectId } from "mongoose";
 import Model from "../Models/aiModel.model";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
-import IAiModel from "../Interfaces/aiModel.interface";
-import { runModel } from "../Utils/APIs/wavespeed_calling";
 import {
   filterModelType,
-  reverseModelTypeMapper,
 } from "../Utils/Format/filterModelType";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
-import modelQueue, { taskQueue } from "../Queues/model.queue";
+import { taskQueue } from "../Queues/model.queue";
 import User from "../Models/user.model";
-import Job from "../Models/job.model";
+import Job from "../Models/job.model";;
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -249,7 +245,7 @@ const modelsController = {
     const itemData = {
       URL: imageUrl.url,
       modelType: modelType,
-      jobId: "pendingJob", 
+      jobId: "pendingJob",
       status: "pending",
       modelName: model.name,
       isVideo: model.isVideo,
@@ -288,7 +284,6 @@ const modelsController = {
       jobId: job.id,
     });
   }),
-
   getJobStatus: catchError(async (req, res) => {
     const { id } = req.params;
 
