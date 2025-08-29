@@ -2,6 +2,7 @@ import { formatModelName } from "../Format/modelNames";
 import { sendNotificationToClient } from "../Notifications/notifications";
 import AppError from "../Errors/AppError";
 import Bull from "bull";
+import { getIO } from "../../Sockets/socket";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
@@ -9,11 +10,32 @@ const updateJobProgress = async (
   job: Bull.Job,
   progress: number,
   status: string,
-  additionalData: object = {}
+  additionalData: Record<string, any> = {}
 ) => {
   if (job) {
     await job.progress(progress);
-    await job.update({ status, ...additionalData });
+    await job.update({
+      ...(job.data || {}),
+      status,
+      progress,
+      ...additionalData,
+    });
+    try {
+      const io = getIO();
+      const payload = {
+        jobId: job.id,
+        status,
+        progress,
+        ...additionalData,
+        timestamp: Date.now(),
+      };
+      if (job.data?.userId) {
+        io.to(`user:${job.data.userId}`).emit("job:progress", payload);
+      }
+    } catch (err) {
+      console.log("Error updating job progress:", err);
+      throw new AppError("Socket.io not initialized");
+    }
   }
 };
 

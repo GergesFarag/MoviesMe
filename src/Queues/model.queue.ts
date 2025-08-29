@@ -10,6 +10,7 @@ import {
 import Model from "../Models/aiModel.model";
 import IAiModel from "../Interfaces/aiModel.interface";
 import Job from "../Models/job.model";
+import { getIO } from "../Sockets/socket";
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -32,16 +33,19 @@ taskQueue.process(async (job) => {
     if (!modelData) {
       throw new AppError("Model Data not found", 404);
     }
-    const modelType = filterModelType(modelData as IAiModel);
+    let modelType = filterModelType(modelData as IAiModel);
     if (!modelType) {
       throw new AppError("Invalid model type", 400);
     }
     const result = await runModel(modelData.name, modelType, data, FCM, job);
-
+    modelType = modelType === "bytedance" ? "image-effects" : modelType;
     return {
       result,
       userId,
-      modelType: modelType === "bytedance" ? "image-effects" : modelType,
+      modelType:
+        reverseModelTypeMapper[
+          modelType as keyof typeof reverseModelTypeMapper
+        ] || modelType,
       resultURL: data.image,
       modelName: modelData.name,
       isVideo: modelData.isVideo,
@@ -99,10 +103,23 @@ taskQueue.on("completed", async (job, result: any) => {
 
     user.items = updatedItems;
     await user.save();
+    const io = getIO();
+    const payload = {
+      jobId: job.id,
+      status: "completed",
+      progress: 100,
+      result: { success: true, data: result },
+      timestamp: Date.now(),
+    };
+
+    if (job.data?.userId) {
+      io.to(`user:${job.data.userId}`).emit("job:completed", payload);
+    }
   } catch (err) {
     console.error("Failed to save item to user", err);
   }
 });
+
 taskQueue.on("failed", async (job, err) => {
   try {
     console.error(`Job ${job.id} failed with error: ${err.message}`);
@@ -111,15 +128,25 @@ taskQueue.on("failed", async (job, err) => {
       { status: "failed", error: err.message }
     );
 
-
     const user = await User.findById(jobUpdated?.userId);
     if (user) {
-      const item = user.items?.find(
-        (item) => item.jobId === job.opts.jobId
-      );
+      const item = user.items?.find((item) => item.jobId === job.opts.jobId);
       if (item) {
         item.status = "failed";
         await user.save();
+      }
+      const io = getIO();
+      const payload = {
+        jobId: job.id,
+        status: "failed",
+        progress: job.progress() ?? 0,
+        result: { success: false, data: null },
+        failedReason: err?.message,
+        timestamp: Date.now(),
+      };
+
+      if (job.data?.userId) {
+        io.to(`user:${job.data.userId}`).emit("job:failed", payload);
       }
     }
   } catch (error) {

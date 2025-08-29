@@ -7,6 +7,7 @@ import { UploadApiResponse } from "cloudinary";
 import { taskQueue } from "../Queues/model.queue";
 import User from "../Models/user.model";
 import Job from "../Models/job.model";
+import { getIO } from "../Sockets/socket";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -258,7 +259,17 @@ const modelsController = {
     const job = await taskQueue.add(jobData, {
       jobId: `model_${modelId}_${Date.now()}`,
     });
-
+    try {
+      const io = getIO();
+      io.to(`job:${job.id}`).emit("job:queued", {
+        jobId: job.id,
+        status: "queued",
+        progress: 0,
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      console.error("Error emitting job:queued event:", err);
+    }
     if (!job || !job.id) {
       throw new AppError("Job creation failed", 500);
     }
