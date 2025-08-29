@@ -32,6 +32,7 @@ const updateJobProgress = async (
       if (job.data?.userId) {
         io.to(`user:${job.data.userId}`).emit("job:progress", payload);
       }
+      console.log("Sending Job Status: ", payload);
     } catch (err) {
       console.log("Error updating job progress:", err);
       throw new AppError("Socket.io not initialized");
@@ -76,13 +77,13 @@ export const runModel = async (
   if (job) {
     await updateJobProgress(job, 10, "Initializing model processing...");
     await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
+    await updateJobProgress(job, 30, "Getting Dummy Data...");
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // simulate delay
+    await updateJobProgress(job, 50, "Running Model...");
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // simulate delay
+    await updateJobProgress(job, 80, "Getting Response...");
+    await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
   }
-
-  if (job) {
-    await updateJobProgress(job, 70, "Getting Dummy Data...");
-    await new Promise((resolve) => setTimeout(resolve, 5000)); // simulate delay
-  }
-
   // await sendNotificationToClient(
   //   FCM,
   //   "Model Processing Completed",

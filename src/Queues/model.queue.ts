@@ -7,7 +7,6 @@ import {
   modelTypeMapper,
   reverseModelTypeMapper,
 } from "../Utils/Format/filterModelType";
-import Model from "../Models/aiModel.model";
 import IAiModel from "../Interfaces/aiModel.interface";
 import Job from "../Models/job.model";
 import { getIO } from "../Sockets/socket";
@@ -71,13 +70,9 @@ taskQueue.on("completed", async (job, result: any) => {
 
     const updatedItems = user?.items?.map((item) => {
       if (item.jobId === result.jobId) {
-        console.log("Updating item for jobId:", result.jobId);
-
         const modelType =
           modelTypeMapper[result.modelType as keyof typeof modelTypeMapper] ||
           result.modelType;
-
-        console.log("Result Model Type:", result.modelType);
 
         if (!modelType) {
           console.error("Model type is missing for jobId:", result.jobId);
@@ -96,7 +91,11 @@ taskQueue.on("completed", async (job, result: any) => {
         item.modelType = modelType;
         item.duration = result.duration || 0;
 
-        console.log("Updated item:", item);
+        console.log(
+          "******************************************\nItem Added:",
+          item,
+          "\n******************************************"
+        );
       }
       return item;
     });
