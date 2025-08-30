@@ -14,7 +14,6 @@ import {
 } from "../Utils/Format/filterModelType";
 import paginator from "../Utils/Pagination/paginator";
 import Job from "../Models/job.model";
-import cloudinary from "../Config/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
 
@@ -41,38 +40,42 @@ const userController = {
   updateProfile: catchError(async (req, res) => {
     const { id } = req.user!;
     const profilePicture = req.file;
-    if (profilePicture) {
-      const imageHash = generateImageHash(profilePicture.buffer);
-      const result = (await cloudUpload(
-        profilePicture.buffer,
-        imageHash
-      )) as UploadApiResponse;
-      req.body.profilePicture = result.secure_url;
-    };
-    if (profilePicture == null) {
+    if (
+      Object.keys(req.body).includes("profilePicture") &&
+      req.body.profilePicture === "null"
+    ) {
       req.body.profilePicture = null;
-    }
-    const user = await User.findById(id).select(fieldsToSelect);
-
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-
-    const updatedData = {
-      ...req.body,
-    };
-
-    Object.keys(updatedData).forEach((key) => {
-      if (key in user && key in updatedData) {
-        (user as any)[key] = updatedData[key as keyof typeof updatedData];
+    } else {
+      if (profilePicture) {
+        const imageHash = generateImageHash(profilePicture.buffer);
+        const result = (await cloudUpload(
+          profilePicture.buffer,
+          imageHash
+        )) as UploadApiResponse;
+        req.body.profilePicture = result.secure_url;
       }
-    });
-    await user.save();
+      const user = await User.findById(id).select(fieldsToSelect);
 
-    res.status(200).json({
-      message: "User profile updated successfully",
-      data: user,
-    } as userProfileResponse);
+      if (!user) {
+        throw new AppError("User not found", 404);
+      }
+
+      const updatedData = {
+        ...req.body,
+      };
+
+      Object.keys(updatedData).forEach((key) => {
+        if (key in user && key in updatedData) {
+          (user as any)[key] = updatedData[key as keyof typeof updatedData];
+        }
+      });
+      await user.save();
+
+      res.status(200).json({
+        message: "User profile updated successfully",
+        data: user,
+      } as userProfileResponse);
+    }
   }),
 
   getUserLibrary: catchError(async (req, res) => {
