@@ -1,4 +1,4 @@
-import Queue from "bull";
+
 import { runModel } from "../Utils/APIs/wavespeed_calling";
 import User from "../Models/user.model";
 import AppError from "../Utils/Errors/AppError";
@@ -10,6 +10,9 @@ import {
 import IAiModel from "../Interfaces/aiModel.interface";
 import Job from "../Models/job.model";
 import { getIO } from "../Sockets/socket";
+
+import { updateJobProgress } from "../Utils/Model/model.utils";
+import Queue from "bull";
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -25,10 +28,10 @@ export const taskQueue = new Queue("modelProcessing", {
     timeout: 300000,
   },
 });
-
 taskQueue.process(async (job) => {
   try {
     const { modelData, userId, data, FCM } = job.data;
+
     if (!modelData) {
       throw new AppError("Model Data not found", 404);
     }
