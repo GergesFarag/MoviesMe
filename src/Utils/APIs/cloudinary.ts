@@ -2,22 +2,36 @@ import { UploadApiResponse } from "cloudinary";
 import cloudinary from "../../Config/cloudinary";
 import AppError from "../Errors/AppError";
 import crypto from "crypto";
-export const cloudUpload = async (imageBuffer:Buffer , publicId?:string) => {
+
+export const cloudUpload = async (imageBuffer: Buffer, publicId?: string): Promise<UploadApiResponse> => {
   return new Promise((resolve, reject) => {
+    const uploadOptions = {
+      resource_type: 'auto' as const,
+      public_id: publicId,
+      overwrite: false,
+      quality: 'auto:good',
+      fetch_format: 'auto',
+      timeout: 60000
+    };
+
     const stream = cloudinary.uploader.upload_stream(
-      { resource_type: 'auto', public_id: publicId , overwrite:false },
+      uploadOptions,
       (error, result) => {
         if (error) {
           console.log("Cloudinary Upload Error:", error);
           reject(new AppError("Cloudinary upload failed", 500));
+        } else if (!result) {
+          reject(new AppError("Cloudinary upload returned no result", 500));
         } else {
           resolve(result as UploadApiResponse);
         }
       }
     );
-    stream.end(imageBuffer); 
+    
+    stream.end(imageBuffer);
   });
 };
-export const generateImageHash = (buffer: Buffer) => {
+
+export const generateImageHash = (buffer: Buffer): string => {
   return crypto.createHash("md5").update(buffer).digest("hex");
 };

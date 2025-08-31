@@ -1,13 +1,11 @@
 import Model from "../Models/aiModel.model";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
-import { filterModelType } from "../Utils/Format/filterModelType";
-import { cloudUpload } from "../Utils/APIs/cloudinary";
-import { UploadApiResponse } from "cloudinary";
 import { taskQueue } from "../Queues/model.queue";
 import User from "../Models/user.model";
 import Job from "../Models/job.model";
-import { getIO } from "../Sockets/socket";
+import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
+import { processModelJobAsync } from "../Services/applyModel.service";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -201,90 +199,58 @@ const modelsController = {
       .status(200)
       .json({ message: "Model updated successfully", data: model });
   }),
+
   applyModel: catchError(async (req, res) => {
     const { modelId, payload } = req.body;
-    const { ...rest } = payload;
-
-    const user = await User.findById(req.user!.id).select("+FCMToken");
-    if (!user || !user.FCMToken) {
-      throw new AppError("FCM Token not found", 404);
-    }
     const image = req.file;
+
     if (!modelId || !image) {
       throw new AppError("Model ID and image are required", 400);
     }
 
-    const imageUrl = (await cloudUpload(image.buffer)) as UploadApiResponse;
+    const [user, model] = await Promise.all([
+      getCachedUser(req.user!.id, User),
+      getCachedModel(modelId),
+    ]);
 
-    if (!imageUrl || !imageUrl.url) {
-      throw new AppError("Image upload failed", 500);
+    if (!user || !user.FCMToken) {
+      throw new AppError("FCM Token not found", 404);
     }
-
-    const fieldsWithSelectFalse = Object.keys(Model.schema.paths)
-      .filter((path) => Model.schema.paths[path].options.select === false)
-      .map((path) => `+${path}`);
-
-    const model = await Model.findById(modelId)
-      .select(fieldsWithSelectFalse.join(" "))
-      .lean();
 
     if (!model) {
       throw new AppError("Model data not found", 404);
     }
-
-    const jobData = {
-      modelData: model,
-      userId: user.id,
-      data: { image: imageUrl.url, ...rest },
-      FCM: user.FCMToken,
-    };
-
-    const modelType = filterModelType(model);
-
-    const itemData = {
-      URL: imageUrl.url,
-      modelType: modelType,
-      jobId: "pendingJob",
-      status: "pending",
-      modelName: model.name,
-      isVideo: model.isVideo,
-      modelThumbnail: model.thumbnail,
-      duration: 0,
-    };
-
-    await User.findByIdAndUpdate(user.id, {
-      $push: { items: itemData },
-    });
-
-    const job = await taskQueue.add(jobData, {
-      jobId: `model_${modelId}_${Date.now()}`,
-    });
-    if (!job || !job.id) {
-      throw new AppError("Job creation failed", 500);
-    }
-
-    await User.findOneAndUpdate(
-      { _id: user.id, "items.jobId": "pendingJob" },
-      { $set: { "items.$.jobId": job.id } }
-    );
-
-    const createdJob = await Job.create({
-      jobId: job.opts.jobId,
-      userId: user.id,
-      modelId: modelId,
-      status: "pending",
-    });
-
-    await User.findByIdAndUpdate(user.id, {
-      $push: { jobs: { _id: createdJob._id, jobId: createdJob.jobId } },
-    });
+    const jobId = `${modelId}_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
 
     res.status(202).json({
-      message: "Model processing started",
-      jobId: job.id,
+      message: "Model processing request accepted",
+      jobId: jobId,
+      status: "accepted",
     });
-  }),
 
+    try {
+      const result = await processModelJobAsync({
+        user,
+        model,
+        modelId,
+        image,
+        payload,
+        jobId,
+      });
+
+      if (result.success) {
+        console.log(
+          `Model processing started successfully with job ID: ${result.jobId}`
+        );
+      } else {
+        console.error(`Failed to start model processing: ${result.error}`);
+      }
+    } catch (error) {
+      console.error(`Unexpected error in model processing:`, error);
+    }
+  }),
 
   getJobStatus: catchError(async (req, res) => {
     const { id } = req.params;

@@ -1,66 +1,19 @@
 import { formatModelName } from "../Format/modelNames";
-import { sendNotificationToClient } from "../Notifications/notifications";
 import AppError from "../Errors/AppError";
 import Bull from "bull";
 import { getIO } from "../../Sockets/socket";
+import { processModelData, updateJobProgress } from "../Model/model.utils";
+import { DefaultEventsMap, Server } from "socket.io";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
-
-const updateJobProgress = async (
-  job: Bull.Job,
-  progress: number,
-  status: string,
-  additionalData: Record<string, any> = {}
-) => {
-  if (job) {
-    await job.progress(progress);
-    await job.update({
-      ...(job.data || {}),
-      status,
-      progress,
-      ...additionalData,
-    });
-    try {
-      const io = getIO();
-      const payload = {
-        jobId: job.id,
-        status,
-        progress,
-        ...additionalData,
-        timestamp: Date.now(),
-      };
-      if (job.data?.userId) {
-        io.to(`user:${job.data.userId}`).emit("job:progress", payload);
-      }
-      console.log("Sending Job Status: ", payload);
-    } catch (err) {
-      console.log("Error updating job progress:", err);
-      throw new AppError("Socket.io not initialized");
-    }
-  }
-};
-
-const processModelData = async (
-  modelName: string,
-  modelType: string,
-  data: any
-) => {
-  const formattedModel = formatModelName(modelName, modelType);
-  const url = `https://api.wavespeed.ai/api/v3/${formattedModel}`;
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-  };
-
-  return { formattedModel, url, headers };
-};
 
 export const runModel = async (
   modelName: string,
   modelType: string,
   data: any,
   FCM: string,
-  job?: Bull.Job
+  job?: Bull.Job,
+  IO?: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
 ) => {
   if (!WAVESPEED_API_KEY) {
     throw new AppError(
@@ -73,15 +26,13 @@ export const runModel = async (
     modelType,
     data
   );
-
-  if (job) {
-    await updateJobProgress(job, 10, "Initializing model processing...");
+  if (job && IO) {
     await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
-    await updateJobProgress(job, 30, "Getting Dummy Data...");
+    await updateJobProgress(job, 30, "Getting Dummy Data...", IO , "job:progress");
     await new Promise((resolve) => setTimeout(resolve, 3000)); // simulate delay
-    await updateJobProgress(job, 50, "Running Model...");
+    await updateJobProgress(job, 50, "Running Model...", IO, "job:progress");
     await new Promise((resolve) => setTimeout(resolve, 3000)); // simulate delay
-    await updateJobProgress(job, 80, "Getting Response...");
+    await updateJobProgress(job, 80, "Getting Response..." , IO, "job:progress");
     await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
   }
   // await sendNotificationToClient(
@@ -90,8 +41,8 @@ export const runModel = async (
   //   `Your video generated successfully`
   // );
 
-  if (job) {
-    await updateJobProgress(job, 100, "Success");
+  if (job && IO) {
+    await updateJobProgress(job, 100, "Success", IO , "job:progress");
   }
 
   return "Dummy Result";

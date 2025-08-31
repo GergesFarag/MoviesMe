@@ -1,4 +1,3 @@
-
 import { runModel } from "../Utils/APIs/wavespeed_calling";
 import User from "../Models/user.model";
 import AppError from "../Utils/Errors/AppError";
@@ -10,9 +9,9 @@ import {
 import IAiModel from "../Interfaces/aiModel.interface";
 import Job from "../Models/job.model";
 import { getIO } from "../Sockets/socket";
-
-import { updateJobProgress } from "../Utils/Model/model.utils";
 import Queue from "bull";
+import {updateJobProgress } from "../Utils/Model/model.utils";
+import { sendWebsocket } from "../Sockets/socket";
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -28,10 +27,11 @@ export const taskQueue = new Queue("modelProcessing", {
     timeout: 300000,
   },
 });
+
 taskQueue.process(async (job) => {
   try {
     const { modelData, userId, data, FCM } = job.data;
-
+    updateJobProgress(job, 10, "Start Processing...", getIO(), "job:progress");
     if (!modelData) {
       throw new AppError("Model Data not found", 404);
     }
@@ -39,9 +39,16 @@ taskQueue.process(async (job) => {
     if (!modelType) {
       throw new AppError("Invalid model type", 400);
     }
-    const result = await runModel(modelData.name, modelType, data, FCM, job);
+    const result = await runModel(
+      modelData.name,
+      modelType,
+      data,
+      FCM,
+      job,
+      getIO()
+    );
     modelType = modelType === "bytedance" ? "image-effects" : modelType;
-    return {
+    const dataToBeSent = {
       result,
       userId,
       modelType:
@@ -53,8 +60,10 @@ taskQueue.process(async (job) => {
       isVideo: modelData.isVideo,
       modelThumbnail: modelData.thumbnail,
       jobId: job.id,
-      duration: modelData.isVideo ? 0 : 0, //* to be edited
+      duration: modelData.isVideo ? 0 : 0,
     };
+    sendWebsocket(getIO(), "job:completed", dataToBeSent, `user:${userId}`);
+    return dataToBeSent;
   } catch (error) {
     console.error(`Job ${job.id} failed:`, error);
     throw error;
@@ -105,18 +114,6 @@ taskQueue.on("completed", async (job, result: any) => {
 
     user.items = updatedItems;
     await user.save();
-    const io = getIO();
-    const payload = {
-      jobId: job.id,
-      status: "completed",
-      progress: 100,
-      result: { success: true, data: result },
-      timestamp: Date.now(),
-    };
-
-    if (job.data?.userId) {
-      io.to(`user:${job.data.userId}`).emit("job:completed", payload);
-    }
   } catch (err) {
     console.error("Failed to save item to user", err);
   }

@@ -3,7 +3,6 @@ const itemSchema = new mongoose.Schema(
   {
     URL: {
       type: String,
-      required: [true, "Item URL is required"],
       trim: true,
     },
     modelType: {

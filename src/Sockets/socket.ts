@@ -1,4 +1,4 @@
-import { Server } from "socket.io";
+import { DefaultEventsMap, Server } from "socket.io";
 import type http from "http";
 import AppError from "../Utils/Errors/AppError";
 let io: Server | null = null;
@@ -27,3 +27,16 @@ export function getIO() {
   if (!io) throw new AppError("Socket.io not initialized");
   return io;
 }
+
+export const sendWebsocket = (
+  io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
+  event: string,
+  data: any,
+  to?: string
+) => {
+  if (to) {
+    io.to(to).emit(event, data);
+  } else {
+    io.emit(event, data);
+  }
+};

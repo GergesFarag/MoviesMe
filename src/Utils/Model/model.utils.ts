@@ -1,13 +1,16 @@
 import Bull from "bull";
-import { getIO } from "../../Config/socketio";
+import { getIO, sendWebsocket } from "../../Sockets/socket";
 import AppError from "../Errors/AppError";
 import { formatModelName } from "../Format/modelNames";
+import { DefaultEventsMap, Server } from "socket.io";
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
 export const updateJobProgress = async (
   job: Bull.Job,
   progress: number,
   status: string,
+  io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
+  event: string,
   additionalData: Record<string, any> = {}
 ) => {
   if (job) {
@@ -19,7 +22,6 @@ export const updateJobProgress = async (
       ...additionalData,
     });
     try {
-      const io = getIO();
       const payload = {
         jobId: job.id,
         status,
@@ -27,10 +29,7 @@ export const updateJobProgress = async (
         ...additionalData,
         timestamp: Date.now(),
       };
-      console.log("USERID: ", job.data.userId);
-      if (job.data?.userId) {
-        io.to(`user:${job.data.userId}`).emit("job:progress", payload);
-      }
+      sendWebsocket(io, event, payload, `user:${job.data.userId}`);
       console.log("Sending Job Status: ", payload);
     } catch (err) {
       console.log("Error updating job progress:", err);
