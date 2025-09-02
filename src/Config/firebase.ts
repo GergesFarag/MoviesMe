@@ -1,4 +1,4 @@
-import admin, { ServiceAccount } from "firebase-admin";
+import admin from "firebase-admin";
 
 if (!admin.apps.length) {
   try {
