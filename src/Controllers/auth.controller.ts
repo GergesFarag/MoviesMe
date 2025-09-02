@@ -9,6 +9,7 @@ import {
   verifyRefreshToken,
 } from "../Utils/Auth/tokenHelpers";
 import { loginResponse } from "../Interfaces/response.interface";
+import { debugFirebaseAuth } from "../Utils/Auth/firebaseDebug";
 
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
@@ -157,6 +158,30 @@ const authController = {
       message: "FCM token added successfully",
       data: { fcmToken: user.FCMToken },
     });
+  }),
+
+  // Debug endpoint to test Firebase configuration
+  debugFirebase: catchError(async (req: Request, res: Response) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      
+      // Run debug function
+      await debugFirebaseAuth(token);
+      
+      res.status(200).json({
+        message: "Firebase debug information logged to console",
+        data: {
+          firebaseInitialized: firebaseAdmin.apps.length > 0,
+          projectId: firebaseAdmin.app().options.projectId,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        message: "Firebase debug failed",
+        error: error.message
+      });
+    }
   }),
 };
 

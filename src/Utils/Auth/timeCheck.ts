@@ -54,5 +54,12 @@ export const validateFirebaseCredentials = (): void => {
     throw new Error('FIREBASE_CLIENT_EMAIL appears to be malformed');
   }
   
+  // Check if private key ID is provided (recommended)
+  if (!process.env.FIREBASE_PRIVATE_KEY_ID) {
+    console.warn('⚠️  FIREBASE_PRIVATE_KEY_ID is not set - this may cause token verification issues');
+  } else {
+    console.log('✅ FIREBASE_PRIVATE_KEY_ID is set:', process.env.FIREBASE_PRIVATE_KEY_ID);
+  }
+  
   console.log('Firebase credentials validation passed');
 };

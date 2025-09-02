@@ -14,15 +14,32 @@ export const firebaseAuth = catchError(
       token = req.headers.authorization.split(" ")[1]; 
     }
     if (!token) { 
-      next(new AppError("Authentication token is required", HTTP_STATUS_CODE.UNAUTHORIZED));
+      return next(new AppError("Authentication token is required", HTTP_STATUS_CODE.UNAUTHORIZED));
     }
-    const decoded = await firebaseAdmin.auth().verifyIdToken(token || "");
-    if (!decoded) {
-      next(new AppError("Invalid authentication token", HTTP_STATUS_CODE.UNAUTHORIZED));
+
+    try {
+      // Add better error handling for Firebase token verification
+      const decoded = await firebaseAdmin.auth().verifyIdToken(token);
+      if (!decoded) {
+        return next(new AppError("Invalid authentication token", HTTP_STATUS_CODE.UNAUTHORIZED));
+      }
+      //@ts-ignore
+      req.user = decoded;
+      next();
+    } catch (error: any) {
+      console.error("Firebase token verification error:", error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/id-token-expired') {
+        return next(new AppError("Authentication token has expired", HTTP_STATUS_CODE.UNAUTHORIZED));
+      } else if (error.code === 'auth/invalid-id-token') {
+        return next(new AppError("Invalid Firebase ID token format", HTTP_STATUS_CODE.UNAUTHORIZED));
+      } else if (error.message && error.message.includes('kid')) {
+        return next(new AppError("Invalid Firebase ID token - missing key identifier. Please ensure you're using a valid Firebase ID token.", HTTP_STATUS_CODE.UNAUTHORIZED));
+      } else {
+        return next(new AppError("Authentication token verification failed", HTTP_STATUS_CODE.UNAUTHORIZED));
+      }
     }
-    //@ts-ignore
-    req.user = decoded;
-    next();
   }
 );
 export const authMiddle = catchError(
