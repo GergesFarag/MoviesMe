@@ -87,6 +87,9 @@ const userController = {
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
     const status = req.query.status as string;
     const isFav = req.query.isFav;
+    const sortBy = (req.query.sortBy as string) || "newest";
+    const sortOrder = sortBy === "oldest" ? 1 : -1;
+
     if (isNaN(page) || page <= 0) {
       throw new AppError("Invalid page number", 400);
     }
@@ -108,10 +111,26 @@ const userController = {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
 
-    let userLib: IItem[] = user.items || [];
+    console.log("Sample item for debugging:", user.items?.[0]);
+
+    const userItems = user.items?.sort((a, b) => {
+      let aTime: number;
+      let bTime: number;
+
+      if (a.createdAt && b.createdAt) {
+        aTime = new Date(a.createdAt).getTime();
+        bTime = new Date(b.createdAt).getTime();
+      } else {
+        aTime = a._id.getTimestamp().getTime();
+        bTime = b._id.getTimestamp().getTime();
+      }
+
+      return sortOrder === -1 ? bTime - aTime : aTime - bTime;
+    }) || [];
+    let userLib: IItem[] = userItems;
     let paginatedItems: IItem[] = [];
-    if (user.items) {
-      userLib = user?.items?.filter((item: any) => {
+    if (userItems) {
+      userLib = userItems.filter((item: any) => {
         return (
           ((status as string) === "all" ? true : item.status === status) &&
           filteringArr.find((type) => type === item.modelType)

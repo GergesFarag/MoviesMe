@@ -92,19 +92,11 @@ taskQueue.on("completed", async (job, result: any) => {
 
         item.URL = result.resultURL;
         item.status = "completed";
-        item.duration = result.duration || 0;
-
-        if (!modelType) {
-          console.error("Model type is missing for jobId:", result.jobId);
-        }
-
-        item.URL = result.resultURL;
-        item.status = "completed";
         item.modelType = modelType;
         item.duration = result.duration || 0;
-
+        item.updatedAt = new Date();
         console.log(
-          "******************************************\nItem Added:",
+          "******************************************\nItem Updated:",
           item,
           "\n******************************************"
         );
@@ -132,6 +124,7 @@ taskQueue.on("failed", async (job, err) => {
       const item = user.items?.find((item) => item.jobId === job.opts.jobId);
       if (item) {
         item.status = "failed";
+        item.updatedAt = new Date(); // Add timestamp update
         await user.save();
       }
       const io = getIO();

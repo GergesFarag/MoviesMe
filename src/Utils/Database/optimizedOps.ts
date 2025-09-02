@@ -28,11 +28,17 @@ export const createJobAndUpdateUser = async (
     Job.create(jobData),
   ]);
 
+  const itemWithTimestamps = {
+    ...itemData,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
   await User.findByIdAndUpdate(
     userId,
     {
       $push: {
-        items: itemData,
+        items: itemWithTimestamps,
         jobs: { _id: createdJob._id, jobId: createdJob.jobId }
       }
     },
