@@ -36,12 +36,6 @@ export const runModel = async (
     await updateJobProgress(job, 80, "Getting Response..." , IO, "job:progress");
     await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
   }
-  
-  await sendNotificationToClient(
-    FCM,
-    "Model Processing Completed",
-    `Your video generated successfully`
-  );
 
   if (job && IO) {
     await updateJobProgress(job, 100, "Success", IO , "job:progress");

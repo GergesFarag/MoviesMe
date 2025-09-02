@@ -10,8 +10,9 @@ import IAiModel from "../Interfaces/aiModel.interface";
 import Job from "../Models/job.model";
 import { getIO } from "../Sockets/socket";
 import Queue from "bull";
-import {updateJobProgress } from "../Utils/Model/model.utils";
+import { updateJobProgress } from "../Utils/Model/model.utils";
 import { sendWebsocket } from "../Sockets/socket";
+import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -26,7 +27,7 @@ export const taskQueue = new Queue("modelProcessing", {
     attempts: 3,
     timeout: 300000,
     removeOnComplete: 10, // Keep only 10 completed jobs
-    removeOnFail: 5,      // Keep only 5 failed jobs
+    removeOnFail: 5, // Keep only 5 failed jobs
   },
 });
 
@@ -49,7 +50,7 @@ taskQueue.process(async (job) => {
       job,
       getIO()
     );
-    console.log("DATA IMAGE" , data.image);
+    console.log("DATA IMAGE", data.image);
     modelType = modelType === "bytedance" ? "image-effects" : modelType;
     const dataToBeSent = {
       result,
@@ -111,6 +112,12 @@ taskQueue.on("completed", async (job, result: any) => {
 
     user.items = updatedItems;
     await user.save();
+
+    await sendNotificationToClient(
+      "cpywthHXSCiYHZ4Y67K3ts:APA91bGhv_kUbjyPzVBDS5PZXjoJ7Sc3JAd1PZXI7KHRUe6feGMfmaUaWkf1CV662rbZCVR19JptmBzAqSjx83Ujeowidll_Bo_PU5-a1Bmz7YJzVEzgtfE", //! fix it later on
+      "Model Processing Completed",
+      `Your video generated successfully`
+    );
   } catch (err) {
     console.error("Failed to save item to user", err);
   }

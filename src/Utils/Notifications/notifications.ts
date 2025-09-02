@@ -6,7 +6,6 @@ export const sendNotificationToClient = async (
   title: string,
   body: string
 ) => {
-  // Validate FCM token
   if (!fcmToken || fcmToken.trim() === '') {
     console.error("Invalid FCM token provided");
     throw new Error("Invalid FCM token");
@@ -24,24 +23,36 @@ export const sendNotificationToClient = async (
   };
 
   try {
-    // Verify Firebase Admin is properly initialized
     if (!firebaseAdmin.apps.length) {
       throw new Error("Firebase Admin is not properly initialized");
     }
 
     console.log("Attempting to send notification to:", fcmToken.substring(0, 20) + "...");
+    
+    // Test Firebase Admin connection before sending
+    try {
+      await firebaseAdmin.auth().listUsers(1); // Quick test call
+    } catch (authError) {
+      console.error("Firebase authentication test failed:", authError);
+      throw new Error(`Firebase authentication failed: ${authError}`);
+    }
+    
     const response = await firebaseAdmin.messaging().send(message);
     console.log("Successfully sent message:", response);
     return response;
   } catch (error) {
     console.error("Error sending message:", error);
     
-    // Provide specific error handling for common Firebase errors
     if (error instanceof Error) {
       if (error.message.includes("invalid_grant")) {
-        console.error("Firebase authentication error - please check service account key and server time");
+        console.error("Firebase authentication error - please check:");
+        console.error("1. Service account key format (especially newlines)");
+        console.error("2. Server time synchronization");
+        console.error("3. Key validity at Firebase console");
       } else if (error.message.includes("invalid-registration-token")) {
         console.error("Invalid FCM token provided");
+      } else if (error.message.includes("invalid_argument")) {
+        console.error("Invalid argument provided to Firebase");
       }
     }
     
