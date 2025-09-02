@@ -22,28 +22,29 @@ interface JobResult {
   error?: string;
 }
 
-export const processModelJobAsync = async (data: ProcessModelJobData): Promise<JobResult> => {
+export const processModelJobAsync = async (
+  data: ProcessModelJobData
+): Promise<JobResult> => {
   const { user, model, modelId, image, payload, jobId } = data;
   const { ...rest } = payload;
   const userId = (user as any)._id.toString();
 
   try {
-    const [imageUrl, job] = await Promise.all([
-      cloudUpload(image.buffer) as Promise<UploadApiResponse>,
-      taskQueue.add({
+    const imageUrl = (await cloudUpload(image.buffer)) as UploadApiResponse;
+    const job = await taskQueue.add(
+      {
         modelData: model,
         userId: (user as any)._id,
-        data: { imageBuffer: image.buffer, ...rest },
-        FCM: user.FCMToken,
-      }, {
+        data: { image: imageUrl.secure_url, ...rest },
+        FCM: "cpywthHXSCiYHZ4Y67K3ts:APA91bGhv_kUbjyPzVBDS5PZXjoJ7Sc3JAd1PZXI7KHRUe6feGMfmaUaWkf1CV662rbZCVR19JptmBzAqSjx83Ujeowidll_Bo_PU5-a1Bmz7YJzVEzgtfE", //! fix it later on
+      },
+      {
         jobId: jobId,
-      })
-    ]);
-
+      }
+    );
     if (!imageUrl || !imageUrl.url) {
-
       if (job) await job.remove();
-      
+
       throw new AppError("Image upload failed", 500);
     }
 
@@ -74,20 +75,15 @@ export const processModelJobAsync = async (data: ProcessModelJobData): Promise<J
       itemData
     );
 
-    await job.update({
-      ...job.data,
-      data: { image: imageUrl.url, ...rest }
-    });
     return {
       success: true,
-      jobId: job.id.toString()
+      jobId: job.id.toString(),
     };
-
   } catch (error) {
-    console.error('Error in processModelJobAsync:', error);
+    console.error("Error in processModelJobAsync:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 };

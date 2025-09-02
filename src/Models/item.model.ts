@@ -4,6 +4,7 @@ const itemSchema = new mongoose.Schema(
     URL: {
       type: String,
       trim: true,
+      required: [true, "Item URL is required"],
     },
     modelType: {
       type: String,

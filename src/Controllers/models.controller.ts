@@ -6,6 +6,7 @@ import User from "../Models/user.model";
 import Job from "../Models/job.model";
 import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
 import { processModelJobAsync } from "../Services/applyModel.service";
+import { getRedisMemoryInfo } from "../Utils/Cache/redisCleanup";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -229,6 +230,8 @@ const modelsController = {
       jobId: jobId,
       status: "accepted",
     });
+    console.log("getRedisMemoryInfo() : " , await getRedisMemoryInfo());
+
 
     try {
       const result = await processModelJobAsync({

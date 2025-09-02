@@ -3,8 +3,8 @@ import Model from '../../Models/aiModel.model';
 import IAiModel from '../../Interfaces/aiModel.interface';
 import { IUser } from '../../Interfaces/user.interface';
 
-// Cache for 15 minutes
-const modelCache = new NodeCache({ stdTTL: 900, checkperiod: 120 });
+// Cache for 10 minutes instead of 15
+const modelCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
 export const getCachedModel = async (modelId: string): Promise<IAiModel | null> => {
   const cacheKey = `model_${modelId}`;
@@ -26,8 +26,8 @@ export const getCachedModel = async (modelId: string): Promise<IAiModel | null> 
   return model || null;
 };
 
-// Cache for user data (shorter TTL)
-const userCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
+// Cache for user data (shorter TTL - 3 minutes instead of 5)
+const userCache = new NodeCache({ stdTTL: 180, checkperiod: 60 });
 
 export const getCachedUser = async (userId: string, userModel: any): Promise<IUser | null> => {
   const cacheKey = `user_${userId}`;

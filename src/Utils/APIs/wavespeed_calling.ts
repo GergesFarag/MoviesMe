@@ -4,6 +4,7 @@ import Bull from "bull";
 import { getIO } from "../../Sockets/socket";
 import { processModelData, updateJobProgress } from "../Model/model.utils";
 import { DefaultEventsMap, Server } from "socket.io";
+import { sendNotificationToClient } from "../Notifications/notifications";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
@@ -35,11 +36,12 @@ export const runModel = async (
     await updateJobProgress(job, 80, "Getting Response..." , IO, "job:progress");
     await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
   }
-  // await sendNotificationToClient(
-  //   FCM,
-  //   "Model Processing Completed",
-  //   `Your video generated successfully`
-  // );
+  
+  await sendNotificationToClient(
+    FCM,
+    "Model Processing Completed",
+    `Your video generated successfully`
+  );
 
   if (job && IO) {
     await updateJobProgress(job, 100, "Success", IO , "job:progress");

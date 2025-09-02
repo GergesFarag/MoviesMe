@@ -25,6 +25,8 @@ export const taskQueue = new Queue("modelProcessing", {
   defaultJobOptions: {
     attempts: 3,
     timeout: 300000,
+    removeOnComplete: 10, // Keep only 10 completed jobs
+    removeOnFail: 5,      // Keep only 5 failed jobs
   },
 });
 
@@ -47,6 +49,7 @@ taskQueue.process(async (job) => {
       job,
       getIO()
     );
+    console.log("DATA IMAGE" , data.image);
     modelType = modelType === "bytedance" ? "image-effects" : modelType;
     const dataToBeSent = {
       result,
@@ -76,6 +79,8 @@ taskQueue.on("completed", async (job, result: any) => {
       { jobId: result.jobId },
       { status: "completed" }
     );
+
+    await job.remove();
 
     const user = await User.findById(result.userId);
     if (!user) return;
@@ -119,12 +124,15 @@ taskQueue.on("failed", async (job, err) => {
       { status: "failed", error: err.message }
     );
 
+    // Clean up the failed job from Redis to free memory
+    await job.remove();
+
     const user = await User.findById(jobUpdated?.userId);
     if (user) {
       const item = user.items?.find((item) => item.jobId === job.opts.jobId);
       if (item) {
         item.status = "failed";
-        item.updatedAt = new Date(); // Add timestamp update
+        item.updatedAt = new Date();
         await user.save();
       }
       const io = getIO();

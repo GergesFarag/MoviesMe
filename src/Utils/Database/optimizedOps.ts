@@ -33,7 +33,7 @@ export const createJobAndUpdateUser = async (
     createdAt: new Date(),
     updatedAt: new Date()
   };
-
+  console.log("Items with timestamps:", itemWithTimestamps);
   await User.findByIdAndUpdate(
     userId,
     {

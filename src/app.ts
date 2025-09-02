@@ -13,6 +13,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerDoc from "./swagger";
 import storyRouter from "./Routes/story.routes";
 import modelsRouter from "./Routes/models.routes";
+import { cleanupRedisJobs } from "./Utils/Cache/redisCleanup";
 
 const app = express();
 app.use(express.json());
@@ -42,6 +43,10 @@ app.use(/\/(.*)/, (req, res, next) => {
   console.log('404 middleware triggered for:', req.originalUrl);
   res.status(404).json({ message: "Route not found" });
 });
- 
+
+setInterval(async () => {
+  console.log("Running periodic Redis cleanup...");
+  await cleanupRedisJobs();
+}, 30 * 60 * 1000);
 
 export default app;
