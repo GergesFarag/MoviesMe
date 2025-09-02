@@ -6,6 +6,7 @@ import { createJobAndUpdateUser } from "../Utils/Database/optimizedOps";
 import AppError from "../Utils/Errors/AppError";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { IUser } from "../Interfaces/user.interface";
+import { IItem } from "../Interfaces/item.interface";
 
 interface ProcessModelJobData {
   user: IUser;
@@ -58,6 +59,7 @@ export const processModelJobAsync = async (
       modelType: modelType,
       jobId: job.id.toString(),
       status: "pending",
+      isFav: false,
       modelName: model.name,
       isVideo: model.isVideo,
       modelThumbnail: model.thumbnail,

@@ -13,6 +13,7 @@ import Queue from "bull";
 import { updateJobProgress } from "../Utils/Model/model.utils";
 import { sendWebsocket } from "../Sockets/socket";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
+import { IItem } from "../Interfaces/item.interface";
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -50,7 +51,6 @@ taskQueue.process(async (job) => {
       job,
       getIO()
     );
-    console.log("DATA IMAGE", data.image);
     modelType = modelType === "bytedance" ? "image-effects" : modelType;
     const dataToBeSent = {
       result,
@@ -67,6 +67,24 @@ taskQueue.process(async (job) => {
       duration: modelData.isVideo ? 0 : 0,
     };
     sendWebsocket(getIO(), "job:completed", dataToBeSent, `user:${userId}`);
+    let notificationData = {
+      URL: data.image,
+      modelType: modelType,
+      modelName: modelData.name,
+      isVideo: modelData.isVideo,
+      isFav: String(false),
+      modelThumbnail: modelData.thumbnail,
+      jobId: String(job.id),
+      duration: String(modelData.isVideo ? 0 : 0),
+    };
+    Object.keys(notificationData).forEach((key) => String(notificationData[key as keyof typeof notificationData]));
+    console.log("first", notificationData);
+    await sendNotificationToClient(
+      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+      "Model Processing Completed",
+      `Your video generated successfully`,
+      notificationData
+    );
     return dataToBeSent;
   } catch (error) {
     console.error(`Job ${job.id} failed:`, error);
@@ -112,12 +130,6 @@ taskQueue.on("completed", async (job, result: any) => {
 
     user.items = updatedItems;
     await user.save();
-
-    await sendNotificationToClient(
-      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
-      "Model Processing Completed",
-      `Your video generated successfully`
-    );
   } catch (err) {
     console.error("Failed to save item to user", err);
   }

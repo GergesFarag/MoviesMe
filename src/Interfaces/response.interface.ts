@@ -22,7 +22,7 @@ export type UserProfileResponseDataKeys =
   | "userLocation"
   | "dob"
   | "isMale"
-  | "profilePicture";
+  | "profilePicture"
 export interface userProfileResponse {
   message: string;
   data: Record<UserProfileResponseDataKeys, any>;

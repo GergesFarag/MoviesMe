@@ -6,12 +6,12 @@ export interface IItem {
   URL: string;
   modelType?: string;
   modelName: string;
-  isVideo: string;
+  isVideo: boolean;
   modelThumbnail: string;
   jobId: string;
   status: jobStatus;
   isFav: boolean;
   duration: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

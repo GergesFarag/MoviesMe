@@ -30,7 +30,7 @@ const fieldsToSelect: UserProfileResponseDataKeys[] = [
 
 const userController = {
   getProfile: catchError(async (req, res) => {
-    const user = await User.findById(req.user!.id).select(fieldsToSelect);
+    const user = await User.findById(req.user!.id).select(fieldsToSelect).select("-items");
     res.status(200).json({
       message: "User profile retrieved successfully",
       data: user,
