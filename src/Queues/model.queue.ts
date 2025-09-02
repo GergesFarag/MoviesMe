@@ -114,7 +114,7 @@ taskQueue.on("completed", async (job, result: any) => {
     await user.save();
 
     await sendNotificationToClient(
-      "cpywthHXSCiYHZ4Y67K3ts:APA91bGhv_kUbjyPzVBDS5PZXjoJ7Sc3JAd1PZXI7KHRUe6feGMfmaUaWkf1CV662rbZCVR19JptmBzAqSjx83Ujeowidll_Bo_PU5-a1Bmz7YJzVEzgtfE", //! fix it later on
+      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
       "Model Processing Completed",
       `Your video generated successfully`
     );

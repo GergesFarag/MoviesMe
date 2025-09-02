@@ -6,11 +6,11 @@ export const sendNotificationToClient = async (
   title: string,
   body: string
 ) => {
+  console.log("GONE HERE");
   if (!fcmToken || fcmToken.trim() === '') {
     console.error("Invalid FCM token provided");
     throw new Error("Invalid FCM token");
   }
-
   const message: Message = {
     token: fcmToken,
     notification: {
