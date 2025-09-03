@@ -1,21 +1,20 @@
-import { stat } from "fs";
 import { IItem } from "../Interfaces/item.interface";
 import {
   userProfileResponse,
   UserProfileResponseDataKeys,
 } from "../Interfaces/response.interface";
-import User, { IUser } from "../Models/user.model";
+import User from "../Models/user.model";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import {
   ModelType,
-  modelTypeMapper,
-  reverseModelTypeMapper,
+  modelTypeMapper
 } from "../Utils/Format/filterModelType";
 import paginator from "../Utils/Pagination/paginator";
 import Job from "../Models/job.model";
 import { UploadApiResponse } from "cloudinary";
 import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
+import { ItemDTO } from "../DTOs/item.dto";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -110,9 +109,6 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
-
-    console.log("Sample item for debugging:", user.items?.[0]);
-
     const userItems = user.items?.sort((a, b) => {
       let aTime: number;
       let bTime: number;
@@ -121,8 +117,8 @@ const userController = {
         aTime = new Date(a.createdAt).getTime();
         bTime = new Date(b.createdAt).getTime();
       } else {
-        aTime = a._id.getTimestamp().getTime();
-        bTime = b._id.getTimestamp().getTime();
+        aTime = a._id!.getTimestamp().getTime();
+        bTime = b._id!.getTimestamp().getTime();
       }
 
       return sortOrder === -1 ? bTime - aTime : aTime - bTime;
@@ -141,21 +137,12 @@ const userController = {
         userLib = userLib.filter((item) => item.isFav === favStatus);
       }
       paginatedItems = paginator(userLib, page, limit);
-      paginatedItems = paginatedItems?.map((item: IItem) => {
-        return {
-          ...item,
-          modelType:
-            reverseModelTypeMapper[
-              item.modelType as keyof typeof reverseModelTypeMapper
-            ] || item.modelType,
-        };
-      });
     }
-
+    const itemsDTO = ItemDTO.toListDTO(paginatedItems);
     res.status(200).json({
       message: "User items retrieved successfully",
       data: {
-        items: paginatedItems,
+        items: itemsDTO,
         paginationData: {
           page,
           limit,
@@ -174,11 +161,16 @@ const userController = {
     }
 
     const user = await User.findById(userId);
+    
     if (!user) {
       throw new AppError("User not found", 404);
     }
+    const itemIds = user?.items?.map(item => item._id!.toString());
+    if (!itemIds!.includes(itemId)) {
+      throw new AppError("Item not found", 404);
+    }
     user.items?.map((item) => {
-      if (item._id.toString() === itemId) {
+      if (item._id!.toString() === itemId) {
         item.isFav = !item.isFav;
       }
     });
@@ -203,11 +195,11 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", 404);
     }
-    const item = user.items?.find((item) => item._id.toString() === itemId);
+    const item = user.items?.find((item) => item._id!.toString() === itemId);
     if (!item) {
       throw new AppError("Item not found", 404);
     }
-    user.items = user?.items?.filter((item) => item._id.toString() !== itemId);
+    user.items = user?.items?.filter((item) => item._id!.toString() !== itemId);
     user.jobs = user?.jobs?.filter((j) => j.jobId !== item.jobId);
     await Job.findOneAndDelete({ jobId: item.jobId });
     await user!.save();

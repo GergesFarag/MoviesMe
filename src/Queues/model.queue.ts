@@ -14,6 +14,8 @@ import { updateJobProgress } from "../Utils/Model/model.utils";
 import { sendWebsocket } from "../Sockets/socket";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import { IItem } from "../Interfaces/item.interface";
+import { NotificationItemDTO } from "../DTOs/item.dto";
+import { getItemFromUser } from "../Utils/Database/optimizedOps";
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -68,23 +70,16 @@ taskQueue.process(async (job) => {
     };
     sendWebsocket(getIO(), "job:completed", dataToBeSent, `user:${userId}`);
     let notificationData = {
-      URL: String(data.image),
-      modelType: String(modelData.name),
-      modelName: String(modelData.name),
-      isVideo: String(modelData.isVideo),
-      isFav: String(false),
-      modelThumbnail: String(modelData.thumbnail),
-      jobId: String(job.id),
-      duration: String(modelData.isVideo ? 0 : 0),
+      URL: data.image,
+      modelType: modelData.name,
+      modelName: modelData.name,
+      isVideo: modelData.isVideo,
+      isFav: false,
+      status: "completed",
+      modelThumbnail: modelData.thumbnail,
+      jobId: job.id as string,
+      duration: modelData.isVideo ? 0 : 0,
     };
-    Object.keys(notificationData).forEach((key) => String(notificationData[key as keyof typeof notificationData]));
-    console.log("first", notificationData);
-    await sendNotificationToClient(
-      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
-      "Model Processing Completed",
-      `Your video generated successfully`,
-      notificationData
-    );
     return dataToBeSent;
   } catch (error) {
     console.error(`Job ${job.id} failed:`, error);
@@ -130,6 +125,16 @@ taskQueue.on("completed", async (job, result: any) => {
 
     user.items = updatedItems;
     await user.save();
+    const item = await getItemFromUser(user.id, result.jobId);
+    if (item) {
+      const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
+      await sendNotificationToClient(
+        "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+        "Model Processing Completed",
+        `Your video generated successfully`,
+        notificationDTO
+      );
+    }
   } catch (err) {
     console.error("Failed to save item to user", err);
   }

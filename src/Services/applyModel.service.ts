@@ -7,6 +7,10 @@ import AppError from "../Utils/Errors/AppError";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { IUser } from "../Interfaces/user.interface";
 import { IItem } from "../Interfaces/item.interface";
+import { NotificationItemDTO } from "../DTOs/item.dto";
+import { sendNotificationToClient } from "../Utils/Notifications/notifications";
+import User from "../Models/user.model";
+import { ObjectId, Types } from "mongoose";
 
 interface ProcessModelJobData {
   user: IUser;
@@ -66,7 +70,7 @@ export const processModelJobAsync = async (
       duration: 0,
     };
 
-    await createJobAndUpdateUser(
+    const createdJob = await createJobAndUpdateUser(
       userId,
       {
         jobId: jobId,
@@ -76,7 +80,6 @@ export const processModelJobAsync = async (
       },
       itemData
     );
-
     return {
       success: true,
       jobId: job.id.toString(),

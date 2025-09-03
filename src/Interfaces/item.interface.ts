@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 import { jobStatus } from "./job.interface";
+import { Job, JobId } from "bull";
 
 export interface IItem {
   _id: Types.ObjectId;
@@ -8,8 +9,8 @@ export interface IItem {
   modelName: string;
   isVideo: boolean;
   modelThumbnail: string;
-  jobId: string;
-  status: jobStatus;
+  jobId: JobId;
+  status: string;
   isFav: boolean;
   duration: number;
   createdAt?: Date;

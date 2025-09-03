@@ -1,5 +1,6 @@
 import User from '../../Models/user.model';
 import Job from '../../Models/job.model';
+import { IItem } from '../../Interfaces/item.interface';
 
 export interface JobCreationData {
   jobId: string;
@@ -33,7 +34,6 @@ export const createJobAndUpdateUser = async (
     createdAt: new Date(),
     updatedAt: new Date()
   };
-  console.log("Items with timestamps:", itemWithTimestamps);
   await User.findByIdAndUpdate(
     userId,
     {
@@ -50,3 +50,11 @@ export const createJobAndUpdateUser = async (
 
   return createdJob;
 };
+export const getItemFromUser = async (userId: string, jobId: string): Promise<IItem | null> => {
+  const user = await User.findById(userId).lean();
+  if (!user) return null;
+
+  const item = user.items?.find((item: IItem) => item.jobId === jobId);
+  return item || null;
+};
+
