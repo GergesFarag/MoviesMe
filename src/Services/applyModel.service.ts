@@ -1,7 +1,10 @@
 import { UploadApiResponse } from "cloudinary";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { taskQueue } from "../Queues/model.queue";
-import { filterModelType, modelTypeMapper } from "../Utils/Format/filterModelType";
+import {
+  filterModelType,
+  modelTypeMapper,
+} from "../Utils/Format/filterModelType";
 import { createJobAndUpdateUser } from "../Utils/Database/optimizedOps";
 import AppError from "../Utils/Errors/AppError";
 import IAiModel from "../Interfaces/aiModel.interface";
@@ -65,7 +68,6 @@ export const processModelJobAsync = async (
       modelThumbnail: model.thumbnail,
       duration: 0,
     };
-    console.log("ITEM DATA", itemData);
     const createdJob = await createJobAndUpdateUser(
       userId,
       {

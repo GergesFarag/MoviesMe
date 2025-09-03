@@ -1,6 +1,7 @@
 import { model, Schema, Types } from "mongoose";
 import { IUser } from "../Interfaces/user.interface";
 import itemSchema from "./item.model";
+import notificationSchema from "./notification.model";
 
 const userSchema = new Schema<IUser>({
   username: { type: String, select: true },
@@ -31,6 +32,10 @@ const userSchema = new Schema<IUser>({
   firebaseUid: { type: String, unique: true },
   jobs: [{ type: { _id: Schema.Types.ObjectId, jobId: String }, ref: "Job" }],
   FCMToken: { type: String, default: null },
+  notifications: {
+    type: [notificationSchema],
+    default: [],
+  },
 });
 userSchema.on("delete", (doc) => {
   console.log("User deleted:", doc);

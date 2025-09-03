@@ -128,12 +128,25 @@ taskQueue.on("completed", async (job, result: any) => {
     const item = await getItemFromUser(user.id, result.jobId);
     if (item) {
       const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
-      await sendNotificationToClient(
+      const res = await sendNotificationToClient(
         "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
         "Model Processing Completed",
         `Your video generated successfully`,
-        notificationDTO
+        {
+          ...notificationDTO,
+          redirectTo: "/effectDetails",
+        }
       );
+      if (res) {
+        user.notifications?.push({
+          title: "Model Processing Completed",
+          message: `Your video generated successfully`,
+          data: notificationDTO,
+          redirectTo: "/effectDetails",
+          createdAt: new Date(),
+        });
+        await user.save();
+      }
     }
   } catch (err) {
     console.error("Failed to save item to user", err);

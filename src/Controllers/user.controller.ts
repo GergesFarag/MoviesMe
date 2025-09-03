@@ -210,6 +210,23 @@ const userController = {
       },
     });
   }),
+
+  getNotifications: catchError(async (req, res) => {
+    const userId = req.user!.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    const notifications = user.notifications || [];
+    res.status(200).json({
+      message: "User notifications retrieved successfully",
+      data: {
+        notifications,
+      },
+    });
+  })
 };
 
 export default userController;

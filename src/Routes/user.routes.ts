@@ -14,5 +14,6 @@ userRouter
   );
 userRouter.route("/lib").get(authMiddle, userController.getUserLibrary);
 userRouter.route("/fav").post(authMiddle, userController.toggleFav);
+userRouter.route("/notifications").get(authMiddle, userController.getNotifications);
 userRouter.route("/lib/:itemId").delete(authMiddle, userController.deleteItem);
 export default userRouter;
