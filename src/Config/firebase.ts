@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { validateFirebaseCredentials, checkServerTime } from "../Utils/Auth/timeCheck";
+import { validateFirebaseCredentials } from "../Utils/Auth/timeCheck";
 
 if (!admin.apps.length) {
   try {
@@ -27,7 +27,6 @@ if (!admin.apps.length) {
         projectId: process.env.FIREBASE_PROJECT_ID,
         privateKey: privateKey,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Include the private key ID if available
         ...(process.env.FIREBASE_PRIVATE_KEY_ID && { privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID })
       };
 
@@ -42,16 +41,10 @@ if (!admin.apps.length) {
       
       console.log('Firebase Admin initialized successfully');
       
-      // Test the Firebase connection
       admin.auth().getUserByEmail(process.env.FIREBASE_CLIENT_EMAIL).catch(() => {
-        // This is expected to fail, but it validates the connection
         console.log('Firebase connection test completed');
       });
       
-      // Check server time in development/staging
-      if (process.env.NODE_ENV !== 'production') {
-        checkServerTime().catch(console.error);
-      }
     } else {
       throw new Error('Missing required Firebase environment variables');
     }

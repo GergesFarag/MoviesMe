@@ -68,12 +68,12 @@ taskQueue.process(async (job) => {
     };
     sendWebsocket(getIO(), "job:completed", dataToBeSent, `user:${userId}`);
     let notificationData = {
-      URL: data.image,
-      modelType: modelType,
-      modelName: modelData.name,
-      isVideo: modelData.isVideo,
+      URL: String(data.image),
+      modelType: String(modelData.name),
+      modelName: String(modelData.name),
+      isVideo: String(modelData.isVideo),
       isFav: String(false),
-      modelThumbnail: modelData.thumbnail,
+      modelThumbnail: String(modelData.thumbnail),
       jobId: String(job.id),
       duration: String(modelData.isVideo ? 0 : 0),
     };

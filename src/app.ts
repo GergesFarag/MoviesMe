@@ -13,6 +13,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerDoc from "./swagger";
 import storyRouter from "./Routes/story.routes";
 import modelsRouter from "./Routes/models.routes";
+import configRouter from "./Routes/config.routes";
 import { cleanupRedisJobs } from "./Utils/Cache/redisCleanup";
 
 const app = express();
@@ -36,6 +37,7 @@ app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter); 
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
+app.use(`${basePath}/config`, configRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use(ErrorHandler);

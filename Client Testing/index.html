@@ -56,43 +56,87 @@
     </div>
 
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import {
         getAuth,
         signInWithPopup,
         GoogleAuthProvider,
-      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyAVdx4hQAviTmiE7_vVmoaSyb3lx1hachY",
-        authDomain: "ttov-a9677.firebaseapp.com",
-        projectId: "ttov-a9677",
-        appId: "1:57747989938:web:e4af38b054fd30014130ab",
-      };
+      let firebaseConfig = null;
 
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
+      // Function to load Firebase configuration from server
+      async function loadFirebaseConfig() {
+        try {
+          const response = await fetch('/api/v1/config/firebase');
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return await response.json();
+        } catch (error) {
+          console.error('Failed to load Firebase config from server:', error);
+          // Fallback to hardcoded config (you should set proper environment variables)
+          return {
+            apiKey: "AIzaSyAVdx4hQAviTmiE7_vVmoaSyb3lx1hachY",
+            authDomain: "ttov-a9677.firebaseapp.com",
+            projectId: "ttov-a9677",
+            appId: "1:57747989938:web:e4af38b054fd30014130ab",
+          };
+        }
+      }
+
+      // Initialize Firebase
+      async function initFirebase() {
+        try {
+          firebaseConfig = await loadFirebaseConfig();
+          console.log('Firebase config loaded:', firebaseConfig);
+          
+          const app = initializeApp(firebaseConfig);
+          const auth = getAuth(app);
+          
+          // Set up login button event listener
+          document.getElementById('gmail-login-btn').addEventListener('click', function () {
+            handleGmailLogin(auth);
+          });
+
+          console.log('Firebase initialized successfully');
+        } catch (error) {
+          console.error('Error initializing Firebase:', error);
+          document.getElementById('error-message').textContent = 
+            'Failed to initialize Firebase. Please check configuration.';
+        }
+      }
 
       // Gmail Login Function
-      document.getElementById('gmail-login-btn').addEventListener('click', function () {
-        const provider = new GoogleAuthProvider();
+      async function handleGmailLogin(auth) {
+        try {
+          const provider = new GoogleAuthProvider();
+          
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+          
+          console.log('User:', user);
+          document.getElementById('success-message').textContent = 
+            `Welcome, ${user.displayName || user.email}!`;
+          document.getElementById('error-message').textContent = '';
 
-        signInWithPopup(auth, provider)
-          .then(async (result) => {
-            const user = result.user;
-            console.log('User:', user);
+          // Get ID token
+          const idToken = await user.getIdToken();
+          console.log('ID Token:', idToken);
+          
+          // You can send this token to your backend for verification
+          // Example: await sendTokenToBackend(idToken);
+          
+        } catch (error) {
+          console.error('Error during login:', error);
+          document.getElementById('error-message').textContent = 
+            `Login failed: ${error.message}`;
+          document.getElementById('success-message').textContent = '';
+        }
+      }
 
-            // Get ID token
-            const idToken = await user.getIdToken();
-
-            console.log('ID Token:', idToken);
-          })
-          .catch((error) => {
-            console.error('Error during login:', error);
-            document.getElementById('error-message').textContent =
-              'Login failed. Please try again.';
-          });
-      });
+      // Initialize when page loads
+      document.addEventListener('DOMContentLoaded', initFirebase);
     </script>
   </body>
 </html>
