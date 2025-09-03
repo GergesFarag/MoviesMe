@@ -27,7 +27,7 @@ export const modelTypeMapper = {
   "characterEffects" : "character-effects",
   "ai3dTools" : "wavespeed-ai",
   "aiTools" : "wavespeed-ai",
-  "scenarioMarketing" : "scenario-marketing"
+  "scenarioMarketing" : "scenario-marketing",
 }
 export const reverseModelTypeMapper = Object.fromEntries(
   Object.entries(modelTypeMapper).map(([key, value]) => [value, key])

@@ -1,16 +1,11 @@
 import { UploadApiResponse } from "cloudinary";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { taskQueue } from "../Queues/model.queue";
-import { filterModelType } from "../Utils/Format/filterModelType";
+import { filterModelType, modelTypeMapper } from "../Utils/Format/filterModelType";
 import { createJobAndUpdateUser } from "../Utils/Database/optimizedOps";
 import AppError from "../Utils/Errors/AppError";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { IUser } from "../Interfaces/user.interface";
-import { IItem } from "../Interfaces/item.interface";
-import { NotificationItemDTO } from "../DTOs/item.dto";
-import { sendNotificationToClient } from "../Utils/Notifications/notifications";
-import User from "../Models/user.model";
-import { ObjectId, Types } from "mongoose";
 
 interface ProcessModelJobData {
   user: IUser;
@@ -58,9 +53,10 @@ export const processModelJobAsync = async (
     }
 
     const modelType = filterModelType(model);
+
     const itemData = {
       URL: imageUrl.url,
-      modelType: modelType,
+      modelType: modelType === "bytedance" ? "image-effects" : modelType,
       jobId: job.id.toString(),
       status: "pending",
       isFav: false,
@@ -69,7 +65,7 @@ export const processModelJobAsync = async (
       modelThumbnail: model.thumbnail,
       duration: 0,
     };
-
+    console.log("ITEM DATA", itemData);
     const createdJob = await createJobAndUpdateUser(
       userId,
       {
@@ -80,6 +76,7 @@ export const processModelJobAsync = async (
       },
       itemData
     );
+    console.log("Data set successfully!!", createdJob);
     return {
       success: true,
       jobId: job.id.toString(),

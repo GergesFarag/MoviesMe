@@ -206,7 +206,7 @@ const userController = {
     res.status(HTTP_STATUS_CODE.OK).json({
       message: "User item deleted successfully",
       data: {
-        userItems: user!.items,
+        item: ItemDTO.toDTO(item)
       },
     });
   }),

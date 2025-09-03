@@ -230,9 +230,7 @@ const modelsController = {
       jobId: jobId,
       status: "accepted",
     });
-    console.log("getRedisMemoryInfo() : " , await getRedisMemoryInfo());
-
-
+  
     try {
       const result = await processModelJobAsync({
         user,
