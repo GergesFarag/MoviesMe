@@ -4,5 +4,4 @@ export interface INotification{
     redirectTo:string;
     data:any;
     createdAt:Date;
-    expiresAt: Date;
 }

@@ -104,8 +104,7 @@ const userController = {
     filteringArr = filteringArr.map((type) => {
       return modelTypeMapper[type as ModelType];
     });
-    const user = await User.findById(userId).lean();
-
+    const user = await User.findOne({ _id: userId });
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }

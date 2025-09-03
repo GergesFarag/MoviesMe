@@ -143,8 +143,7 @@ taskQueue.on("completed", async (job, result: any) => {
           message: `Your video generated successfully`,
           data: notificationDTO,
           redirectTo: "/effectDetails",
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 10 * 1000),
+          createdAt: new Date()
         });
         await user.save();
       }
