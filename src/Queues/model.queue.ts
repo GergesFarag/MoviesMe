@@ -144,6 +144,7 @@ taskQueue.on("completed", async (job, result: any) => {
           data: notificationDTO,
           redirectTo: "/effectDetails",
           createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 10 * 1000),
         });
         await user.save();
       }
