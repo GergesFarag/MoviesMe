@@ -2,13 +2,12 @@ import { IStoryRequest } from "../Interfaces/storyRequest.interface";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { getVoiceId } from "../Utils/Database/optimizedOps";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "";
 export class ElevenLabsService {
-  private apiKey: string;
   private client: ElevenLabsClient;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    this.client = new ElevenLabsClient({ apiKey });
+  constructor() {
+    this.client = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
   }
 
   async generateVoiceOver(

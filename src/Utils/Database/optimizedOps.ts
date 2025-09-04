@@ -6,6 +6,7 @@ import { appendFile } from "fs";
 import AppError, { HTTP_STATUS_CODE } from "../Errors/AppError";
 import { ObjectId } from "mongoose";
 import AudioModel from "../../Models/audioModel.model";
+import Model from "../../Models/aiModel.model";
 
 export interface JobCreationData {
   jobId: string;
@@ -73,4 +74,12 @@ export const getVoiceId = async (
     throw new AppError("No audio model found", HTTP_STATUS_CODE.NOT_FOUND);
   }
   return item.elevenLabsId || null;
+};
+
+export const getModelCallApi = async (modelId: string): Promise<string|null> => {
+  const model = await Model.findById(modelId).lean();
+  if (!model) {
+    throw new AppError("No audio model found", HTTP_STATUS_CODE.NOT_FOUND);
+  }
+  return model.wavespeedCall || null;
 };

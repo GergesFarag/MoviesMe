@@ -8,6 +8,7 @@ import GenerationInfo from "../Models/generationInfo.model";
 import { IStoryRequest } from "../Interfaces/storyRequest.interface";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
+import { VideoGenerationService } from "../Services/videoGeneration.service";
 
 const storyController = {
   getAllStories: catchError(
@@ -34,19 +35,22 @@ const storyController = {
     }
   ),
 
-  addStory: catchError(
+  generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { id } = req.user!;
       const image = req.file;
-      let totalData:IStoryRequest = req.body;
-      if(image){
-        const imageRes = (await cloudUpload(image?.buffer)) as UploadApiResponse;
-        totalData.image = imageRes.secure_url;
-      }
-      if(!totalData.prompt || !totalData.storyDuration){
+      let totalData: IStoryRequest = req.body;
+      if (!totalData.prompt || !totalData.storyDuration) {
         throw new AppError("Prompt and story duration are required", 400);
       }
-      res.status(201).json({ message: "I GOT DATA :", data: totalData });
+      // if(image){
+      //   const imageRes = (await cloudUpload(image?.buffer)) as UploadApiResponse;
+      //   totalData.image = imageRes.secure_url;
+      // }
+      const v = new VideoGenerationService();
+      const result = await v.generateImageFromDescription(totalData.prompt);
+      console.log("RESULT", result);
+      res.status(201).json({ message: "I GOT DATA :", data: result });
     }
   ),
 
