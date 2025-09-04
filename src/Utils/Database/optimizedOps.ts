@@ -1,6 +1,11 @@
-import User from '../../Models/user.model';
-import Job from '../../Models/job.model';
-import { IItem } from '../../Interfaces/item.interface';
+import User from "../../Models/user.model";
+import Job from "../../Models/job.model";
+import { IItem } from "../../Interfaces/item.interface";
+import GenerationInfo from "../../Models/generationInfo.model";
+import { appendFile } from "fs";
+import AppError, { HTTP_STATUS_CODE } from "../Errors/AppError";
+import { ObjectId } from "mongoose";
+import AudioModel from "../../Models/audioModel.model";
 
 export interface JobCreationData {
   jobId: string;
@@ -25,32 +30,34 @@ export const createJobAndUpdateUser = async (
   jobData: JobCreationData,
   itemData: ItemData
 ) => {
-  const [createdJob] = await Promise.all([
-    Job.create(jobData),
-  ]);
+  const [createdJob] = await Promise.all([Job.create(jobData)]);
 
   const itemWithTimestamps = {
     ...itemData,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
   await User.findByIdAndUpdate(
     userId,
     {
       $push: {
         items: itemWithTimestamps,
-        jobs: { _id: createdJob._id, jobId: createdJob.jobId }
-      }
+        jobs: { _id: createdJob._id, jobId: createdJob.jobId },
+      },
     },
-    { 
+    {
       new: false,
-      writeConcern: { w: 1 }
+      writeConcern: { w: 1 },
     }
   );
 
   return createdJob;
 };
-export const getItemFromUser = async (userId: string, jobId: string): Promise<IItem | null> => {
+
+export const getItemFromUser = async (
+  userId: string,
+  jobId: string
+): Promise<IItem | null> => {
   const user = await User.findById(userId).lean();
   if (!user) return null;
 
@@ -58,3 +65,12 @@ export const getItemFromUser = async (userId: string, jobId: string): Promise<II
   return item || null;
 };
 
+export const getVoiceId = async (
+  voiceGender: "male" | "female" | "kid"
+): Promise<string | null> => {
+  const item = await AudioModel.findOne({ gender: voiceGender }).lean();
+  if (!item) {
+    throw new AppError("No audio model found", HTTP_STATUS_CODE.NOT_FOUND);
+  }
+  return item.elevenLabsId || null;
+};

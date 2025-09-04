@@ -25,7 +25,9 @@ const generationInfoSchema = new mongoose.Schema<generatinInfo>({
     max:3600
   },
   languages: {
-    type: [String],
+    type: [{ 
+      lang: String 
+    }],
     required: true,
   },
   voiceOverCredits: {

@@ -2,9 +2,9 @@ export interface IStoryRequest {
   prompt: string;
   storyDuration: number;
   voiceOver?: {
-    voiceOverLyrics: string;
-    voiceLanguageId: string;
-    voiceGender: string;
+    voiceOverLyrics: string | null;
+    voiceLanguage: string;
+    voiceGender: "male" | "female" | "kid";
   };
   storyLocationId?: string;
   storyStyleId?: string;

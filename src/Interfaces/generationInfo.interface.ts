@@ -9,9 +9,9 @@ export interface generatinInfo {
   };
   genres: string[];
   estimatedTimePerSecond: number;
-  languages: string[],
-  voiceOverCredits: number,
-  generationCredits: number,
+  languages: [string];
+  voiceOverCredits: number;
+  generationCredits: number;
   createdAt: Date;
   updatedAt: Date;
 }
