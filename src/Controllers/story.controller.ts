@@ -9,6 +9,7 @@ import { IStoryRequest } from "../Interfaces/storyRequest.interface";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { VideoGenerationService } from "../Services/videoGeneration.service";
+import { ElevenLabsService } from "../Services/elevenLabs.service";
 
 const storyController = {
   getAllStories: catchError(
@@ -38,18 +39,21 @@ const storyController = {
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { id } = req.user!;
-      const image = req.file;
-      let totalData: IStoryRequest = req.body;
-      if (!totalData.prompt || !totalData.storyDuration) {
-        throw new AppError("Prompt and story duration are required", 400);
-      }
+      // const image = req.file;
+      // let totalData: IStoryRequest = req.body;
+      // if (!totalData.prompt || !totalData.storyDuration) {
+      //   throw new AppError("Prompt and story duration are required", 400);
+      // }
       // if(image){
       //   const imageRes = (await cloudUpload(image?.buffer)) as UploadApiResponse;
       //   totalData.image = imageRes.secure_url;
       // }
-      const v = new VideoGenerationService();
-      const result = await v.generateImageFromDescription(totalData.prompt);
-      console.log("RESULT", result);
+      // const v = new VideoGenerationService();
+      // const result = await v.generateImageFromDescription(totalData.prompt);
+      // console.log("RESULT", result);
+      const {prompt} = req.body;
+      const imageService = new VideoGenerationService();
+      const result = await imageService.generateImageFromDescription(prompt);
       res.status(201).json({ message: "I GOT DATA :", data: result });
     }
   ),
