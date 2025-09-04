@@ -7,6 +7,9 @@ import AppError from "../Utils/Errors/AppError";
 import mongoose, { Types } from "mongoose";
 import { IScene } from "../Interfaces/scene.interface";
 import GenerationInfo from "../Models/generationInfo.model";
+import { IStoryRequest } from "../Interfaces/storyRequest.interface";
+import { cloudUpload } from "../Utils/APIs/cloudinary";
+import { UploadApiResponse } from "cloudinary";
 
 const storyController = {
   getAllStories: catchError(
@@ -36,44 +39,16 @@ const storyController = {
   addStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { id } = req.user!;
-      const { prompt } = req.body;
-      if (!prompt) {
-        throw new AppError("Prompt is required", 400);
+      const image = req.file;
+      let totalData:IStoryRequest = req.body;
+      if(image){
+        const imageRes = (await cloudUpload(image?.buffer)) as UploadApiResponse;
+        totalData.image = imageRes.secure_url;
       }
-      const response = await openAICalling(prompt);
-      console.log("response : ", response);
-      if (!response) {
-        throw new AppError("Failed to generate story", 500);
+      if(!totalData.prompt || !totalData.storyDuration){
+        throw new AppError("Prompt and story duration are required", 400);
       }
-      if (!response.scenes) {
-        res.status(200).json({
-          message: "Failed to generate story",
-          data: response,
-        });
-      }
-      const story = await Story.create({
-        title: response.title,
-        userId: id as Types.ObjectId,
-        scenes: response.scenes.map((scene: IScene) => ({
-          sceneNumber: scene.sceneNumber,
-          videoDescription: scene.videoDescription,
-          imageDescription: scene.imageDescription,
-        })),
-      });
-      if (!story) {
-        throw new AppError("Failed to create story", 500);
-      }
-      const user = await User.findByIdAndUpdate(id, {
-        $push: { stories: story._id },
-      });
-
-      if (!user) {
-        throw new AppError("Failed to update user with new story", 500);
-      }
-      res.status(201).json({
-        message: "Story Added Successfully",
-        data: { story },
-      });
+      res.status(201).json({ message: "I GOT DATA :", data: totalData });
     }
   ),
 

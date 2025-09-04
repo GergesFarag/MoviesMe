@@ -1,11 +1,12 @@
 import { Router } from "express";
-const storyRouter = Router();
 import storyController from "../Controllers/story.controller";
 import { authMiddle } from "../Middlewares/auth.middleware";
+import { imageUpload } from "../Config/multer";
+const storyRouter = Router();
 storyRouter
   .route("/")
   .get(authMiddle, storyController.getAllStories)
-  .post(authMiddle, storyController.addStory);
+  .post(authMiddle, imageUpload.single("image"), storyController.addStory);
 storyRouter
   .route("/generationData")
   .get(storyController.getGenerationData)

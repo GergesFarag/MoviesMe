@@ -1,4 +1,4 @@
-export interface IRequestStory {
+export interface IStoryRequest {
   prompt: string;
   storyDuration: number;
   voiceOver?: {
