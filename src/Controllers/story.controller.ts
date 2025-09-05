@@ -5,11 +5,19 @@ import User from "../Models/user.model";
 import AppError from "../Utils/Errors/AppError";
 import mongoose, { ObjectId, Types } from "mongoose";
 import GenerationInfo from "../Models/generationInfo.model";
-import { IStoryRequest } from "../Interfaces/storyRequest.interface";
+import {
+  genderType,
+  IStoryRequest,
+} from "../Interfaces/storyRequest.interface";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { VideoGenerationService } from "../Services/videoGeneration.service";
-import { ElevenLabsService } from "../Services/voiceGeneration.service";
+import { VoiceGenerationService } from "../Services/voiceGeneration.service";
+import { OpenAIService } from "../Services/openAi.service";
+import { IScene } from "../Interfaces/scene.interface";
+import { IStoryResponse } from "../Interfaces/storyResponse.interface";
+import { getStoryGenerationData } from "../Utils/Database/optimizedOps";
+import { ImageGenerationService } from "../Services/imageGeneration.service";
 
 const storyController = {
   getAllStories: catchError(
@@ -38,23 +46,69 @@ const storyController = {
 
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { id } = req.user!;
-      // const image = req.file;
-      // let totalData: IStoryRequest = req.body;
-      // if (!totalData.prompt || !totalData.storyDuration) {
-      //   throw new AppError("Prompt and story duration are required", 400);
-      // }
-      // if(image){
-      //   const imageRes = (await cloudUpload(image?.buffer)) as UploadApiResponse;
-      //   totalData.image = imageRes.secure_url;
-      // }
-      // const v = new VideoGenerationService();
-      // const result = await v.generateImageFromDescription(totalData.prompt);
-      // console.log("RESULT", result);
-      const {prompt} = req.body;
-      const imageService = new VideoGenerationService();
-      const result = await imageService.generateImageFromDescription(prompt);
-      res.status(201).json({ message: "I GOT DATA :", data: result });
+      const { prompt } = req.body;
+      const image = req.file;
+      let storyData: IStoryRequest = req.body;
+      if (!storyData.prompt || !storyData.storyDuration) {
+        throw new AppError("Prompt and story duration are required", 400);
+      }
+      if (image) {
+        const imageRes = (await cloudUpload(
+          image?.buffer
+        )) as UploadApiResponse;
+        storyData.image = imageRes.secure_url;
+      }
+
+      const { location, style } = await getStoryGenerationData(
+        storyData.storyLocationId,
+        storyData.storyStyleId
+      );
+
+      const sceneDuration = storyData.storyDuration / 5;
+      const openAIService = new OpenAIService(
+        sceneDuration,
+        storyData.storyTitle,
+        style,
+        storyData.genere,
+        location,
+        storyData.voiceOver ? false : true
+      );
+      const story: IStoryResponse = await openAIService.generateScenes(prompt);
+
+      const voiceGenerationService = new VoiceGenerationService();
+      const voiceOver = await voiceGenerationService.generateVoiceOver({
+        voiceGender: storyData.voiceOver?.voiceGender as genderType,
+        voiceOverLyrics: story.scenes[0].narration as string,
+          voiceLanguage: storyData.voiceOver?.voiceLanguage as string,
+        });
+
+      const imageGenerationService = new ImageGenerationService();
+      const resultURL: string = await imageGenerationService.generateImageFromDescription(
+        story.scenes[0].imageDescription
+      );
+
+        await imageGenerationService.generateImageFromDescription(
+          story.scenes[0].imageDescription
+        );
+        
+        const videoGenerationService = new VideoGenerationService();
+        
+      const videoURL =
+        await videoGenerationService.generateVideoFromDescription(
+          story.scenes[0].videoDescription,
+          resultURL,
+          5
+        );
+      const testDataToSent = {
+        scene: story.scenes[0],
+        imageUrl: resultURL,
+        voiceUrl: voiceOver,
+        videoUrl: videoURL,
+      };
+      res.status(201).json({
+        message: "Scene 1 test generated successfully",
+        data: testDataToSent,
+      });
     }
   ),
 

@@ -1,9 +1,9 @@
+import { IScene } from "../Interfaces/scene.interface";
 import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
 const baseURL = "https://api.wavespeed.ai/api/v3";
 export class ImageGenerationService {
-  
   async generateImageFromDescription(
     imageDescription: string,
     refImageUrl?: string

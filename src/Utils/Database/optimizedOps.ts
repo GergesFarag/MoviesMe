@@ -83,3 +83,15 @@ export const getModelCallApi = async (modelId: string): Promise<string|null> => 
   }
   return model.wavespeedCall || null;
 };
+
+export const getStoryGenerationData = async (locationId?: string, styleId?: string) => {
+  const generationData = await GenerationInfo.findOne().lean();
+  let location, style;
+  if(locationId){
+    location = generationData?.location.find((loc:any) => loc._id?.toString() === locationId)?.name;
+  }
+  if(styleId){
+    style = generationData?.style.find((sty:any) => sty._id?.toString() === styleId)?.name;
+  }
+  return { location, style };
+};

@@ -1,10 +1,11 @@
+export type genderType = "male" | "female" | "kid";
 export interface IStoryRequest {
   prompt: string;
   storyDuration: number;
   voiceOver?: {
     voiceOverLyrics: string | null;
-    voiceLanguage: string;
-    voiceGender: "male" | "female" | "kid";
+    voiceLanguage: string | null;
+    voiceGender: genderType;
   };
   storyLocationId?: string;
   storyStyleId?: string;

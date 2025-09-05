@@ -1,19 +1,19 @@
 import mongoose from "mongoose";
-import {
-  generatinInfo,
-} from "../Interfaces/generationInfo.interface";
+import { generatinInfo } from "../Interfaces/generationInfo.interface";
 
-const locationSchema = new mongoose.Schema<generatinInfo["location"]>({
-  name: { type: String, required: true },
-  image: { type: String, required: true },
-});
-const styleSchema = new mongoose.Schema<generatinInfo["style"]>({
-  name: { type: String, required: true },
-  image: { type: String, required: true },
-});
 const generationInfoSchema = new mongoose.Schema<generatinInfo>({
-  location: [locationSchema],
-  style: [styleSchema],
+  location: [
+    {
+      name: { type: String, required: true },
+      image: { type: String, required: true },
+    },
+  ],
+  style: [
+    {
+      name: { type: String, required: true },
+      image: { type: String, required: true },
+    },
+  ],
   genres: {
     type: [String],
     required: true,
@@ -22,7 +22,7 @@ const generationInfoSchema = new mongoose.Schema<generatinInfo>({
     type: Number,
     required: true,
     min: 15,
-    max:3600
+    max: 3600,
   },
   languages: {
     type: [String],

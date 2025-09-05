@@ -1,38 +1,29 @@
 import OpenAI from "openai";
 import AppError from "../Utils/Errors/AppError";
 import { IStoryResponse } from "../Interfaces/storyResponse.interface";
+import { generateSysPrompt } from "../Utils/Format/generateSysPrompt";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 export class OpenAIService {
   private client: OpenAI;
-  private readonly SYSTEM_PROMPT = `You are a cinematic scene generator for visual storytelling and AI animation.
-                    TASK:
-                    Convert valid short stories (in ANY language) into EXACTLY 3 cinematic scenes optimized for AI image/video generation.
+  private SYSTEM_PROMPT: string;
 
-                    VALIDATION:
-                    - Reject input if: single words, greetings, prompts, questions, or non-narrative text.
-                    → Respond: { "error": "Invalid input. Please provide a valid story." }
-                    - If story too complex for 3 scenes:
-                    → Respond: { "error": "Story too complex for 3 scenes." }
-                    RESPONSE FORMAT:
-                    {
-                      "title": "<Story Title>",
-                      "scenes": [<Scenes>]
-                    }
-                      
-                    SCENE FORMAT (3 scenes only):
-                        {
-                        "sceneNumber": <1 to 3>,
-                        "sceneDescription": "<Detailed description of the scene>",
-                        "imageDescription": "<Main subject, detailed setting, lighting, camera composition, cinematic style>",
-                        "videoDescription": "<Camera movement, timing, effects, transitions, character acting and motion>"
-                        }
-
-                    OUTPUT RULES:
-                    - JSON array ONLY
-                    - English only
-                    - Visually rich and AI-optimized`;
-
-  constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
+  constructor(
+    scenesNumber: number,
+    storyTitle?: string,
+    storyStyle?: string,
+    storyGenere?: string,
+    storyLocation?: string,
+    doNarration: boolean = false
+  ) {
+    this.client = new OpenAI({ apiKey: OPENAI_API_KEY });
+    this.SYSTEM_PROMPT = generateSysPrompt(
+      scenesNumber,
+      storyTitle,
+      storyStyle,
+      storyGenere,
+      storyLocation,
+      doNarration
+    );
   }
 
   async generateScenes(prompt: string): Promise<IStoryResponse> {
@@ -59,16 +50,72 @@ export class OpenAIService {
             ],
           },
         ],
-        max_output_tokens: 400,
+        max_output_tokens: 2000,
       });
       console.log("JSON RESPONSE: ", response.output_text);
-      const parsedResponse = JSON.parse(response.output_text);
+
+      let cleanResponse = response.output_text.trim();
+      
+      // Check if response appears to be truncated
+      if (!cleanResponse.endsWith('}') && !cleanResponse.endsWith(']}')) {
+        throw new AppError(
+          "AI response was truncated. The response appears incomplete. Please try with a shorter story or fewer scenes.",
+          500
+        );
+      }
+      
+      // Basic JSON structure validation
+      const openBraces = (cleanResponse.match(/\{/g) || []).length;
+      const closeBraces = (cleanResponse.match(/\}/g) || []).length;
+      const openBrackets = (cleanResponse.match(/\[/g) || []).length;
+      const closeBrackets = (cleanResponse.match(/\]/g) || []).length;
+      
+      if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
+        throw new AppError(
+          "AI response contains malformed JSON structure. Mismatched braces or brackets detected.",
+          500
+        );
+      }
+
+      if (cleanResponse.startsWith("```json")) {
+        cleanResponse = cleanResponse
+          .replace(/```json\s*/, "")
+          .replace(/\s*```$/, "");
+      }
+      if (cleanResponse.startsWith("```")) {
+        cleanResponse = cleanResponse
+          .replace(/```\s*/, "")
+          .replace(/\s*```$/, "");
+      }
+
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(cleanResponse);
+      } catch (parseErr) {
+        console.error("JSON Parse Error:", parseErr);
+        console.error("Raw response:", response.output_text);
+        throw new AppError(
+          `Invalid JSON response from AI model: ${
+            parseErr instanceof Error
+              ? parseErr.message
+              : "Unknown parsing error"
+          }`,
+          500
+        );
+      }
+
       if (parsedResponse.error) {
         throw new AppError(parsedResponse.error);
       }
       return parsedResponse as IStoryResponse;
     } catch (err: any) {
-      throw new AppError(err.message, err.status);
+      if (err instanceof AppError) {
+        throw err;
+      }
+      throw new AppError(
+        err.message || "OpenAI service error",
+        err.status || 500
+      );
     }
   }
 
@@ -110,5 +157,4 @@ export class OpenAIService {
       throw new AppError(err.message, err.status);
     }
   }
-  
 }
