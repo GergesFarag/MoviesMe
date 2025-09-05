@@ -9,7 +9,7 @@ import { IStoryRequest } from "../Interfaces/storyRequest.interface";
 import { cloudUpload } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { VideoGenerationService } from "../Services/videoGeneration.service";
-import { ElevenLabsService } from "../Services/elevenLabs.service";
+import { ElevenLabsService } from "../Services/voiceGeneration.service";
 
 const storyController = {
   getAllStories: catchError(

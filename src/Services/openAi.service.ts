@@ -105,7 +105,6 @@ export class OpenAIService {
         ],
         max_output_tokens: 400,
       });
-      console.log("NARRATIVE RESPONSE: ", response.output_text);
       return response.output_text as string;
     } catch (err: any) {
       throw new AppError(err.message, err.status);
