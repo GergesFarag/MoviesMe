@@ -1,0 +1,278 @@
+[
+  {
+    "_id": "66db1234567890abcdef0001",
+    "title": "The Lost City",
+    "prompt": "A thrilling adventure story about a hidden city in the jungle.",
+    "thumbnail": "https://picsum.photos/640/360?random=1",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+    "duration": 15,
+    "numOfScenes": 3,
+    "style": "cinematic",
+    "location": "Amazon Jungle",
+    "genre": "Adventure",
+    "scenes": [
+      {
+        "description": "The explorers enter the dense jungle.",
+        "image": "https://picsum.photos/800/600?random=101"
+      },
+      {
+        "description": "They discover ancient ruins covered in vines.",
+        "image": "https://picsum.photos/800/600?random=102"
+      },
+      {
+        "description": "The hidden city reveals itself in golden light.",
+        "image": "https://picsum.photos/800/600?random=103"
+      }
+    ],
+    "jobId": "job_lost_city_abc123def456",
+    "voiceOver": {
+      "sound": "https://www.soundjay.com/misc/sounds/fail-buzzer-02.mp3",
+      "text": "In a forgotten land, hidden for centuries, a new adventure begins."
+    }
+  },
+  {
+    "_id": "66db1234567890abcdef0002",
+    "title": "Space Odyssey",
+    "prompt": "An epic journey through the cosmos exploring distant galaxies.",
+    "thumbnail": "https://picsum.photos/640/360?random=2",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4",
+    "duration": 20,
+    "numOfScenes": 4,
+    "style": "sci-fi",
+    "location": "Outer Space",
+    "genre": "Science Fiction",
+    "scenes": [
+      {
+        "description": "A spaceship launches from Earth into the starry void.",
+        "image": "https://picsum.photos/800/600?random=201"
+      },
+      {
+        "description": "Navigating through a colorful nebula.",
+        "image": "https://picsum.photos/800/600?random=202"
+      },
+      {
+        "description": "Discovering an alien planet with strange formations.",
+        "image": "https://picsum.photos/800/600?random=203"
+      },
+      {
+        "description": "First contact with an advanced alien civilization.",
+        "image": "https://picsum.photos/800/600?random=204"
+      }
+    ],
+    "jobId": "job_space_odyssey_xyz789ghi012",
+    "voiceOver": {
+      "sound": "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+      "text": "Beyond the stars lies the greatest adventure humanity has ever known."
+    }
+  },
+  {
+    "_id": "66db1234567890abcdef0003",
+    "title": "Ocean's Mystery",
+    "prompt": "Deep sea exploration reveals ancient underwater civilizations.",
+    "thumbnail": "https://picsum.photos/640/360?random=3",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4",
+    "duration": 25,
+    "numOfScenes": 5,
+    "style": "documentary",
+    "location": "Pacific Ocean",
+    "genre": "Mystery",
+    "scenes": [
+      {
+        "description": "A submarine descends into the deep blue ocean.",
+        "image": "https://picsum.photos/800/600?random=301"
+      },
+      {
+        "description": "Bioluminescent creatures illuminate the darkness.",
+        "image": "https://picsum.photos/800/600?random=302"
+      },
+      {
+        "description": "Ancient stone structures appear on the ocean floor.",
+        "image": "https://picsum.photos/800/600?random=303"
+      },
+      {
+        "description": "Mysterious symbols carved into underwater temples.",
+        "image": "https://picsum.photos/800/600?random=304"
+      },
+      {
+        "description": "Evidence of an advanced underwater civilization.",
+        "image": "https://picsum.photos/800/600?random=305"
+      }
+    ],
+    "jobId": "job_ocean_mystery_mno345pqr678",
+    "voiceOver": {
+      "sound": "https://www.soundjay.com/misc/sounds/magic-chime-02.mp3",
+      "text": "Beneath the waves lies a world forgotten by time, waiting to be discovered."
+    }
+  },
+  {
+    "_id": "66db1234567890abcdef0004",
+    "title": "Mountain Peaks",
+    "prompt": "A climber's journey to conquer the world's highest peaks.",
+    "thumbnail": "https://picsum.photos/640/360?random=4",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_640x360_1mb.mp4",
+    "duration": 10,
+    "numOfScenes": 2,
+    "style": "dramatic",
+    "location": "Himalayas",
+    "genre": "Drama",
+    "scenes": [
+      {
+        "description": "The climber begins the treacherous ascent.",
+        "image": "https://picsum.photos/800/600?random=401"
+      },
+      {
+        "description": "Reaching the summit at sunrise.",
+        "image": "https://picsum.photos/800/600?random=402"
+      }
+    ],
+    "jobId": "job_mountain_peaks_stu901vwx234",
+    "voiceOver": {
+      "sound": "https://www.soundjay.com/misc/sounds/wind-chimes-1.mp3",
+      "text": "Every step higher brings us closer to touching the sky."
+    }
+  },
+  {
+    "_id": "66db1234567890abcdef0005",
+    "title": "Urban Night",
+    "prompt": "The bustling energy of a city that never sleeps.",
+    "thumbnail": "https://picsum.photos/640/360?random=5",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_30s_20mb.mp4",
+    "duration": 30,
+    "numOfScenes": 6,
+    "style": "noir",
+    "location": "New York City",
+    "genre": "Urban",
+    "scenes": [
+      {
+        "description": "Neon lights reflect on wet streets.",
+        "image": "https://picsum.photos/800/600?random=501"
+      },
+      {
+        "description": "People rushing through busy intersections.",
+        "image": "https://picsum.photos/800/600?random=502"
+      },
+      {
+        "description": "Jazz music echoes from underground clubs.",
+        "image": "https://picsum.photos/800/600?random=503"
+      },
+      {
+        "description": "Skyscrapers tower into the midnight sky.",
+        "image": "https://picsum.photos/800/600?random=504"
+      },
+      {
+        "description": "Street vendors serve late-night customers.",
+        "image": "https://picsum.photos/800/600?random=505"
+      },
+      {
+        "description": "The city's heartbeat pulses through the darkness.",
+        "image": "https://picsum.photos/800/600?random=506"
+      }
+    ],
+    "jobId": "job_urban_night_def567hij890",
+    "voiceOver": {
+      "sound": "https://www.soundjay.com/misc/sounds/typewriter-key-1.mp3",
+      "text": "In the city of dreams, every corner tells a story, and every light holds a secret."
+    }
+  },
+  {
+    "_id": "66db1234567890abcdef0006",
+    "title": "Desert Mirage",
+    "prompt": "A lone traveler's quest across endless sand dunes.",
+    "thumbnail": "https://picsum.photos/640/360?random=6",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_720x480_1mb.mp4",
+    "duration": 12,
+    "numOfScenes": 2,
+    "style": "minimalist",
+    "location": "Sahara Desert",
+    "genre": "Drama",
+    "scenes": [
+      {
+        "description": "The traveler walks across golden sand dunes.",
+        "image": "https://picsum.photos/800/600?random=601"
+      },
+      {
+        "description": "An oasis appears on the horizon like a mirage.",
+        "image": "https://picsum.photos/800/600?random=602"
+      }
+    ],
+    "jobId": "job_desert_mirage_abc123xyz789"
+  },
+  {
+    "_id": "66db1234567890abcdef0007",
+    "title": "Forest Spirits",
+    "prompt": "Magical creatures dwelling in an enchanted forest.",
+    "thumbnail": "https://picsum.photos/640/360?random=7",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_10mb.mp4",
+    "duration": 18,
+    "numOfScenes": 3,
+    "style": "fantasy",
+    "location": "Enchanted Forest",
+    "genre": "Fantasy",
+    "scenes": [
+      {
+        "description": "Sunlight filters through ancient trees.",
+        "image": "https://picsum.photos/800/600?random=701"
+      },
+      {
+        "description": "Mystical creatures dance in moonbeams.",
+        "image": "https://picsum.photos/800/600?random=702"
+      },
+      {
+        "description": "Magic sparkles fill the air around sacred groves.",
+        "image": "https://picsum.photos/800/600?random=703"
+      }
+    ],
+    "jobId": "job_forest_spirits_mno456pqr123",
+    "voiceOver": {
+      "sound": "https://www.soundjay.com/misc/sounds/fairy-song.mp3",
+      "text": "Where ancient trees whisper secrets, and magic flows like morning mist."
+    }
+  },
+  {
+    "_id": "66db1234567890abcdef0008",
+    "title": "Time Machine",
+    "prompt": "A scientist's journey through different eras of history.",
+    "thumbnail": "https://picsum.photos/640/360?random=8",
+    "videoUrl": "https://sample-videos.com/zip/10/mp4/SampleVideo_1920x1080_1mb.mp4",
+    "duration": 35,
+    "numOfScenes": 7,
+    "style": "steampunk",
+    "location": "Laboratory & Various Time Periods",
+    "genre": "Science Fiction",
+    "scenes": [
+      {
+        "description": "The time machine activates in a Victorian laboratory.",
+        "image": "https://picsum.photos/800/600?random=801"
+      },
+      {
+        "description": "Arriving in ancient Egypt during pyramid construction.",
+        "image": "https://picsum.photos/800/600?random=802"
+      },
+      {
+        "description": "Witnessing medieval knights in a castle courtyard.",
+        "image": "https://picsum.photos/800/600?random=803"
+      },
+      {
+        "description": "The Renaissance art studios of Leonardo da Vinci.",
+        "image": "https://picsum.photos/800/600?random=804"
+      },
+      {
+        "description": "The Wild West with cowboys and saloons.",
+        "image": "https://picsum.photos/800/600?random=805"
+      },
+      {
+        "description": "The roaring twenties jazz age.",
+        "image": "https://picsum.photos/800/600?random=806"
+      },
+      {
+        "description": "Returning to the present with newfound wisdom.",
+        "image": "https://picsum.photos/800/600?random=807"
+      }
+    ],
+    "jobId": "job_time_machine_stu789vwx012",
+    "voiceOver": {
+      "sound": "https://www.soundjay.com/misc/sounds/clock-ticking-1.mp3",
+      "text": "Through the corridors of time, every moment holds infinite possibilities."
+    }
+  }
+]

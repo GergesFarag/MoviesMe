@@ -1,6 +1,5 @@
 import { Types } from "mongoose";
-import { jobStatus } from "./job.interface";
-import { Job, JobId } from "bull";
+import { JobId } from "bull";
 
 export interface IItem {
   _id: Types.ObjectId;

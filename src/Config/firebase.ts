@@ -30,10 +30,6 @@ if (!admin.apps.length) {
         ...(process.env.FIREBASE_PRIVATE_KEY_ID && { privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID })
       };
 
-      console.log('Initializing Firebase with project:', process.env.FIREBASE_PROJECT_ID);
-      console.log('Client email:', process.env.FIREBASE_CLIENT_EMAIL);
-      console.log('Private key ID:', process.env.FIREBASE_PRIVATE_KEY_ID || 'Not specified');
-
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: process.env.FIREBASE_PROJECT_ID
