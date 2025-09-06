@@ -18,6 +18,7 @@ import { IScene } from "../Interfaces/scene.interface";
 import { IStoryResponse } from "../Interfaces/storyResponse.interface";
 import { getStoryGenerationData } from "../Utils/Database/optimizedOps";
 import { ImageGenerationService } from "../Services/imageGeneration.service";
+import paginator from "../Utils/Pagination/paginator";
 
 const storyController = {
   getAllStories: catchError(
@@ -29,12 +30,26 @@ const storyController = {
       //     .status(200)
       //     .json({ message: "No stories found for this user", data: [] });
       // }
+      const { page = 1, limit = 5 } = req.query;
       const mockStories = Array.from(
         await import("../Mock/videoGenerationAbs.json")
       );
-      res
-        .status(200)
-        .json({ message: "Stories Fetched Successfully", data: mockStories });
+      const paginatedStories = paginator(
+        mockStories,
+        Number(page),
+        Number(limit)
+      );
+      res.status(200).json({
+        message: "Stories Fetched Successfully",
+        data: {
+          paginatedStories,
+          paginationData: {
+            total: mockStories.length,
+            page: Number(page),
+            limit: Number(limit),
+          },
+        },
+      });
     }
   ),
 
@@ -45,9 +60,7 @@ const storyController = {
       const mockStories = Array.from(
         await import("../Mock/videoGeneration.json")
       );
-      const filteredStory = mockStories.find(
-        (story) => story._id === storyID
-      );
+      const filteredStory = mockStories.find((story) => story._id === storyID);
       res
         .status(200)
         .json({ message: "Story Fetched Successfully", data: filteredStory });
@@ -117,9 +130,7 @@ const storyController = {
       // };
       res.status(201).json({
         message: "Story Added Successfully",
-        data: {
-          
-        },
+        data: {},
       });
     }
   ),
