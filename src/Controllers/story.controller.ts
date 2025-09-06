@@ -42,7 +42,7 @@ const storyController = {
       res.status(200).json({
         message: "Stories Fetched Successfully",
         data: {
-          stories: [...paginatedStories],
+          items: [...paginatedStories],
           paginationData: {
             total: mockStories.length,
             page: Number(page),
