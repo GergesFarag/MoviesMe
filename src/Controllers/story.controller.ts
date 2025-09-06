@@ -117,7 +117,9 @@ const storyController = {
       // };
       res.status(201).json({
         message: "Story Added Successfully",
-        data: "to be processed",
+        data: {
+          
+        },
       });
     }
   ),
