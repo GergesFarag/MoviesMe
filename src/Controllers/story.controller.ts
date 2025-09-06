@@ -30,7 +30,7 @@ const storyController = {
       //     .json({ message: "No stories found for this user", data: [] });
       // }
       const mockStories = Array.from(
-        await import("../Mock/videoGeneration.json")
+        await import("../Mock/videoGenerationAbs.json")
       );
       res
         .status(200)
@@ -43,7 +43,7 @@ const storyController = {
       const { id } = req.user!;
       const { storyID } = req.params;
       const mockStories = Array.from(
-        await import("../Mock/videoGenerationAbs.json")
+        await import("../Mock/videoGeneration.json")
       );
       const filteredStory = mockStories.find(
         (story) => story._id === storyID
