@@ -197,14 +197,14 @@ const userController = {
 
     const { storyId } = req.params;
     const mockStories = Array.from(
-      await import("../Mock/videoGeneration.json")
+      await import("../Mock/videoGenerationAbs.json")
     );
     const storyIndex = mockStories.findIndex((story) => story._id === storyId);
     if (storyIndex === -1) {
       throw new AppError("Story ID not found", 404);
     }
     mockStories.splice(storyIndex, 1);
-    res.status(200).json({ message: "Story Deleted Successfully" , data: mockStories[storyIndex] });
+    res.status(200).json({ message: "Story Deleted Successfully", data: mockStories });
   }),
 
   toggleFav: catchError(async (req, res) => {
