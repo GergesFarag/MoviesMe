@@ -174,16 +174,19 @@ const userController = {
       },
     });
   }),
-  
+
   //! MOCK
   getUserStory: catchError(async (req, res) => {
-    const { id } = req.user!;
+    // const { id } = req.user!;
     const { storyId } = req.params;
+    if (!storyId) {
+      throw new AppError("Story ID is required", 400);
+    }
     const mockStories = Array.from(
       await import("../Mock/videoGeneration.json")
     );
     const filteredStory = mockStories.find((story) => story._id === storyId);
-    if(!filteredStory) {
+    if (!filteredStory) {
       throw new AppError("Story ID not found", 404);
     }
     res
@@ -196,6 +199,9 @@ const userController = {
     // const { id } = req.user!
 
     const { storyId } = req.params;
+    if (!storyId) {
+      throw new AppError("Story ID is required", 400);
+    }
     const mockStories = Array.from(
       await import("../Mock/videoGenerationAbs.json")
     );
@@ -204,7 +210,12 @@ const userController = {
       throw new AppError("Story ID not found", 404);
     }
     mockStories.splice(storyIndex, 1);
-    res.status(200).json({ message: "Story Deleted Successfully", data: mockStories });
+    res
+      .status(200)
+      .json({
+        message: "Story Deleted Successfully",
+        data: mockStories[storyIndex],
+      });
   }),
 
   toggleFav: catchError(async (req, res) => {
