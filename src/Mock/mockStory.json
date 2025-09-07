@@ -1,0 +1,23 @@
+{
+  "title": "Quest for the Lost Artifact",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "narration": "A young adventurer steps into the dense, vibrant jungle, sunlight filtering through thick foliage.",
+      "imageDescription": "A lush jungle with towering trees, colorful flowers, and sunlight dappling the ground.",
+      "videoDescription": "Wide shot of the jungle as the camera pans slowly around the adventurer, who looks determined."
+    },
+    {
+      "sceneNumber": 2,
+      "narration": "Suddenly, a gigantic serpent slithers between the trees, eyes fixed on the adventurer.",
+      "imageDescription": "A massive green serpent with shimmering scales, coiled around a tree, ready to strike.",
+      "videoDescription": "Close-up of the serpent's eyes followed by a quick zoom out revealing its full length and the adventurer."
+    },
+    {
+      "sceneNumber": 3,
+      "narration": "A mysterious guide appears, cloaked in shadows, pointing towards a hidden temple in the distance.",
+      "imageDescription": "A shadowy figure in a tattered cloak, gesturing towards an ancient overgrown stone temple.",
+      "videoDescription": "Slow dolly move towards the guide, focusing on the temple as light breaks through the clouds."
+    }
+  ]
+}

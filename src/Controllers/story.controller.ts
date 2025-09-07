@@ -17,55 +17,10 @@ import { OpenAIService } from "../Services/openAi.service";
 import { IScene } from "../Interfaces/scene.interface";
 import { IStoryResponse } from "../Interfaces/storyResponse.interface";
 import { getStoryGenerationData } from "../Utils/Database/optimizedOps";
-import { ImageGenerationService } from "../Services/imageGeneration.service";
 import paginator from "../Utils/Pagination/paginator";
+import { ImageGenerationService } from "../Services/imageGeneration.service";
 
 const storyController = {
-  getAllStories: catchError(
-    async (req: Request, res: Response, next: NextFunction) => {
-      // const { id } = req.user!;
-      // const stories = await Story.where("userId").equals(id);
-      // if (!stories || stories.length === 0) {
-      //   res
-      //     .status(200)
-      //     .json({ message: "No stories found for this user", data: [] });
-      // }
-      const { page = 1, limit = 5 } = req.query;
-      const mockStories = Array.from(
-        await import("../Mock/videoGenerationAbs.json")
-      );
-      const paginatedStories = paginator(
-        mockStories,
-        Number(page),
-        Number(limit)
-      );
-      res.status(200).json({
-        message: "Stories Fetched Successfully",
-        data: {
-          items: [...paginatedStories],
-          paginationData: {
-            total: mockStories.length,
-            page: Number(page),
-            limit: Number(limit),
-          },
-        },
-      });
-    }
-  ),
-
-  getStory: catchError(
-    async (req: Request, res: Response, next: NextFunction) => {
-      const { id } = req.user!;
-      const { storyID } = req.params;
-      const mockStories = Array.from(
-        await import("../Mock/videoGeneration.json")
-      );
-      const filteredStory = mockStories.find((story) => story._id === storyID);
-      res
-        .status(200)
-        .json({ message: "Story Fetched Successfully", data: filteredStory });
-    }
-  ),
 
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
@@ -81,10 +36,10 @@ const storyController = {
         )) as UploadApiResponse;
         storyData.image = imageRes.secure_url;
       }
-      // const { location, style } = await getStoryGenerationData(
-      //   storyData.storyLocationId,
-      //   storyData.storyStyleId
-      // );
+      const { location, style } = await getStoryGenerationData(
+        storyData.storyLocationId,
+        storyData.storyStyleId
+      );
 
       // const sceneDuration = storyData.storyDuration / 5;
       // const openAIService = new OpenAIService(
@@ -96,18 +51,48 @@ const storyController = {
       //   storyData.voiceOver ? false : true
       // );
       // const story: IStoryResponse = await openAIService.generateScenes(prompt);
+      const story = await import("../Mock/mockStory.json");
+      
+      // const firstScene = story.scenes[0];
+      const voiceOver =
+      "https://res.cloudinary.com/dggkd3bfz/video/upload/v1757201839/ux7a1yrdoczcazvxpkx9.mp3";
+
+      const sceneImage =
+        "https://d1q70pf5vjeyhc.cloudfront.net/predictions/2dbb12391d4b4c72b66e521b7574aedd/1.png";
+
+        const video = "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ed00bf8ef96141818af54fd6d09db599/1.mp4";
+      
+        const videoGenerationService = new VideoGenerationService();
+        // const result = await videoGenerationService.composeSoundWithVideo(
+        //   video,
+        //   voiceOver
+        // );
+        const result = await videoGenerationService.mergeScenes(
+          [
+            "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ed00bf8ef96141818af54fd6d09db599/1.mp4",
+            "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ed00bf8ef96141818af54fd6d09db599/1.mp4",
+            "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ed00bf8ef96141818af54fd6d09db599/1.mp4",
+          ],
+        );
+        console.log(result);
+
+
+
+
+
 
       // const voiceGenerationService = new VoiceGenerationService();
+
       // const voiceOver = await voiceGenerationService.generateVoiceOver({
       //   voiceGender: storyData.voiceOver?.voiceGender as genderType,
-      //   voiceOverLyrics: story.scenes[0].narration as string,
+      //   voiceOverLyrics: firstScene.narration as string,
       //   voiceLanguage: storyData.voiceOver?.voiceLanguage as string,
       // });
 
       // const imageGenerationService = new ImageGenerationService();
       // const resultURL: string =
       //   await imageGenerationService.generateImageFromDescription(
-      //     story.scenes[0].imageDescription
+      //     firstScene.imageDescription
       //   );
 
       // await imageGenerationService.generateImageFromDescription(
@@ -118,8 +103,8 @@ const storyController = {
 
       // const videoURL =
       //   await videoGenerationService.generateVideoFromDescription(
-      //     story.scenes[0].videoDescription,
-      //     resultURL,
+      //     firstScene.narration,
+      //     sceneImage,
       //     5
       //   );
       // const testDataToSent = {
@@ -128,9 +113,14 @@ const storyController = {
       //   voiceUrl: voiceOver,
       //   videoUrl: videoURL,
       // };
+
       res.status(201).json({
         message: "Story Added Successfully",
-        data: {},
+        data: {
+          image: sceneImage,
+          voice: voiceOver,
+          video: video,
+        },
       });
     }
   ),

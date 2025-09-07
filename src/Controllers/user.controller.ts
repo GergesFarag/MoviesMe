@@ -6,10 +6,7 @@ import {
 import User from "../Models/user.model";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
-import {
-  ModelType,
-  modelTypeMapper
-} from "../Utils/Format/filterModelType";
+import { ModelType, modelTypeMapper } from "../Utils/Format/filterModelType";
 import paginator from "../Utils/Pagination/paginator";
 import Job from "../Models/job.model";
 import { UploadApiResponse } from "cloudinary";
@@ -29,7 +26,9 @@ const fieldsToSelect: UserProfileResponseDataKeys[] = [
 
 const userController = {
   getProfile: catchError(async (req, res) => {
-    const user = await User.findById(req.user!.id).select(fieldsToSelect).select("-items");
+    const user = await User.findById(req.user!.id)
+      .select(fieldsToSelect)
+      .select("-items");
     res.status(200).json({
       message: "User profile retrieved successfully",
       data: user,
@@ -108,20 +107,21 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
-    const userItems = user.items?.sort((a, b) => {
-      let aTime: number;
-      let bTime: number;
+    const userItems =
+      user.items?.sort((a, b) => {
+        let aTime: number;
+        let bTime: number;
 
-      if (a.createdAt && b.createdAt) {
-        aTime = new Date(a.createdAt).getTime();
-        bTime = new Date(b.createdAt).getTime();
-      } else {
-        aTime = a._id!.getTimestamp().getTime();
-        bTime = b._id!.getTimestamp().getTime();
-      }
+        if (a.createdAt && b.createdAt) {
+          aTime = new Date(a.createdAt).getTime();
+          bTime = new Date(b.createdAt).getTime();
+        } else {
+          aTime = a._id!.getTimestamp().getTime();
+          bTime = b._id!.getTimestamp().getTime();
+        }
 
-      return sortOrder === -1 ? bTime - aTime : aTime - bTime;
-    }) || [];
+        return sortOrder === -1 ? bTime - aTime : aTime - bTime;
+      }) || [];
     let userLib: IItem[] = userItems;
     let paginatedItems: IItem[] = [];
     if (userItems) {
@@ -151,6 +151,62 @@ const userController = {
     });
   }),
 
+  //! MOCK
+  getUserStoriesLibrary: catchError(async (req, res) => {
+    const { page = 1, limit = 5 } = req.query;
+    const mockStories = Array.from(
+      await import("../Mock/videoGenerationAbs.json")
+    );
+    const paginatedStories = paginator(
+      mockStories,
+      Number(page),
+      Number(limit)
+    );
+    res.status(200).json({
+      message: "Stories Fetched Successfully",
+      data: {
+        items: [...paginatedStories],
+        paginationData: {
+          total: mockStories.length,
+          page: Number(page),
+          limit: Number(limit),
+        },
+      },
+    });
+  }),
+  
+  //! MOCK
+  getUserStory: catchError(async (req, res) => {
+    const { id } = req.user!;
+    const { storyId } = req.params;
+    const mockStories = Array.from(
+      await import("../Mock/videoGeneration.json")
+    );
+    const filteredStory = mockStories.find((story) => story._id === storyId);
+    if(!filteredStory) {
+      throw new AppError("Story ID not found", 404);
+    }
+    res
+      .status(200)
+      .json({ message: "Story Fetched Successfully", data: filteredStory });
+  }),
+
+  //! MOCK
+  deleteUserStory: catchError(async (req, res) => {
+    // const { id } = req.user!
+
+    const { storyId } = req.params;
+    const mockStories = Array.from(
+      await import("../Mock/videoGeneration.json")
+    );
+    const storyIndex = mockStories.findIndex((story) => story._id === storyId);
+    if (storyIndex === -1) {
+      throw new AppError("Story ID not found", 404);
+    }
+    mockStories.splice(storyIndex, 1);
+    res.status(200).json({ message: "Story Deleted Successfully" , data: mockStories[storyIndex] });
+  }),
+
   toggleFav: catchError(async (req, res) => {
     const userId = req.user!.id;
     const itemId = req.body.itemId;
@@ -160,11 +216,11 @@ const userController = {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       throw new AppError("User not found", 404);
     }
-    const itemIds = user?.items?.map(item => item._id!.toString());
+    const itemIds = user?.items?.map((item) => item._id!.toString());
     if (!itemIds!.includes(itemId)) {
       throw new AppError("Item not found", 404);
     }
@@ -205,7 +261,7 @@ const userController = {
     res.status(HTTP_STATUS_CODE.OK).json({
       message: "User item deleted successfully",
       data: {
-        item: ItemDTO.toDTO(item)
+        item: ItemDTO.toDTO(item),
       },
     });
   }),
@@ -225,7 +281,7 @@ const userController = {
         notifications,
       },
     });
-  })
+  }),
 };
 
 export default userController;
