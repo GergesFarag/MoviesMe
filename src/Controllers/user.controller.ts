@@ -153,12 +153,21 @@ const userController = {
 
   //! MOCK
   getUserStoriesLibrary: catchError(async (req, res) => {
-    const { page = 1, limit = 5 } = req.query;
+    const { page = 1, limit = 5 , isFav , status } = req.query;
     const mockStories = Array.from(
       await import("../Mock/videoGenerationAbs.json")
     );
+    let filteredStories = mockStories;
+    if(isFav !== undefined){
+      filteredStories = filteredStories.filter(story => String(story.isFav) === isFav as string);
+      console.log("GONE");
+      console.log("filteredStories", filteredStories);
+    }
+    if(status && status !== "all"){
+      filteredStories = filteredStories.filter(story => story.status === status);
+    }
     const paginatedStories = paginator(
-      mockStories,
+      filteredStories,
       Number(page),
       Number(limit)
     );
