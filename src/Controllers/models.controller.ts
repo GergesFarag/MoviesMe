@@ -196,7 +196,7 @@ const modelsController = {
         paginationData: {
           page: Number(page),
           limit: Number(limit),
-          total: await Model.countDocuments({ isAITool: true }),
+          total: await Model.countDocuments({ isAI3DTool: true }),
         },
       },
     });
