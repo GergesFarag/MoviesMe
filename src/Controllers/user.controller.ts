@@ -12,6 +12,7 @@ import Job from "../Models/job.model";
 import { UploadApiResponse } from "cloudinary";
 import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
 import { ItemDTO } from "../DTOs/item.dto";
+import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types/custom";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -78,14 +79,13 @@ const userController = {
 
   getUserLibrary: catchError(async (req, res) => {
     const userId = req.user!.id;
-    const modelType = req.query.modelType as string;
-    const limit = req.query.limit
-      ? parseInt(req.query.limit as string, 10)
-      : 20;
-    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-    const status = req.query.status as string;
-    const isFav = req.query.isFav;
-    const sortBy = (req.query.sortBy as string) || "newest";
+    const query: TUserLibraryQuery = req.query;
+    const modelType = query.modelType;
+    const limit = query.limit ? parseInt(query.limit.toString(), 10) : 20;
+    const page = query.page ? parseInt(query.page.toString(), 10) : 1;
+    const status = query.status;
+    const isFav = query.isFav;
+    const sortBy: TSort = query.sortBy || "newest";
     const sortOrder = sortBy === "oldest" ? 1 : -1;
 
     if (isNaN(page) || page <= 0) {
@@ -153,7 +153,7 @@ const userController = {
 
   //! MOCK
   getUserStoriesLibrary: catchError(async (req, res) => {
-    const { page = 1, limit = 5 , isFav , status } = req.query;
+    const { page = 1, limit = 5 , isFav , status }: TPaginationQuery & { isFav?: string; status?: string } = req.query;
     const mockStories = Array.from(
       await import("../Mock/videoGenerationAbs.json")
     );

@@ -1,30 +1,38 @@
 import Model from "../Models/aiModel.model";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
-import { taskQueue } from "../Queues/model.queue";
 import User from "../Models/user.model";
-import Job from "../Models/job.model";
 import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
 import { processModelJobAsync } from "../Services/applyModel.service";
-import { getRedisMemoryInfo } from "../Utils/Cache/redisCleanup";
+import { Sorting } from "../Utils/Sorting/sorting";
+import paginator from "../Utils/Pagination/paginator";
+import { TModelFetchQuery } from "../types/custom";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+    }: TModelFetchQuery = req.query;
     const models = await Model.find({
       isVideoEffect: true,
-    })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    }).select("-__v");
+
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
+
     if (!models) {
       throw new AppError("No models found", 404);
     }
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models: models,
+        models: paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -35,22 +43,32 @@ const modelsController = {
       },
     });
   }),
+
   getImageModels: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+    }: TModelFetchQuery = req.query;
     const models = await Model.find({
       isImageEffect: true,
-    })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    }).select("-__v");
+
     if (!models) {
       throw new AppError("No models found", 404);
     }
+
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
+
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models,
+        paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -61,20 +79,27 @@ const modelsController = {
       },
     });
   }),
+
   getTrendingModels: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
-    const models = await Model.find({ isTrending: true })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+    }: TModelFetchQuery = req.query;
+    const models = await Model.find({ isTrending: true }).select("-__v");
     if (!models) {
       throw new AppError("No models found", 404);
     }
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models,
+        models: paginatedModels,
         paginationData: {
           page,
           limit,
@@ -83,20 +108,29 @@ const modelsController = {
       },
     });
   }),
+
   getCharacterEffects: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
-    const models = await Model.find({ isCharacterEffect: true })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+    }: TModelFetchQuery = req.query;
+    const models = await Model.find({ isCharacterEffect: true }).select("-__v");
+
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
+
     if (!models) {
       throw new AppError("No models found", 404);
     }
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models,
+        paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -105,20 +139,29 @@ const modelsController = {
       },
     });
   }),
+
   getAITools: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
-    const models = await Model.find({ isAITool: true })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+    }: TModelFetchQuery = req.query;
+    const models = await Model.find({ isAITool: true }).select("-__v");
     if (!models) {
       throw new AppError("No models found", 404);
     }
+
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
+
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models,
+        paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -127,19 +170,28 @@ const modelsController = {
       },
     });
   }),
+
   getAI3DTools: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
-    const models = await Model.find({ isAI3DTool: true })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+    }: TModelFetchQuery = req.query;
+    const models = await Model.find({ isAI3DTool: true }).select("-__v");
+
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
+
     if (!models) {
       throw new AppError("No models found", 404);
     }
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
+      paginatedModels: {
         models,
         paginationData: {
           page: Number(page),
@@ -149,20 +201,29 @@ const modelsController = {
       },
     });
   }),
+
   getMarketingTools: catchError(async (req, res) => {
-    const { limit = 5, page = 1 }: { limit?: number; page?: number } =
-      req.query;
-    const models = await Model.find({ isMarketingTool: true })
-      .select("-__v")
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+    }: TModelFetchQuery = req.query;
+    const models = await Model.find({ isMarketingTool: true }).select("-__v");
+
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
+
     if (!models) {
       throw new AppError("No models found", 404);
     }
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models,
+        paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -171,6 +232,7 @@ const modelsController = {
       },
     });
   }),
+
   addModel: catchError(async (req, res) => {
     const newModel = new Model(req.body);
     await newModel.save();
@@ -178,8 +240,12 @@ const modelsController = {
       .status(201)
       .json({ message: "Model added successfully", data: newModel });
   }),
+
   deleteModel: catchError(async (req, res) => {
     const { id } = req.params;
+    if (!id) {
+      throw new AppError("Model ID is required", 400);
+    }
     const deletedModel = await Model.findByIdAndDelete(id);
     if (!deletedModel) {
       throw new AppError("Model not found", 404);
@@ -188,6 +254,7 @@ const modelsController = {
       .status(200)
       .json({ message: "Model deleted successfully", data: deletedModel });
   }),
+  
   updateModel: catchError(async (req, res) => {
     const { id } = req.params;
     const existingModel = await Model.findById(id);
@@ -230,7 +297,7 @@ const modelsController = {
       jobId: jobId,
       status: "accepted",
     });
-  
+
     try {
       const result = await processModelJobAsync({
         user,
@@ -251,34 +318,6 @@ const modelsController = {
     } catch (error) {
       console.error(`Unexpected error in model processing:`, error);
     }
-  }),
-
-  getJobStatus: catchError(async (req, res) => {
-    const { id } = req.params;
-
-    const job = await taskQueue.getJob(id);
-
-    if (!job) {
-      throw new AppError("Job not found", 404);
-    }
-
-    const progress = job.progress();
-    const result = job.returnvalue;
-    const failedReason = job.failedReason;
-    const customStatus = job.data.status || "unknown";
-    const customProgress = job.data.progress || progress;
-
-    res.json({
-      jobId: id,
-      status: customStatus,
-      progress: customProgress,
-      result: {
-        success: result ? true : false,
-        data: result,
-      },
-      failedReason,
-      timestamp: job.timestamp,
-    });
   }),
 };
 export default modelsController;

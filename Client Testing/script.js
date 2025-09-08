@@ -13,6 +13,7 @@
     projectId: "ttov-a9677",
     appId: "1:57747989938:web:e4af38b054fd30014130ab",
   };
+  
   let confirmationResult;
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);

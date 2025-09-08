@@ -5,10 +5,11 @@ import AppError from "../Utils/Errors/AppError";
 import { firebaseAdmin } from "../Config/firebase";
 import { FirebaseAppError } from "firebase-admin/app";
 import AudioModel from "../Models/audioModel.model";
+import { TPaginationQuery } from "../types/custom";
 
 const adminController = {
   getAllUsers: catchError(async (req: Request, res: Response) => {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10 }: TPaginationQuery = req.query;
     if (limit && isNaN(Number(limit))) {
       throw new AppError("Limit must be a number", 400);
     }

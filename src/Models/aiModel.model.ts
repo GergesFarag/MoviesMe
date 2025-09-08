@@ -18,6 +18,6 @@ const modelSchema = new mongoose.Schema<IAiModel>({
     isMarketingTool: { type: Boolean, default: false , select: false },
 })
 
-const Model = mongoose.model<IAiModel>("Model", modelSchema);
 
+const Model = mongoose.model<IAiModel>("Model", modelSchema);
 export default Model;

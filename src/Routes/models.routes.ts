@@ -10,14 +10,13 @@ modelsRouter.get("/aiTools", modelsController.getAITools);
 modelsRouter.get("/ai3dTools", modelsController.getAI3DTools);
 modelsRouter.get("/marketingTools", modelsController.getMarketingTools);
 modelsRouter.get("/trending", modelsController.getTrendingModels);
+modelsRouter.post("/", modelsController.addModel);
 modelsRouter.post(
   "/applyModel",
   authMiddle,
   upload.single("payload[image]"),
   modelsController.applyModel
 );
-modelsRouter.post("/", modelsController.addModel);
-modelsRouter.get("/jobStatus/:id", modelsController.getJobStatus);
 modelsRouter
   .route("/:id")
   .patch(modelsController.updateModel)
