@@ -13,6 +13,7 @@ import { UploadApiResponse } from "cloudinary";
 import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
 import { ItemDTO } from "../DTOs/item.dto";
 import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types/custom";
+import { Sorting } from "../Utils/Sorting/sorting";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -290,11 +291,12 @@ const userController = {
     const userId = req.user!.id;
 
     const user = await User.findById(userId);
+
     if (!user) {
       throw new AppError("User not found", 404);
     }
 
-    const notifications = user.notifications || [];
+    const notifications = Sorting.sortItems(user.notifications! , "newest") || [];
     res.status(200).json({
       message: "User notifications retrieved successfully",
       data: {
