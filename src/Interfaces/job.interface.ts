@@ -1,5 +1,4 @@
 import { ObjectId } from "mongoose";
-
 export type jobStatus = "pending" | "completed" | "failed";
 export interface IJob {
   jobId: string;

@@ -191,8 +191,8 @@ const modelsController = {
     }
     res.status(200).json({
       message: "Models retrieved successfully",
-      paginatedModels: {
-        models : paginatedModels,
+      data: {
+        models: paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
