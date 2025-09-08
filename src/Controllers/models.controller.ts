@@ -68,7 +68,7 @@ const modelsController = {
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        paginatedModels,
+        models: paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -130,7 +130,7 @@ const modelsController = {
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        paginatedModels,
+        models: paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -161,7 +161,7 @@ const modelsController = {
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        paginatedModels,
+        models: paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -192,7 +192,7 @@ const modelsController = {
     res.status(200).json({
       message: "Models retrieved successfully",
       paginatedModels: {
-        models,
+        models : paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -223,7 +223,7 @@ const modelsController = {
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        paginatedModels,
+        models: paginatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -254,7 +254,7 @@ const modelsController = {
       .status(200)
       .json({ message: "Model deleted successfully", data: deletedModel });
   }),
-  
+
   updateModel: catchError(async (req, res) => {
     const { id } = req.params;
     const existingModel = await Model.findById(id);
