@@ -6,7 +6,6 @@ const baseURL = "https://api.wavespeed.ai/api/v3";
 export class ImageGenerationService {
   async generateImageFromDescription(
     imageDescription: string,
-    refImageUrl?: string
   ): Promise<string> {
     let url = `${baseURL}/google/nano-banana/text-to-image`;
     const headers = {
@@ -19,11 +18,21 @@ export class ImageGenerationService {
       output_format: "png",
       prompt: imageDescription,
     };
-    if (refImageUrl) {
-      Object.assign(payload, { image: refImageUrl });
-      url = `${baseURL}/google/nano-banana/edit`;
-    }
+
     const resultUrl = await wavespeedBase(url, headers, payload);
     return resultUrl;
+  }
+
+  async generateImagesForScenes(scenes: IScene[]): Promise<string[]> {
+    const imageUrls: string[] = [];
+    for (let i = 0; i < scenes.length; i++) {
+      const scene = scenes[i];
+      const imageUrl = await this.generateImageFromDescription(
+        scene.imageDescription,
+      );
+      imageUrls.push(imageUrl);
+    }
+    
+    return imageUrls;
   }
 }

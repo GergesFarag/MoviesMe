@@ -1,6 +1,6 @@
 import { model, Schema, Types } from "mongoose";
 import { IUser } from "../Interfaces/user.interface";
-import itemSchema from "./item.model";
+import effectItemSchema from "./effectItem.model";
 import notificationSchema from "./notification.model";
 
 const userSchema = new Schema<IUser>({
@@ -20,12 +20,12 @@ const userSchema = new Schema<IUser>({
   dob: { type: Date, default: null, select: true },
   isMale: { type: Boolean, default: null, select: true },
   profilePicture: { type: String, default: null, select: true },
-  items: {
-    type: [itemSchema],
+  effectsLib: {
+    type: [effectItemSchema],
     default: [],
   },
+  storiesLib: [{ type: Schema.Types.ObjectId, ref: "Story" }],
   isActive: { type: Boolean, default: true },
-  stories: [{ type: Schema.Types.ObjectId, ref: "Story" }],
   isAdmin: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },

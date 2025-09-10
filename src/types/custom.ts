@@ -4,10 +4,12 @@ export type TModelFetchQuery = {
   page?: number;
   sortBy?: TSort;
 };
+
 export type TPaginationQuery = {
   limit?: number;
   page?: number;
 };
+
 export type TUserLibraryQuery = TPaginationQuery & {
   modelType?: string;
   status?: string;

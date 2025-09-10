@@ -38,14 +38,17 @@ export const wavespeedBase = async (
             console.error("Task failed:", data.error);
             return null;
           } else {
-            console.log("Task still processing. Status:", status);
+            // Only log every 10th check to reduce spam
+            if (Math.random() < 0.1) {
+              console.log("Task still processing. Status:", status);
+            }
           }
         } else {
           console.error("Error:", response.status, JSON.stringify(result));
           break;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 0.1 * 1000));
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Increased to 2 seconds
       }
     } else {
       console.error(`Error: ${response.status}, ${await response.text()}`);

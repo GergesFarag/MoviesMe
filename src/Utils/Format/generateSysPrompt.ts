@@ -39,9 +39,13 @@ REQUIRED RESPONSE FORMAT (valid JSON only):
   "scenes": [
     {
       "sceneNumber": 1,
-      ${doNarration && `"narration" : "Narration text for scene 1"  !!MAKE SURE TO MAKE IT FIT ON 5 SECONDS!!`}
+      ${
+        doNarration &&
+        `"narration" : "Narration text for scene 1"  !!MAKE SURE TO MAKE IT FIT ON 5 SECONDS!!`
+      }
       "imageDescription": "Visual description for AI generation",
-      "videoDescription": "Camera and motion description"
+      "videoDescription": "Camera and motion description",
+      "sceneDescription": "Detailed scene description for context"
     }
   ]
 }

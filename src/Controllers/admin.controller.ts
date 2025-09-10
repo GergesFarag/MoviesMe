@@ -6,6 +6,7 @@ import { firebaseAdmin } from "../Config/firebase";
 import { FirebaseAppError } from "firebase-admin/app";
 import AudioModel from "../Models/audioModel.model";
 import { TPaginationQuery } from "../types/custom";
+import paginator from "../Utils/Pagination/paginator";
 
 const adminController = {
   getAllUsers: catchError(async (req: Request, res: Response) => {
@@ -13,14 +14,12 @@ const adminController = {
     if (limit && isNaN(Number(limit))) {
       throw new AppError("Limit must be a number", 400);
     }
-    const users = await User.find()
-      .select("-password -__v")
-      .skip((Number(page) - 1) * Number(limit))
-      .limit(Number(limit));
+    const users = await User.find().select("-password -__v -items");
+    const paginatedUsers = paginator(users, Number(page), Number(limit));
     res.status(200).json({
       message: "Users retrieved successfully",
       data: {
-        users,
+        users: paginatedUsers,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -82,12 +81,16 @@ const adminController = {
 
   addModels: catchError(async (req: Request, res: Response) => {
     const audioModel = await AudioModel.create(req.body);
-    res.status(201).json({ message: "Audio model added successfully", data: audioModel });
+    res
+      .status(201)
+      .json({ message: "Audio model added successfully", data: audioModel });
   }),
 
   getAllModels: catchError(async (req: Request, res: Response) => {
     const models = await AudioModel.find();
-    res.status(200).json({ message: "Audio models retrieved successfully", data: models });
-  })
+    res
+      .status(200)
+      .json({ message: "Audio models retrieved successfully", data: models });
+  }),
 };
 export default adminController;

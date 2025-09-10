@@ -15,7 +15,7 @@ export class VoiceGenerationService {
     try {
       this.client = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
     } catch (error) {
-      console.log("err" , error);
+      console.log("err", error);
       throw new AppError(
         "ElevenLabs Client initialization failed",
         HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
@@ -23,17 +23,28 @@ export class VoiceGenerationService {
     }
   }
 
-  async generateVoiceOver(data: IStoryRequest["voiceOver"]): Promise<string> {
+  async generateVoiceOver(
+    data: IStoryRequest["voiceOver"],
+    narration?: string
+  ): Promise<string> {
     let voiceId: string | null = null;
     if (data?.voiceGender) {
       voiceId = await getVoiceId(data!.voiceGender);
       if (!voiceId)
         throw new AppError("No voiceId found", HTTP_STATUS_CODE.NOT_FOUND);
     }
+    if (!data?.voiceOverLyrics && !narration) {
+      throw new AppError(
+        "No voiceOverLyrics or narration provided",
+        HTTP_STATUS_CODE.BAD_REQUEST
+      );
+    }
+    if (!data?.voiceOverLyrics) data!.voiceOverLyrics = narration as string;
+    console.log(data?.voiceGender, data?.voiceOverLyrics);
     const audio = await this.client.textToSpeech.convert(
       voiceId || "CwhRBWXzGAHq8TQ4Fs17",
       {
-        text: data?.voiceOverLyrics as string,
+        text: data!.voiceOverLyrics,
         modelId: "eleven_multilingual_v2",
         outputFormat: "mp3_44100_128",
       }

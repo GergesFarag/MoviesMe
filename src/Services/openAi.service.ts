@@ -8,7 +8,7 @@ export class OpenAIService {
   private SYSTEM_PROMPT: string;
 
   constructor(
-    scenesNumber: number,
+    numOfScenes: number,
     storyTitle?: string,
     storyStyle?: string,
     storyGenere?: string,
@@ -17,7 +17,7 @@ export class OpenAIService {
   ) {
     this.client = new OpenAI({ apiKey: OPENAI_API_KEY });
     this.SYSTEM_PROMPT = generateSysPrompt(
-      scenesNumber,
+      numOfScenes,
       storyTitle,
       storyStyle,
       storyGenere,
@@ -52,8 +52,6 @@ export class OpenAIService {
         ],
         max_output_tokens: 2000,
       });
-      console.log("JSON RESPONSE: ", response.output_text);
-
       let cleanResponse = response.output_text.trim();
       
       // Check if response appears to be truncated

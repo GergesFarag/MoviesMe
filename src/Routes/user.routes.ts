@@ -13,6 +13,7 @@ userRouter
     userController.updateProfile
   );
   userRouter.route("/fav").post(authMiddle, userController.toggleFav);
+  userRouter.route("/story/fav").post(authMiddle, userController.toggleStoryFav);
   
   userRouter
     .route("/notifications")
@@ -27,7 +28,7 @@ userRouter
 
 userRouter
   .route("/lib/stories/:storyId")
-  .get(userController.getUserStory)
-  .delete(userController.deleteUserStory);
+  .get(authMiddle, userController.getUserStory)
+  .delete(authMiddle, userController.deleteUserStory);
 
 export default userRouter;

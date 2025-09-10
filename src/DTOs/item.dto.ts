@@ -1,4 +1,4 @@
-import { IItem } from "../Interfaces/item.interface";
+import { IEffectItem } from "../Interfaces/effectItem.interface";
 import { reverseModelTypeMapper } from "../Utils/Format/filterModelType";
 export interface IItemDTO {
   id: string;
@@ -19,13 +19,13 @@ export interface INotificationItemDTO {
 }
 
 interface IItemMapper {
-  toDTO(item: IItem): IItemDTO | INotificationItemDTO;
+  toDTO(item: IEffectItem): IItemDTO | INotificationItemDTO;
 }
 
 export class ItemDTO implements IItemMapper {
-  private item: IItem;
+  private item: IEffectItem;
 
-  constructor(item: IItem) {
+  constructor(item: IEffectItem) {
     this.item = item;
   }
 
@@ -50,17 +50,17 @@ export class ItemDTO implements IItemMapper {
     };
   }
 
-  public static toDTO(item: IItem): IItemDTO {
+  public static toDTO(item: IEffectItem): IItemDTO {
     return new ItemDTO(item).toDTO();
   }
 
-  public static toListDTO(items: IItem[]): IItemDTO[] {
+  public static toListDTO(items: IEffectItem[]): IItemDTO[] {
     return items.map((item) => new ItemDTO(item).toDTO());
   }
 }
 
 export class NotificationItemDTO implements IItemMapper {
-  toDTO(item: IItem): INotificationItemDTO {
+  toDTO(item: IEffectItem): INotificationItemDTO {
     return {
       id: item._id!.toString(),
       url: String(item.URL),
@@ -80,11 +80,11 @@ export class NotificationItemDTO implements IItemMapper {
       createdAt: item.createdAt?.toISOString() || new Date().toISOString(),
     };
   }
-  public static toNotificationDTO(item: IItem): INotificationItemDTO {
+  public static toNotificationDTO(item: IEffectItem): INotificationItemDTO {
     return new NotificationItemDTO().toDTO(item);
   }
 
-  public static toNotificationListDTO(items: IItem[]): INotificationItemDTO[] {
+  public static toNotificationListDTO(items: IEffectItem[]): INotificationItemDTO[] {
     return items.map((item) => new NotificationItemDTO().toDTO(item));
   }
 }

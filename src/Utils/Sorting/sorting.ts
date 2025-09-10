@@ -1,6 +1,7 @@
 import { TSort } from "../../types/custom";
 
 export class Sorting{
+    
     public static sortItems<T>(items: T[], sortBy: TSort): T[] {
         if (sortBy === "newest" || sortBy === "oldest") {
             return this.sortByDate(items, sortBy);

@@ -13,7 +13,7 @@ import Queue from "bull";
 import { updateJobProgress } from "../Utils/Model/model.utils";
 import { sendWebsocket } from "../Sockets/socket";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
-import { IItem } from "../Interfaces/item.interface";
+import { IEffectItem } from "../Interfaces/effectItem.interface";
 import { NotificationItemDTO } from "../DTOs/item.dto";
 import { getItemFromUser } from "../Utils/Database/optimizedOps";
 const redisPort = (process.env.REDIS_PORT as string)
@@ -69,17 +69,17 @@ taskQueue.process(async (job) => {
       duration: modelData.isVideo ? 0 : 0,
     };
     sendWebsocket(getIO(), "job:completed", dataToBeSent, `user:${userId}`);
-    let notificationData = {
-      URL: data.image,
-      modelType: modelData.name,
-      modelName: modelData.name,
-      isVideo: modelData.isVideo,
-      isFav: false,
-      status: "completed",
-      modelThumbnail: modelData.thumbnail,
-      jobId: job.id as string,
-      duration: modelData.isVideo ? 0 : 0,
-    };
+    // let notificationData = {
+    //   URL: data.image,
+    //   modelType: modelData.name,
+    //   modelName: modelData.name,
+    //   isVideo: modelData.isVideo,
+    //   isFav: false,
+    //   status: "completed",
+    //   modelThumbnail: modelData.thumbnail,
+    //   jobId: job.id as string,
+    //   duration: modelData.isVideo ? 0 : 0,
+    // };
     return dataToBeSent;
   } catch (error) {
     console.error(`Job ${job.id} failed:`, error);
@@ -99,7 +99,7 @@ taskQueue.on("completed", async (job, result: any) => {
     const user = await User.findById(result.userId);
     if (!user) return;
 
-    const updatedItems = user?.items?.map((item) => {
+    const updatedItems = user?.effectsLib?.map((item) => {
       if (item.jobId === result.jobId) {
         const modelType =
           modelTypeMapper[result.modelType as keyof typeof modelTypeMapper] ||
@@ -123,7 +123,7 @@ taskQueue.on("completed", async (job, result: any) => {
       return item;
     });
 
-    user.items = updatedItems;
+    user.effectsLib = updatedItems;
     await user.save();
     const item = await getItemFromUser(user.id, result.jobId);
     if (item) {
@@ -166,7 +166,7 @@ taskQueue.on("failed", async (job, err) => {
 
     const user = await User.findById(jobUpdated?.userId);
     if (user) {
-      const item = user.items?.find((item) => item.jobId === job.opts.jobId);
+      const item = user.effectsLib?.find((item) => item.jobId === job.opts.jobId);
       if (item) {
         item.status = "failed";
         item.updatedAt = new Date();

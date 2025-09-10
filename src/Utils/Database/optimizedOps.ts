@@ -1,10 +1,13 @@
 import User from "../../Models/user.model";
 import Job from "../../Models/job.model";
-import { IItem } from "../../Interfaces/item.interface";
+import Story from "../../Models/story.model";
+import { IEffectItem } from "../../Interfaces/effectItem.interface";
+import { IStory } from "../../Interfaces/story.interface";
 import GenerationInfo from "../../Models/generationInfo.model";
 import { appendFile } from "fs";
 import AppError, { HTTP_STATUS_CODE } from "../Errors/AppError";
 import { ObjectId } from "mongoose";
+import mongoose from "mongoose";
 import AudioModel from "../../Models/audioModel.model";
 import Model from "../../Models/aiModel.model";
 
@@ -42,7 +45,7 @@ export const createJobAndUpdateUser = async (
     userId,
     {
       $push: {
-        items: itemWithTimestamps,
+        effectsLib: itemWithTimestamps,
         jobs: { _id: createdJob._id, jobId: createdJob.jobId },
       },
     },
@@ -58,11 +61,11 @@ export const createJobAndUpdateUser = async (
 export const getItemFromUser = async (
   userId: string,
   jobId: string
-): Promise<IItem | null> => {
+): Promise<IEffectItem | null> => {
   const user = await User.findById(userId).lean();
   if (!user) return null;
 
-  const item = user.items?.find((item: IItem) => item.jobId === jobId);
+  const item = user.effectsLib?.find((item: IEffectItem) => item.jobId === jobId);
   return item || null;
 };
 
@@ -84,14 +87,286 @@ export const getModelCallApi = async (modelId: string): Promise<string|null> => 
   return model.wavespeedCall || null;
 };
 
-export const getStoryGenerationData = async (locationId?: string, styleId?: string) => {
+export const getLocationName = async (locationId?: string): Promise<string | undefined> => {
+  if (!locationId) return undefined;
   const generationData = await GenerationInfo.findOne().lean();
-  let location, style;
-  if(locationId){
-    location = generationData?.location.find((loc:any) => loc._id?.toString() === locationId)?.name;
+  return generationData?.location.find((loc: any) => 
+    loc._id?.toString() === locationId
+  )?.name;
+};
+
+export const getStyleName = async (styleId?: string): Promise<string | undefined> => {
+  if (!styleId) return undefined;
+  const generationData = await GenerationInfo.findOne().lean();
+  return generationData?.style.find((sty: any) => 
+    sty._id?.toString() === styleId
+  )?.name;
+};
+
+export const checkGenereExists = async (genere: string): Promise<boolean> => {
+  const generationData = await GenerationInfo.findOne().lean();
+  return generationData?.genres.includes(genere.toLowerCase()) || false;
+};
+
+export interface StoryCreationData {
+  userId: string;
+  title: string;
+  scenes: any[];
+  videoUrl: string;
+  duration: number;
+  genre?: string;
+  jobId: string;
+  location?: string;
+  prompt: string;
+  style: string;
+  thumbnail: string;
+  voiceOver?: {
+    sound: string;
+    text: string;
+  };
+}
+
+export const createStoryAndUpdateUser = async (
+  storyData: StoryCreationData
+): Promise<IStory> => {
+  // Create the story
+  const createdStory = await Story.create({
+    ...storyData,
+    status: "completed",
+    isFav: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  // Update user's storiesLib and jobs status
+  const user = await User.findByIdAndUpdate(
+    storyData.userId,
+    {
+      $push: {
+        storiesLib: createdStory._id,
+      },
+    },
+    {
+      new: false,
+      writeConcern: { w: 1 },
+    }
+  );
+
+  if (!user) {
+    throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
   }
-  if(styleId){
-    style = generationData?.style.find((sty:any) => sty._id?.toString() === styleId)?.name;
+
+  // Update job status to completed
+  await Job.findOneAndUpdate(
+    { jobId: storyData.jobId },
+    { 
+      status: "completed",
+      updatedAt: new Date()
+    }
+  );
+
+  return createdStory;
+};
+
+export const createInitialStoryAndUpdateUser = async (
+  userId: string,
+  jobId: string,
+  storyData: {
+    title: string;
+    prompt: string;
+    genre?: string;
+    location?: string;
+    style?: string;
+    duration: number;
+    thumbnail?: string;
   }
-  return { location, style };
+): Promise<IStory> => {
+  // Create the story with pending status and basic data
+  const createdStory = await Story.create({
+    userId,
+    jobId,
+    title: storyData.title || "Generating...",
+    prompt: storyData.prompt,
+    status: "pending",
+    isFav: false,
+    videoUrl: "", // Will be updated when job completes
+    duration: storyData.duration,
+    genre: storyData.genre || "",
+    location: storyData.location || "",
+    style: storyData.style || "",
+    thumbnail: storyData.thumbnail || "",
+    scenes: [], // Will be populated when job completes
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  // Update user's storiesLib immediately
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      $push: {
+        storiesLib: createdStory._id,
+      },
+    },
+    {
+      new: false,
+      writeConcern: { w: 1 },
+    }
+  );
+
+  if (!user) {
+    // If user update fails, remove the created story
+    await Story.findByIdAndDelete(createdStory._id);
+    throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+  }
+
+  return createdStory;
+};
+
+export const updateCompletedStory = async (
+  jobId: string,
+  updateData: {
+    videoUrl: string;
+    scenes: any[];
+    thumbnail?: string;
+    location?: string;
+    style?: string;
+    title?: string;
+    genre?: string;
+    voiceOver?: {
+      sound: string;
+      text: string;
+    };
+  }
+): Promise<IStory | null> => {
+  try {
+    // Validate required fields
+    if (!jobId) {
+      throw new AppError("Job ID is required for story update", HTTP_STATUS_CODE.BAD_REQUEST);
+    }
+    
+    if (!updateData.videoUrl) {
+      throw new AppError("Video URL is required for story completion", HTTP_STATUS_CODE.BAD_REQUEST);
+    }
+
+    console.log(`Updating story for jobId: ${jobId}`);
+    console.log("Update data:", updateData);
+
+    // Check if story exists first (don't restrict by status to handle race conditions)
+    const existingStory = await Story.findOne({ jobId });
+    if (!existingStory) {
+      console.error(`Story not found for jobId: ${jobId}`);
+      throw new AppError("Story not found", HTTP_STATUS_CODE.NOT_FOUND);
+    }
+
+    // If story is already completed, log and return it without error
+    if (existingStory.status === "completed") {
+      console.log(`Story with jobId: ${jobId} is already completed. Returning existing story.`);
+      
+      // Also ensure the job status is updated to completed if it's not already
+      await Job.findOneAndUpdate(
+        { jobId },
+        { 
+          status: "completed",
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+      
+      return existingStory;
+    }
+
+    // If story is failed, we can still update it to completed
+    if (existingStory.status === "failed") {
+      console.log(`Story with jobId: ${jobId} was marked as failed, but updating to completed.`);
+    }
+
+    // Update the existing story with completed data (allow updating from any status)
+    const updatedStory = await Story.findOneAndUpdate(
+      { jobId },
+      {
+        ...updateData,
+        status: "completed",
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    if (!updatedStory) {
+      throw new AppError("Failed to update story", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
+    }
+
+    console.log(`Story updated successfully: ${updatedStory._id}`);
+
+    // Update job status to completed
+    const jobUpdate = await Job.findOneAndUpdate(
+      { jobId },
+      { 
+        status: "completed",
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!jobUpdate) {
+      console.warn(`Job not found for jobId: ${jobId}, but story was updated successfully`);
+    } else {
+      console.log(`Job updated successfully: ${jobUpdate._id}`);
+    }
+
+    return updatedStory;
+  } catch (error) {
+    console.error("Error in updateCompletedStory:", error);
+    throw error;
+  }
+};
+
+export const createJobForStory = async (
+  userId: string,
+  jobId: string,
+  modelId?: string
+): Promise<void> => {
+  try {
+    console.log(`Creating job for story - userId: ${userId}, jobId: ${jobId}`);
+    
+    // Use a valid ObjectId for modelId - create a default one if not provided
+    const defaultModelId = new mongoose.Types.ObjectId();
+    
+    const createdJob = await Job.create({
+      jobId,
+      userId,
+      modelId: modelId ? new mongoose.Types.ObjectId(modelId) : defaultModelId,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    console.log(`Job created successfully: ${createdJob._id}`);
+
+    // Add job to user's jobs array
+    const userUpdate = await User.findByIdAndUpdate(
+      userId,
+      {
+        $push: {
+          jobs: { _id: createdJob._id, jobId: createdJob.jobId },
+        },
+      },
+      {
+        new: false,
+        writeConcern: { w: 1 },
+      }
+    );
+
+    if (!userUpdate) {
+      console.error(`Failed to update user jobs for userId: ${userId}`);
+      // Clean up the created job if user update fails
+      await Job.findByIdAndDelete(createdJob._id);
+      throw new AppError("Failed to update user with job", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
+    }
+
+    console.log(`User jobs updated successfully for userId: ${userId}`);
+  } catch (error) {
+    console.error("Error in createJobForStory:", error);
+    throw error;
+  }
 };

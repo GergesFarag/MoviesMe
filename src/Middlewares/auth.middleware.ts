@@ -18,7 +18,6 @@ export const firebaseAuth = catchError(
     }
 
     try {
-      // Add better error handling for Firebase token verification
       const decoded = await firebaseAdmin.auth().verifyIdToken(token);
       if (!decoded) {
         return next(new AppError("Invalid authentication token", HTTP_STATUS_CODE.UNAUTHORIZED));
@@ -29,7 +28,6 @@ export const firebaseAuth = catchError(
     } catch (error: any) {
       console.error("Firebase token verification error:", error);
       
-      // Handle specific Firebase errors
       if (error.code === 'auth/id-token-expired') {
         return next(new AppError("Authentication token has expired", HTTP_STATUS_CODE.UNAUTHORIZED));
       } else if (error.code === 'auth/invalid-id-token') {

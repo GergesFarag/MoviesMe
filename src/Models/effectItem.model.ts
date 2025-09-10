@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-const itemSchema = new mongoose.Schema(
+const effectItemSchema = new mongoose.Schema(
   {
     URL: {
       type: String,
@@ -60,4 +60,4 @@ const itemSchema = new mongoose.Schema(
     _id: true,
   }
 );
-export default itemSchema;
+export default effectItemSchema;

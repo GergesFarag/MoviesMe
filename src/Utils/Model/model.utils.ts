@@ -9,8 +9,8 @@ export const updateJobProgress = async (
   job: Bull.Job,
   progress: number,
   status: string,
-  io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
-  event: string,
+  io?: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
+  event?: string,
   additionalData: Record<string, any> = {}
 ) => {
   if (job) {
@@ -21,19 +21,21 @@ export const updateJobProgress = async (
       progress,
       ...additionalData,
     });
-    try {
-      const payload = {
-        jobId: job.id,
-        status,
-        progress,
-        ...additionalData,
-        timestamp: Date.now(),
-      };
-      sendWebsocket(io, event, payload, `user:${job.data.userId}`);
-      console.log("Sending Job Status: ", payload);
-    } catch (err) {
-      console.log("Error updating job progress:", err);
-      throw new AppError("Socket.io not initialized");
+    if (io && event) {
+      try {
+        const payload = {
+          jobId: job.id,
+          status,
+          progress,
+          ...additionalData,
+          timestamp: Date.now(),
+        };
+        sendWebsocket(io, event, payload, `user:${job.data.userId}`);
+        console.log("Sending Job Status: ", payload);
+      } catch (err) {
+        console.log("Error updating job progress:", err);
+        throw new AppError("Socket.io not initialized");
+      }
     }
   }
 };

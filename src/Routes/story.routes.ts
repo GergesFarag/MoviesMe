@@ -6,6 +6,7 @@ const storyRouter = Router();
 storyRouter
   .route("/")
   .post(authMiddle, imageUpload.single("image"), storyController.generateStory);
+  storyRouter.route("/:storyID").delete(authMiddle, storyController.deleteStory);
 storyRouter
   .route("/generationData")
   .get(storyController.getGenerationData)

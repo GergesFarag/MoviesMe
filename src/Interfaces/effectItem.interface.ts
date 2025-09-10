@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import { JobId } from "bull";
 
-export interface IItem {
+export interface IEffectItem {
   _id: Types.ObjectId;
   URL: string;
   modelType?: string;

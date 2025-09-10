@@ -290,7 +290,7 @@ const modelsController = {
     }
     const jobId = `${modelId}_${Date.now()}_${Math.random()
       .toString(36)
-      .substr(2, 9)}`;
+      .slice(2, 9)}`;
 
     res.status(202).json({
       message: "Model processing request accepted",

@@ -1,9 +1,10 @@
-import { IItem } from "../Interfaces/item.interface";
+import { IEffectItem } from "../Interfaces/effectItem.interface";
 import {
   userProfileResponse,
   UserProfileResponseDataKeys,
 } from "../Interfaces/response.interface";
 import User from "../Models/user.model";
+import Story from "../Models/story.model";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import { ModelType, modelTypeMapper } from "../Utils/Format/filterModelType";
@@ -12,8 +13,12 @@ import Job from "../Models/job.model";
 import { UploadApiResponse } from "cloudinary";
 import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
 import { ItemDTO } from "../DTOs/item.dto";
+import { IStoryDTO, StoryDTO } from "../DTOs/story.dto";
 import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types/custom";
 import { Sorting } from "../Utils/Sorting/sorting";
+import mongoose from "mongoose";
+import { IStory } from "../Interfaces/story.interface";
+import { totalmem } from "os";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -109,7 +114,7 @@ const userController = {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
     const userItems =
-      user.items?.sort((a, b) => {
+      user.effectsLib?.sort((a, b) => {
         let aTime: number;
         let bTime: number;
 
@@ -123,8 +128,8 @@ const userController = {
 
         return sortOrder === -1 ? bTime - aTime : aTime - bTime;
       }) || [];
-    let userLib: IItem[] = userItems;
-    let paginatedItems: IItem[] = [];
+    let userLib: IEffectItem[] = userItems;
+    let paginatedItems: IEffectItem[] = [];
     if (userItems) {
       userLib = userItems.filter((item: any) => {
         return (
@@ -152,32 +157,45 @@ const userController = {
     });
   }),
 
-  //! MOCK
   getUserStoriesLibrary: catchError(async (req, res) => {
-    const { page = 1, limit = 5 , isFav , status }: TPaginationQuery & { isFav?: string; status?: string } = req.query;
-    const mockStories = Array.from(
-      await import("../Mock/videoGenerationAbs.json")
-    );
-    let filteredStories = mockStories;
-    if(isFav !== undefined){
-      filteredStories = filteredStories.filter(story => String(story.isFav) === isFav as string);
-      console.log("GONE");
-      console.log("filteredStories", filteredStories);
+    const {
+      page = 1,
+      limit = 10,
+      isFav,
+      status,
+      sortBy = "newest",
+    }: TUserLibraryQuery = req.query;
+    const userId = req.user!.id;
+
+    let filterQuery: any = { userId };
+
+    if (isFav !== undefined) {
+      filterQuery.isFav = isFav === "true";
     }
-    if(status && status !== "all"){
-      filteredStories = filteredStories.filter(story => story.status === status);
+
+    if (status && status !== "all") {
+      filterQuery.status = status;
     }
+
+    const total = await Story.countDocuments(filterQuery);
+    const stories = await Story.find(filterQuery).lean();
+    const sortedStories = Sorting.sortItems(stories, sortBy);
     const paginatedStories = paginator(
-      filteredStories,
+      sortedStories,
       Number(page),
       Number(limit)
     );
+
+    const storiesDTO = paginatedStories.map((story: IStory) =>
+      StoryDTO.toAbstractDTO(story)
+    );
+    console.log("Stories", storiesDTO);
     res.status(200).json({
       message: "Stories Fetched Successfully",
       data: {
-        items: [...paginatedStories],
+        items: storiesDTO,
         paginationData: {
-          total: mockStories.length,
+          total,
           page: Number(page),
           limit: Number(limit),
         },
@@ -185,47 +203,66 @@ const userController = {
     });
   }),
 
-  //! MOCK
   getUserStory: catchError(async (req, res) => {
-    // const { id } = req.user!;
+    const userId = req.user!.id;
     const { storyId } = req.params;
+
     if (!storyId) {
       throw new AppError("Story ID is required", 400);
     }
-    const mockStories = Array.from(
-      await import("../Mock/videoGeneration.json")
-    );
-    const filteredStory = mockStories.find((story) => story._id === storyId);
-    if (!filteredStory) {
-      throw new AppError("Story ID not found", 404);
+
+    if (!mongoose.Types.ObjectId.isValid(storyId)) {
+      throw new AppError("Invalid story ID format", 400);
     }
-    res
-      .status(200)
-      .json({ message: "Story Fetched Successfully", data: filteredStory });
+
+    const story = await Story.findOne({
+      _id: storyId,
+      userId: userId,
+    }).lean();
+
+    if (!story) {
+      throw new AppError("Story not found", 404);
+    }
+
+    res.status(200).json({
+      message: "Story Fetched Successfully",
+      data: StoryDTO.toDTO(story as IStory),
+    });
   }),
 
-  //! MOCK
   deleteUserStory: catchError(async (req, res) => {
-    // const { id } = req.user!
-
+    const userId = req.user!.id;
     const { storyId } = req.params;
+
     if (!storyId) {
       throw new AppError("Story ID is required", 400);
     }
-    const mockStories = Array.from(
-      await import("../Mock/videoGenerationAbs.json")
-    );
-    const storyIndex = mockStories.findIndex((story) => story._id === storyId);
-    if (storyIndex === -1) {
-      throw new AppError("Story ID not found", 404);
+
+    if (!mongoose.Types.ObjectId.isValid(storyId)) {
+      throw new AppError("Invalid story ID format", 400);
     }
-    mockStories.splice(storyIndex, 1);
-    res
-      .status(200)
-      .json({
-        message: "Story Deleted Successfully",
-        data: mockStories[storyIndex],
-      });
+
+    const story = await Story.findOneAndDelete({
+      _id: storyId,
+      userId: userId,
+    });
+
+    if (!story) {
+      throw new AppError("Story not found", 404);
+    }
+
+    await User.findByIdAndUpdate(userId, { $pull: { storiesLib: storyId } });
+
+    await Job.findOneAndDelete({ jobId: story.jobId });
+
+    await User.findByIdAndUpdate(userId, {
+      $pull: { jobs: { jobId: story.jobId } },
+    });
+
+    res.status(200).json({
+      message: "Story Deleted Successfully",
+      data: StoryDTO.toDTO(story),
+    });
   }),
 
   toggleFav: catchError(async (req, res) => {
@@ -241,11 +278,11 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", 404);
     }
-    const itemIds = user?.items?.map((item) => item._id!.toString());
+    const itemIds = user?.effectsLib?.map((item) => item._id!.toString());
     if (!itemIds!.includes(itemId)) {
       throw new AppError("Item not found", 404);
     }
-    user.items?.map((item) => {
+    user.effectsLib?.map((item) => {
       if (item._id!.toString() === itemId) {
         item.isFav = !item.isFav;
       }
@@ -254,7 +291,40 @@ const userController = {
     res.status(HTTP_STATUS_CODE.OK).json({
       message: "User favorites updated successfully",
       data: {
-        userFavs: user.items?.filter((item) => item.isFav === true),
+        userFavs: user.effectsLib?.filter((item) => item.isFav === true),
+      },
+    });
+  }),
+
+  toggleStoryFav: catchError(async (req, res) => {
+    const userId = req.user!.id;
+    const { storyId } = req.body;
+
+    if (!storyId) {
+      throw new AppError("Story ID is required", 400);
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(storyId)) {
+      throw new AppError("Invalid story ID format", 400);
+    }
+
+    const story = await Story.findOne({
+      _id: storyId,
+      userId: userId,
+    });
+
+    if (!story) {
+      throw new AppError("Story not found", 404);
+    }
+
+    story.isFav = !story.isFav;
+    await story.save();
+
+    res.status(HTTP_STATUS_CODE.OK).json({
+      message: "Story favorite status updated successfully",
+      data: {
+        storyId: story._id,
+        isFav: story.isFav,
       },
     });
   }),
@@ -271,11 +341,15 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", 404);
     }
-    const item = user.items?.find((item) => item._id!.toString() === itemId);
+    const item = user.effectsLib?.find(
+      (item) => item._id!.toString() === itemId
+    );
     if (!item) {
       throw new AppError("Item not found", 404);
     }
-    user.items = user?.items?.filter((item) => item._id!.toString() !== itemId);
+    user.effectsLib = user?.effectsLib?.filter(
+      (item) => item._id!.toString() !== itemId
+    );
     user.jobs = user?.jobs?.filter((j) => j.jobId !== item.jobId);
     await Job.findOneAndDelete({ jobId: item.jobId });
     await user!.save();
@@ -296,7 +370,8 @@ const userController = {
       throw new AppError("User not found", 404);
     }
 
-    const notifications = Sorting.sortItems(user.notifications! , "newest") || [];
+    const notifications =
+      Sorting.sortItems(user.notifications!, "newest") || [];
     res.status(200).json({
       message: "User notifications retrieved successfully",
       data: {
