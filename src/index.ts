@@ -1,13 +1,24 @@
 import app from "./app";
 import connectDB from "./Config/db";
 import { getIO, initSocket } from "./Sockets/socket";
+import http from "http";
+
 const PORT = process.env.PORT_NUMBER || 3000;
+
 (async () => {
   await connectDB();
-  const server = app.listen(PORT, () => {
-    console.log(`Sever is running on : http://localhost:${PORT}/`);
-    initSocket(server);
+  
+  // Create HTTP server
+  const server = http.createServer(app);
+  
+  // Initialize socket.io
+  initSocket(server);
+  
+  // Start listening
+  server.listen(PORT, () => {
+    console.log(`Server is running on: http://localhost:${PORT}/`);
   });
+  
   process.on("unhandledRejection", (error) => {
     console.error("Unhandled Rejection:", error);
     server.close(() => {

@@ -12,6 +12,8 @@ import {
   cloudUploadVideo,
   deleteCloudinaryResource,
 } from "../Utils/APIs/cloudinary";
+import { StoryDTO } from "../DTOs/story.dto";
+
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -353,16 +355,16 @@ storyQueue.process(async (job) => {
 storyQueue.on("completed", (job, result) => {
   console.log(`Story job with ID ${job.id} has been completed.`);
   console.log("Result:", result);
-
   const io = getIO();
   if (job.data.userId) {
-    io.to(`user_${job.data.userId}`).emit("story:completed", {
+    const roomName = `user:${job.data.userId}`;
+    console.log(`📤 Sending completion notification to room: ${roomName}`);
+    io.to(roomName).emit("story:completed", {
       message: "Your story has been generated successfully!",
-      storyId: result.storyId,
+      story: StoryDTO.toDTO(result),
       jobId: job.opts.jobId,
     });
   }
-
   job.remove();
 });
 
@@ -374,7 +376,7 @@ storyQueue.on("failed", async (job, err) => {
   if (job?.opts?.jobId) {
     try {
       await Job.findOneAndUpdate(
-        { jobId: job.opts.jobId as string },
+        { jobId: job.opts.jobId as string }, 
         {
           status: "failed",
           updatedAt: new Date(),
@@ -395,7 +397,9 @@ storyQueue.on("failed", async (job, err) => {
   // Send notification to user about story failure
   const io = getIO();
   if (job?.data?.userId) {
-    io.to(`user_${job.data.userId}`).emit("story:failed", {
+    const roomName = `user:${job.data.userId}`;
+    console.log(`📤 Sending failure notification to room: ${roomName}`);
+    io.to(roomName).emit("story:failed", {
       message: "Story generation failed. Please try again.",
       jobId: job.opts?.jobId,
       error: err.message,

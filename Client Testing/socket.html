@@ -416,37 +416,82 @@
           socket = null;
         }
 
-        // Build options
-        const opts = { transports: ["websocket"] };
+        // Build options with fallback transports
+        const opts = { 
+          transports: ["websocket", "polling"],
+          timeout: 20000,
+          forceNew: true,
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5,
+          maxReconnectionAttempts: 5
+        };
         if (token) opts.auth = { token };
+
+        addLog("client:info", { message: "Attempting to connect...", url });
+        setStatus("warn", "Connecting...");
 
         socket = io(url, opts);
 
         socket.on("connect", () => {
           setStatus("ok", `Connected: ${socket.id}`);
-          addLog("connect", { id: socket.id, url });
+          addLog("connect", { id: socket.id, url, transport: socket.io.engine.transport.name });
           socket.emit("join:user", userId);
           addLog("client:join", { room: `user:${userId}` });
         });
 
         socket.on("connect_error", (err) => {
           setStatus("err", "Connect error");
-          addLog("connect_error", { message: err?.message, data: err?.data });
+          addLog("connect_error", { 
+            message: err?.message || "Unknown connection error", 
+            data: err?.data,
+            type: err?.type,
+            description: err?.description
+          });
         });
 
         socket.on("disconnect", (reason) => {
           setStatus("warn", `Disconnected: ${reason}`);
           addLog("disconnect", { reason });
+          
+          // Attempt reconnection for certain disconnect reasons
+          if (reason === "io server disconnect") {
+            addLog("client:info", { message: "Server disconnected. Attempting to reconnect..." });
+          }
+        });
+
+        socket.on("reconnect", (attemptNumber) => {
+          addLog("reconnect", { attemptNumber });
+          setStatus("ok", `Reconnected after ${attemptNumber} attempts`);
+        });
+
+        socket.on("reconnect_attempt", (attemptNumber) => {
+          addLog("reconnect_attempt", { attemptNumber });
+          setStatus("warn", `Reconnecting... (${attemptNumber})`);
+        });
+
+        socket.on("reconnect_error", (error) => {
+          addLog("reconnect_error", { message: error?.message });
+        });
+
+        socket.on("reconnect_failed", () => {
+          addLog("reconnect_failed", { message: "Failed to reconnect" });
+          setStatus("err", "Reconnection failed");
         });
 
         // Listen to server events for this user
         [
           "story:progress",
-          "job:queued",
-          "job:progress",
-          "job:completed",
-          "job:failed",
+          "story:completed",
+          "story:failed"
         ].forEach((ev) => socket.on(ev, (payload) => addLog(ev, payload)));
+
+        // Add heartbeat
+        setInterval(() => {
+          if (socket && socket.connected) {
+            socket.emit("ping");
+          }
+        }, 25000);
       }
 
       function disconnect() {
