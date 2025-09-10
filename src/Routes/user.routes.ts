@@ -12,7 +12,7 @@ userRouter
     imageUpload.single("profilePicture"),
     userController.updateProfile
   );
-  userRouter.route("/fav").post(authMiddle, userController.toggleFav);
+  userRouter.route("/effect/fav").post(authMiddle, userController.toggleEffectFav);
   userRouter.route("/story/fav").post(authMiddle, userController.toggleStoryFav);
   
   userRouter

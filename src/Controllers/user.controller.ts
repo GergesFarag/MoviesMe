@@ -265,7 +265,7 @@ const userController = {
     });
   }),
 
-  toggleFav: catchError(async (req, res) => {
+  toggleEffectFav: catchError(async (req, res) => {
     const userId = req.user!.id;
     const itemId = req.body.itemId;
 
