@@ -52,6 +52,7 @@ export class OpenAIService {
         ],
         max_output_tokens: 2000,
       });
+      console.log("Parsed response:", JSON.parse(response.output_text as string));
       let cleanResponse = response.output_text.trim();
       
       // Check if response appears to be truncated

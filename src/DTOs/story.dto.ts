@@ -73,7 +73,7 @@ class StoryDTO implements IStoryMapper {
       genre: this.story.genre,
       scenes: this.story.scenes.map((scene) => ({
         description: scene.sceneDescription,
-        image: scene.image,
+        image: scene.image as string,
       })),
       jobId: this.story.jobId,
       voiceOver: {

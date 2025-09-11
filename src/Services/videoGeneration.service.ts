@@ -208,8 +208,8 @@ export class VideoGenerationService {
       sceneVideos.map(async (scene: IScene, index: number) => {
         const videoUrl = await this.generateVideoFromDescription(
           scene.videoDescription,
-          scene.image,
-          index > 0 ? sceneVideos[index - 1].image : null,
+          scene.image!,
+          index > 0 ? sceneVideos[index - 1].image! : null,
           5
         );
         videoUrls.push(videoUrl);

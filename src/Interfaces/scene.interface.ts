@@ -3,6 +3,6 @@ export interface IScene {
   imageDescription: string;
   videoDescription: string;
   sceneDescription: string;
-  image: string;
+  image?: string;
   narration?: string;
 }

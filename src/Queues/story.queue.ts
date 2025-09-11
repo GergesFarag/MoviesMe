@@ -57,24 +57,61 @@ storyQueue.process(async (job) => {
       "story:progress"
     );
 
-    const openAIService = new OpenAIService(
-      jobData.numOfScenes,
-      jobData.title,
-      jobData.style,
-      jobData.genere,
-      jobData.location,
-      jobData.voiceOver?.voiceOverLyrics ? false : true
-    );
+    // const openAIService = new OpenAIService(
+    //   jobData.numOfScenes,
+    //   jobData.title,
+    //   jobData.style,
+    //   jobData.genere,
+    //   jobData.location,
+    //   jobData.voiceOver?.voiceOverLyrics ? false : true
+    // );
 
     console.log("Calling OpenAI service to generate scenes...");
     let story: IStoryResponse;
-    try {
-      story = await openAIService.generateScenes(jobData.prompt);
-    } catch (openAIError) {
-      console.error("OpenAI service error:", openAIError);
-      throw new AppError("Failed to generate story scenes with OpenAI", 500);
-    }
-
+    // try {
+    //   story = await openAIService.generateScenes(jobData.prompt);
+    // } catch (openAIError) {
+    //   console.error("OpenAI service error:", openAIError);
+    //   throw new AppError("Failed to generate story scenes with OpenAI", 500);
+    // }
+    story = {
+      title: "The Mirage's Curse",
+      scenes: [
+        {
+          sceneNumber: 1,
+          narration:
+            "Under the scorching sun, the guide leads a reluctant treasure hunter through endless dunes, shadows looming ominously.",
+          imageDescription:
+            "A vast desert landscape with golden dunes, a skilled guide in traditional attire, and a ruthless treasure hunter in tattered clothes.",
+          videoDescription:
+            "Wide shot of the desert with a steady camera, slowly panning to reveal the characters silhouetted against the sun.",
+          sceneDescription:
+            "The relentless sun beats down as the guide, weathered yet determined, walks ahead, while the treasure hunter trails closely, eyes glinting with greed.",
+        },
+        {
+          sceneNumber: 2,
+          narration:
+            "Amidst swirling sands, they encounter a mysterious nomad, whose secrets and wisdom spark distrust and ambition.",
+          imageDescription:
+            "A cloaked nomad appears at dusk, surrounded by swirling sand, eyes reflecting ancient knowledge and mystery.",
+          videoDescription:
+            "Close-up of the nomad rising from the shadows, the camera rotates around to capture the intensity of the moment.",
+          sceneDescription:
+            "The nomad's eerie smile cuts through the twilight, revealing cryptic hints about the oasis that reveals one's deepest fears and desires.",
+        },
+        {
+          sceneNumber: 3,
+          narration:
+            "As the oasis manifests, each character confronts their inner demons, greed fracturing their fragile trust.",
+          imageDescription:
+            "A shimmering oasis appears under a starlit sky, revealing distorted reflections of fears and ambitions.",
+          videoDescription:
+            "The camera zooms into the oasis, focusing on each character's reflection, which morphs into dark, haunting visions.",
+          sceneDescription:
+            "The oasis pulses with life, water glistening, as shadows of the characters loom over them, revealing what they truly desire and fear.",
+        },
+      ],
+    };
     if (
       !story ||
       !story.scenes ||
@@ -290,7 +327,6 @@ storyQueue.process(async (job) => {
       "story:completed"
     );
 
-    // Update the existing story with completed data
     console.log("Updating story in database...");
     const updatedStory = await updateCompletedStory(job.opts.jobId as string, {
       videoUrl: finalVideoUrl,
@@ -376,7 +412,7 @@ storyQueue.on("failed", async (job, err) => {
   if (job?.opts?.jobId) {
     try {
       await Job.findOneAndUpdate(
-        { jobId: job.opts.jobId as string }, 
+        { jobId: job.opts.jobId as string },
         {
           status: "failed",
           updatedAt: new Date(),
