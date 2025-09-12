@@ -279,19 +279,30 @@ storyQueue.process(async (job) => {
       );
 
       console.log("Composing video with sound...");
+      console.log("Video URL:", mergedVideoUrl);
+      console.log("Audio URL:", voiceOverUrl);
+      
       try {
+        // Validate URLs before composition
+        if (!mergedVideoUrl || !mergedVideoUrl.startsWith('http')) {
+          throw new AppError("Invalid video URL for composition", 500);
+        }
+        if (!voiceOverUrl || !voiceOverUrl.startsWith('http')) {
+          throw new AppError("Invalid audio URL for composition", 500);
+        }
+
         finalVideoBuffer = await videoGenerationService.composeSoundWithVideo(
           mergedVideoUrl,
           voiceOverUrl
         );
       } catch (composeError) {
         console.error("Video composition error:", composeError);
-        throw new AppError("Failed to compose video with voice over", 500);
+        throw new AppError(`Failed to compose video with voice over: ${composeError instanceof Error ? composeError.message : 'Unknown error'}`, 500);
       }
 
-      if (!finalVideoBuffer) {
+      if (!finalVideoBuffer || finalVideoBuffer.length === 0) {
         throw new AppError(
-          "Failed to compose video with voice over - no buffer returned",
+          "Failed to compose video with voice over - no buffer returned or empty buffer",
           500
         );
       }

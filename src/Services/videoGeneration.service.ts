@@ -47,48 +47,121 @@ export class VideoGenerationService {
     videoUrl: string,
     audioUrl: string
   ): Promise<Buffer> {
-    const outputPath = path.join(__dirname, `output_video_${Date.now()}.mp4`);
+    if (!videoUrl || !audioUrl) {
+      throw new Error("Both video URL and audio URL are required");
+    }
+
+    // Create a unique temporary directory for this operation
+    const tempDir = path.join(__dirname, `temp_compose_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    const outputPath = path.join(tempDir, "composed_video.mp4");
 
     try {
+      // Create temporary directory
+      await fs.promises.mkdir(tempDir, { recursive: true });
+
+      // Download video and audio files in parallel for faster processing
+      const [downloadedVideoBuffer, downloadedAudioBuffer] = await Promise.all([
+        this.downloadFile(videoUrl, "video"),
+        this.downloadFile(audioUrl, "audio")
+      ]);
+
+      // Write downloaded files to temporary location
+      const tempVideoPath = path.join(tempDir, "input_video.mp4");
+      const tempAudioPath = path.join(tempDir, "input_audio.mp3");
+
+      await Promise.all([
+        fs.promises.writeFile(tempVideoPath, downloadedVideoBuffer),
+        fs.promises.writeFile(tempAudioPath, downloadedAudioBuffer)
+      ]);
+
+      console.log("Downloaded and saved video and audio files locally");
+
+      // Compose video with audio using optimized ffmpeg settings
       await new Promise<void>((resolve, reject) => {
-        ffmpeg()
-          .input(videoUrl)
-          .input(audioUrl)
-          .audioCodec("aac")
-          .videoCodec("libx264")
-          .output(outputPath)
-          .on("end", () => {
-            console.log("File has been converted successfully");
+        const command = ffmpeg()
+          .input(tempVideoPath)
+          .input(tempAudioPath)
+          .videoCodec('copy') // Copy video stream without re-encoding (much faster)
+          .audioCodec('aac')
+          .outputOptions([
+            '-map', '0:v:0', // Map first video stream
+            '-map', '1:a:0', // Map first audio stream
+            '-shortest',     // End when shortest input ends
+            '-avoid_negative_ts', 'make_zero',
+            '-fflags', '+genpts',
+            '-movflags', '+faststart'
+          ])
+          .output(outputPath);
+
+        command
+          .on('start', (commandLine) => {
+            console.log('Started audio composition with command:', commandLine);
+          })
+          .on('progress', (progress) => {
+            if (progress.percent) {
+              console.log(`Audio composition progress: ${Math.round(progress.percent)}%`);
+            }
+          })
+          .on('end', () => {
+            console.log('Audio composition completed successfully');
             resolve();
           })
-          .on("error", (err: any) => {
-            console.error("An error occurred: " + err.message);
-            reject(err);
+          .on('error', (err) => {
+            console.error('FFmpeg error during audio composition:', err);
+            reject(new Error(`Audio composition failed: ${err.message}`));
           })
           .run();
       });
 
-      // Read the file as buffer and then delete the local file
-      const videoBuffer = fs.readFileSync(outputPath);
-      
-      // Clean up the temporary file asynchronously for better performance
-      fs.unlink(outputPath, (unlinkErr) => {
-        if (unlinkErr) {
-          console.warn("Failed to clean up temporary file:", unlinkErr);
-        } else {
-          console.log("Temporary video file cleaned up:", outputPath);
-        }
-      });
+      // Verify output file exists and has content
+      if (!fs.existsSync(outputPath)) {
+        throw new Error("Composed video file was not created");
+      }
 
-      return videoBuffer;
+      const stats = await fs.promises.stat(outputPath);
+      if (stats.size === 0) {
+        throw new Error("Composed video file is empty");
+      }
+
+      console.log(`Composed video created: ${outputPath}, size: ${stats.size} bytes`);
+
+      // Read the composed video as buffer
+      const composedVideoBuffer = await fs.promises.readFile(outputPath);
+
+      return composedVideoBuffer;
+
     } catch (error) {
-      // Clean up in case of error (async cleanup)
-      fs.unlink(outputPath, (unlinkErr) => {
-        if (unlinkErr) {
-          console.warn("Failed to clean up temporary file after error:", unlinkErr);
-        }
-      });
+      console.error("Error in composeSoundWithVideo:", error);
       throw error;
+    } finally {
+      // Clean up temporary directory and all files
+      try {
+        if (fs.existsSync(tempDir)) {
+          await fs.promises.rm(tempDir, { recursive: true, force: true });
+          console.log("Cleaned up temporary directory:", tempDir);
+        }
+      } catch (cleanupError) {
+        console.warn("Failed to clean up temporary directory:", cleanupError);
+      }
+    }
+  }
+
+  private async downloadFile(url: string, type: 'video' | 'audio'): Promise<Buffer> {
+    try {
+      console.log(`Downloading ${type} from:`, url);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download ${type}: ${response.status} ${response.statusText}`);
+      }
+
+      const buffer = await response.arrayBuffer();
+      console.log(`Downloaded ${type} successfully, size: ${buffer.byteLength} bytes`);
+      
+      return Buffer.from(buffer);
+    } catch (error) {
+      console.error(`Error downloading ${type}:`, error);
+      throw new Error(`Failed to download ${type} from ${url}: ${error}`);
     }
   }
 
