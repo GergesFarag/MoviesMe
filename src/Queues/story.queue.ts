@@ -229,6 +229,8 @@ storyQueue.process(async (job) => {
     //Starting Voice Over
     let voiceOverUrl =
       "https://res.cloudinary.com/dggkd3bfz/video/upload/v1757442453/pu3strlgov6fn4b8wfyz.mp3";
+    let voiceOverText = "";
+    
     if (jobData.voiceOver) {
       updateJobProgress(
         job,
@@ -238,11 +240,22 @@ storyQueue.process(async (job) => {
         "story:progress"
       );
       console.log("Processing voice over...");
+      
+      // Generate narration text from story scenes
       const voiceOverNarration = story.scenes
         .map((scene) => scene.narration)
         .join(" ");
-      jobData.voiceOver.text = voiceOverNarration;
+      
+      // Use provided lyrics if available, otherwise use generated narration
+      voiceOverText = jobData.voiceOver.voiceOverLyrics || voiceOverNarration;
+      
+      // Update the voiceOver object with the text
+      jobData.voiceOver.text = voiceOverText;
       jobData.voiceOver.sound = voiceOverUrl;
+      
+      console.log("Voice Over Text: ", voiceOverText);
+      console.log("Voice Over Narration: ", voiceOverNarration);
+      
       // const voiceOverService = new VoiceGenerationService();
       // voiceOverUrl = await voiceOverService.generateVoiceOver(
       //   jobData.voiceOver,
@@ -251,25 +264,8 @@ storyQueue.process(async (job) => {
     }
     console.log("Voice Over URL: ", voiceOverUrl);
 
-    // First, upload the merged video to get a URL for voice composition
-    let mergedVideoUrl = "";
-    if (jobData.voiceOver && voiceOverUrl) {
-      updateJobProgress(
-        job,
-        92,
-        `Uploading video for voice composition`,
-        getIO(),
-        "story:progress"
-      );
-
-      const tempUploadResult = await cloudUploadVideo(
-        finalVideoBuffer,
-        `temp_story_videos/${jobData.jobId}_temp`
-      );
-      mergedVideoUrl = tempUploadResult.secure_url;
-    }
-
-    if (jobData.voiceOver && voiceOverUrl && mergedVideoUrl) {
+    // Compose video with sound directly using buffer (no upload needed)
+    if (jobData.voiceOver && voiceOverUrl && voiceOverText) {
       updateJobProgress(
         job,
         95,
@@ -278,21 +274,20 @@ storyQueue.process(async (job) => {
         "story:progress"
       );
 
-      console.log("Composing video with sound...");
-      console.log("Video URL:", mergedVideoUrl);
+      console.log("Composing video with sound using buffer...");
+      console.log("Video buffer size:", finalVideoBuffer.length);
       console.log("Audio URL:", voiceOverUrl);
+      console.log("Voice over text:", voiceOverText);
       
       try {
-        // Validate URLs before composition
-        if (!mergedVideoUrl || !mergedVideoUrl.startsWith('http')) {
-          throw new AppError("Invalid video URL for composition", 500);
-        }
+        // Validate audio URL
         if (!voiceOverUrl || !voiceOverUrl.startsWith('http')) {
           throw new AppError("Invalid audio URL for composition", 500);
         }
 
-        finalVideoBuffer = await videoGenerationService.composeSoundWithVideo(
-          mergedVideoUrl,
+        // Use the new buffer-based composition method
+        finalVideoBuffer = await videoGenerationService.composeSoundWithVideoBuffer(
+          finalVideoBuffer,
           voiceOverUrl
         );
       } catch (composeError) {
@@ -325,22 +320,6 @@ storyQueue.process(async (job) => {
       await cloudUploadVideo(finalVideoBuffer, `story_videos/${jobData.jobId}`)
     ).secure_url;
 
-    // Clean up temporary video upload if it exists
-    if (mergedVideoUrl && jobData.voiceOver) {
-      try {
-        await deleteCloudinaryResource(
-          `temp_story_videos/${jobData.jobId}_temp`,
-          "video"
-        );
-        console.log("Temporary video upload cleaned up");
-      } catch (cleanupError) {
-        console.warn(
-          "Failed to clean up temporary video upload:",
-          cleanupError
-        );
-      }
-    }
-
     console.log("Final video URL: ", finalVideoUrl);
     updateJobProgress(
       job,
@@ -359,10 +338,10 @@ storyQueue.process(async (job) => {
       style: jobData.style || undefined,
       title: story.title || undefined,
       genre: jobData.genere || undefined,
-      voiceOver: voiceOverUrl
+      voiceOver: (voiceOverUrl && voiceOverText)
         ? {
             sound: voiceOverUrl,
-            text: jobData.voiceOver?.text || "",
+            text: voiceOverText,
           }
         : undefined,
     });

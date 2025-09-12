@@ -146,6 +146,113 @@ export class VideoGenerationService {
     }
   }
 
+  async composeSoundWithVideoBuffer(
+    videoBuffer: Buffer,
+    audioUrl: string
+  ): Promise<Buffer> {
+    if (!videoBuffer || videoBuffer.length === 0) {
+      throw new Error("Valid video buffer is required");
+    }
+    if (!audioUrl) {
+      throw new Error("Audio URL is required");
+    }
+
+    // Create a unique temporary directory for this operation
+    const tempDir = path.join(__dirname, `temp_compose_buffer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    const outputPath = path.join(tempDir, "composed_video.mp4");
+
+    try {
+      // Create temporary directory
+      await fs.promises.mkdir(tempDir, { recursive: true });
+
+      // Download audio file and write video buffer to disk in parallel
+      const [downloadedAudioBuffer] = await Promise.all([
+        this.downloadFile(audioUrl, "audio")
+      ]);
+
+      // Write video buffer and audio to temporary location
+      const tempVideoPath = path.join(tempDir, "input_video.mp4");
+      const tempAudioPath = path.join(tempDir, "input_audio.mp3");
+
+      await Promise.all([
+        fs.promises.writeFile(tempVideoPath, videoBuffer),
+        fs.promises.writeFile(tempAudioPath, downloadedAudioBuffer)
+      ]);
+
+      console.log("Saved video buffer and downloaded audio file locally");
+      console.log(`Video buffer size: ${videoBuffer.length} bytes`);
+      console.log(`Audio buffer size: ${downloadedAudioBuffer.length} bytes`);
+
+      // Compose video with audio using optimized ffmpeg settings
+      await new Promise<void>((resolve, reject) => {
+        const command = ffmpeg()
+          .input(tempVideoPath)
+          .input(tempAudioPath)
+          .videoCodec('copy') // Copy video stream without re-encoding (much faster)
+          .audioCodec('aac')
+          .outputOptions([
+            '-map', '0:v:0', // Map first video stream
+            '-map', '1:a:0', // Map first audio stream
+            '-shortest',     // End when shortest input ends
+            '-avoid_negative_ts', 'make_zero',
+            '-fflags', '+genpts',
+            '-movflags', '+faststart'
+          ])
+          .output(outputPath);
+
+        command
+          .on('start', (commandLine) => {
+            console.log('Started audio composition with video buffer, command:', commandLine);
+          })
+          .on('progress', (progress) => {
+            if (progress.percent) {
+              console.log(`Audio composition progress: ${Math.round(progress.percent)}%`);
+            }
+          })
+          .on('end', () => {
+            console.log('Audio composition with video buffer completed successfully');
+            resolve();
+          })
+          .on('error', (err) => {
+            console.error('FFmpeg error during audio composition with buffer:', err);
+            reject(new Error(`Audio composition with buffer failed: ${err.message}`));
+          })
+          .run();
+      });
+
+      // Verify output file exists and has content
+      if (!fs.existsSync(outputPath)) {
+        throw new Error("Composed video file was not created");
+      }
+
+      const stats = await fs.promises.stat(outputPath);
+      if (stats.size === 0) {
+        throw new Error("Composed video file is empty");
+      }
+
+      console.log(`Composed video created from buffer: ${outputPath}, size: ${stats.size} bytes`);
+
+      // Read the composed video as buffer
+      const composedVideoBuffer = await fs.promises.readFile(outputPath);
+
+      return composedVideoBuffer;
+
+    } catch (error) {
+      console.error("Error in composeSoundWithVideoBuffer:", error);
+      throw error;
+    } finally {
+      // Clean up temporary directory and all files
+      try {
+        if (fs.existsSync(tempDir)) {
+          await fs.promises.rm(tempDir, { recursive: true, force: true });
+          console.log("Cleaned up temporary directory:", tempDir);
+        }
+      } catch (cleanupError) {
+        console.warn("Failed to clean up temporary directory:", cleanupError);
+      }
+    }
+  }
+
   private async downloadFile(url: string, type: 'video' | 'audio'): Promise<Buffer> {
     try {
       console.log(`Downloading ${type} from:`, url);
