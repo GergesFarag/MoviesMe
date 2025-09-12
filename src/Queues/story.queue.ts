@@ -8,11 +8,14 @@ import { getIO } from "../Sockets/socket";
 import { VideoGenerationService } from "../Services/videoGeneration.service";
 import { updateCompletedStory } from "../Utils/Database/optimizedOps";
 import Job from "../Models/job.model";
+import Story from "../Models/story.model";
 import {
   cloudUploadVideo,
   deleteCloudinaryResource,
 } from "../Utils/APIs/cloudinary";
 import { StoryDTO } from "../DTOs/story.dto";
+import { sendNotificationToClient } from "../Utils/Notifications/notifications";
+import User from "../Models/user.model";
 
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
@@ -199,9 +202,14 @@ storyQueue.process(async (job) => {
       }
 
       // Check if all URLs are valid
-      const invalidUrls = videoUrls.filter(url => !url || typeof url !== 'string' || !url.startsWith('http'));
+      const invalidUrls = videoUrls.filter(
+        (url) => !url || typeof url !== "string" || !url.startsWith("http")
+      );
       if (invalidUrls.length > 0) {
-        throw new AppError(`Invalid video URLs found: ${invalidUrls.length} invalid URLs`, 500);
+        throw new AppError(
+          `Invalid video URLs found: ${invalidUrls.length} invalid URLs`,
+          500
+        );
       }
 
       console.log(`Merging ${videoUrls.length} video scenes:`, videoUrls);
@@ -210,7 +218,12 @@ storyQueue.process(async (job) => {
       );
     } catch (mergeError) {
       console.error("Video merge error:", mergeError);
-      throw new AppError(`Failed to merge video scenes: ${mergeError instanceof Error ? mergeError.message : 'Unknown error'}`, 500);
+      throw new AppError(
+        `Failed to merge video scenes: ${
+          mergeError instanceof Error ? mergeError.message : "Unknown error"
+        }`,
+        500
+      );
     }
 
     if (!mergedVideoBuffer) {
@@ -230,7 +243,7 @@ storyQueue.process(async (job) => {
     let voiceOverUrl =
       "https://res.cloudinary.com/dggkd3bfz/video/upload/v1757442453/pu3strlgov6fn4b8wfyz.mp3";
     let voiceOverText = "";
-    
+
     if (jobData.voiceOver) {
       updateJobProgress(
         job,
@@ -240,22 +253,22 @@ storyQueue.process(async (job) => {
         "story:progress"
       );
       console.log("Processing voice over...");
-      
+
       // Generate narration text from story scenes
       const voiceOverNarration = story.scenes
         .map((scene) => scene.narration)
         .join(" ");
-      
+
       // Use provided lyrics if available, otherwise use generated narration
       voiceOverText = jobData.voiceOver.voiceOverLyrics || voiceOverNarration;
-      
+
       // Update the voiceOver object with the text
       jobData.voiceOver.text = voiceOverText;
       jobData.voiceOver.sound = voiceOverUrl;
-      
+
       console.log("Voice Over Text: ", voiceOverText);
       console.log("Voice Over Narration: ", voiceOverNarration);
-      
+
       // const voiceOverService = new VoiceGenerationService();
       // voiceOverUrl = await voiceOverService.generateVoiceOver(
       //   jobData.voiceOver,
@@ -263,9 +276,15 @@ storyQueue.process(async (job) => {
       // );
     }
     console.log("Voice Over URL: ", voiceOverUrl);
+    console.log("Voice Over Text length: ", voiceOverText?.length || 0);
+    console.log("Job Data Voice Over: ", !!jobData.voiceOver);
+    console.log(
+      "Will compose audio: ",
+      !!(jobData.voiceOver && voiceOverUrl && voiceOverText)
+    );
 
     // Compose video with sound directly using buffer (no upload needed)
-    if (jobData.voiceOver && voiceOverUrl && voiceOverText) {
+    if (jobData.voiceOver && voiceOverUrl) {
       updateJobProgress(
         job,
         95,
@@ -274,37 +293,69 @@ storyQueue.process(async (job) => {
         "story:progress"
       );
 
-      console.log("Composing video with sound using buffer...");
+      console.log("🎵 Starting audio composition...");
       console.log("Video buffer size:", finalVideoBuffer.length);
       console.log("Audio URL:", voiceOverUrl);
-      console.log("Voice over text:", voiceOverText);
-      
+      console.log(
+        "Voice over text preview:",
+        voiceOverText?.substring(0, 200) + "..."
+      );
+
       try {
         // Validate audio URL
-        if (!voiceOverUrl || !voiceOverUrl.startsWith('http')) {
+        if (!voiceOverUrl || !voiceOverUrl.startsWith("http")) {
           throw new AppError("Invalid audio URL for composition", 500);
         }
 
-        // Use the new buffer-based composition method
-        finalVideoBuffer = await videoGenerationService.composeSoundWithVideoBuffer(
-          finalVideoBuffer,
-          voiceOverUrl
+        // Ensure we have text (use fallback if needed)
+        if (!voiceOverText) {
+          voiceOverText = story.scenes
+            .map((scene) => scene.narration)
+            .join(" ");
+          console.log(
+            "⚠️ Using fallback text for voice over:",
+            voiceOverText.substring(0, 200) + "..."
+          );
+        }
+
+        console.log("🎬 Calling composeSoundWithVideoBuffer...");
+        const composedBuffer =
+          await videoGenerationService.composeSoundWithVideoBuffer(
+            finalVideoBuffer,
+            voiceOverUrl
+          );
+
+        if (!composedBuffer || composedBuffer.length === 0) {
+          throw new AppError("Audio composition returned empty buffer", 500);
+        }
+
+        finalVideoBuffer = composedBuffer;
+        console.log(
+          "✅ Audio composition successful! New buffer size:",
+          finalVideoBuffer.length
         );
       } catch (composeError) {
-        console.error("Video composition error:", composeError);
-        throw new AppError(`Failed to compose video with voice over: ${composeError instanceof Error ? composeError.message : 'Unknown error'}`, 500);
-      }
-
-      if (!finalVideoBuffer || finalVideoBuffer.length === 0) {
+        console.error("❌ Video composition error:", composeError);
         throw new AppError(
-          "Failed to compose video with voice over - no buffer returned or empty buffer",
+          `Failed to compose video with voice over: ${
+            composeError instanceof Error
+              ? composeError.message
+              : "Unknown error"
+          }`,
           500
         );
       }
+
       console.log(
-        "Video composed with sound successfully, buffer size:",
+        "🎉 Video composed with sound successfully, final buffer size:",
         finalVideoBuffer.length
       );
+    } else {
+      console.log("⚠️ Skipping audio composition - missing requirements:", {
+        hasVoiceOver: !!jobData.voiceOver,
+        hasVoiceOverUrl: !!voiceOverUrl,
+        hasVoiceOverText: !!voiceOverText,
+      });
     }
 
     // Upload final video to Cloudinary
@@ -338,15 +389,36 @@ storyQueue.process(async (job) => {
       style: jobData.style || undefined,
       title: story.title || undefined,
       genre: jobData.genere || undefined,
-      voiceOver: (voiceOverUrl && voiceOverText)
-        ? {
-            sound: voiceOverUrl,
-            text: voiceOverText,
-          }
-        : undefined,
+      voiceOver:
+        voiceOverUrl && voiceOverText
+          ? {
+              sound: voiceOverUrl,
+              text: voiceOverText,
+            }
+          : undefined,
     });
 
+    // Update the complete voiceOver object if we have voice over data
+    if (updatedStory && jobData.voiceOver && voiceOverUrl && voiceOverText) {
+      console.log("Updating complete voice over object in story...");
+      await Story.findByIdAndUpdate(updatedStory._id, {
+        voiceOver: {
+          voiceOverLyrics: jobData.voiceOver.voiceOverLyrics || null,
+          voiceLanguage: jobData.voiceOver.voiceLanguage || null,
+          voiceGender: jobData.voiceOver.voiceGender,
+          sound: voiceOverUrl,
+          text: voiceOverText,
+        },
+      });
+      console.log("Complete voice over object updated in database");
+    }
+
     console.log("Story updated in database:", updatedStory?._id);
+    console.log("Voice over data saved:", {
+      hasVoiceOver: !!jobData.voiceOver,
+      sound: voiceOverUrl,
+      text: voiceOverText ? voiceOverText.substring(0, 100) + "..." : "No text",
+    });
 
     return {
       finalVideoUrl,
@@ -390,7 +462,7 @@ storyQueue.process(async (job) => {
   }
 });
 
-storyQueue.on("completed", (job, result) => {
+storyQueue.on("completed", async (job, result) => {
   console.log(`Story job with ID ${job.id} has been completed.`);
   console.log("Result:", result);
   const io = getIO();
@@ -402,6 +474,34 @@ storyQueue.on("completed", (job, result) => {
       story: StoryDTO.toDTO(result),
       jobId: job.opts.jobId,
     });
+  }
+  const notificationDTO = {
+    storyId: job.data._id as string,
+    jobId: job.opts.jobId as string,
+    status: job.data.status as string,
+    userId: job.data.userId as string,
+  };
+  const user = await User.findById(job.data.userId);
+
+  const res = await sendNotificationToClient(
+    "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+    "Model Processing Completed",
+    `Your video generated successfully`,
+    {
+      ...notificationDTO,
+      redirectTo: "/storiesDetails",
+    }
+  );
+  if (res) {
+    user?.notifications?.push({
+      title: "Model Processing Completed",
+      message: `Your video generated successfully`,
+      data: notificationDTO,
+      redirectTo: "/storiesDetails",
+      createdAt: new Date(),
+    });
+    await user?.save();
+    console.log("Notification saved to user and saved in DB");
   }
   job.remove();
 });
@@ -421,7 +521,6 @@ storyQueue.on("failed", async (job, err) => {
         }
       );
 
-      // Also update the story status to failed
       const Story = require("../Models/story.model").default;
       await Story.findOneAndUpdate(
         { jobId: job.opts.jobId as string },
@@ -432,7 +531,6 @@ storyQueue.on("failed", async (job, err) => {
     }
   }
 
-  // Send notification to user about story failure
   const io = getIO();
   if (job?.data?.userId) {
     const roomName = `user:${job.data.userId}`;
@@ -442,6 +540,35 @@ storyQueue.on("failed", async (job, err) => {
       jobId: job.opts?.jobId,
       error: err.message,
     });
+  }
+
+  const notificationDTO = {
+    storyId: job.data._id as string,
+    jobId: job.opts.jobId as string,
+    status: job.data.status as string,
+    userId: job.data.userId as string,
+  };
+  const user = await User.findById(job.data.userId);
+
+  const res = await sendNotificationToClient(
+    "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+    "Story Processing Completed",
+    `Your video generated successfully`,
+    {
+      ...notificationDTO,
+      redirectTo: "/storiesDetails",
+    }
+  );
+  if (res) {
+    user?.notifications?.push({
+      title: "Story Processing Failed",
+      message: `Your video failed to generate.`,
+      data: notificationDTO,
+      redirectTo: "/storiesDetails",
+      createdAt: new Date(),
+    });
+    await user?.save();
+    console.log("Notification saved to user and saved in DB");
   }
 });
 
