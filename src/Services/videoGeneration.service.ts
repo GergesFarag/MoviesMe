@@ -93,113 +93,113 @@ export class VideoGenerationService {
   }
 
   async mergeScenes(sceneVideos: string[]): Promise<Buffer> {
-    const outputPath = path.join(__dirname, `output_merged_video_${Date.now()}.mp4`);
+    if (!sceneVideos || sceneVideos.length === 0) {
+      throw new Error("No video URLs provided for merging");
+    }
 
-    return new Promise<Buffer>((resolve, reject) => {
-      let command = ffmpeg();
+    // Create a unique temporary directory for this merge operation
+    const tempDir = path.join(__dirname, `temp_merge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    const outputPath = path.join(tempDir, "merged_video.mp4");
+    const listFilePath = path.join(tempDir, "video_list.txt");
 
-      // Add all input URLs
-      sceneVideos.forEach((videoUrl) => {
-        command = command.input(videoUrl);
+    try {
+      // Create temporary directory
+      await fs.promises.mkdir(tempDir, { recursive: true });
+
+      // Download videos to local temporary files
+      const tempVideoFiles: string[] = [];
+      const downloadPromises = sceneVideos.map(async (videoUrl, index) => {
+        const tempVideoPath = path.join(tempDir, `video_${index}.mp4`);
+        
+        try {
+          const response = await fetch(videoUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to download video ${index}: ${response.statusText}`);
+          }
+          
+          const buffer = await response.arrayBuffer();
+          await fs.promises.writeFile(tempVideoPath, Buffer.from(buffer));
+          tempVideoFiles[index] = tempVideoPath;
+          console.log(`Downloaded video ${index} to ${tempVideoPath}`);
+        } catch (downloadError) {
+          console.error(`Error downloading video ${index}:`, downloadError);
+          throw new Error(`Failed to download video ${index}: ${downloadError}`);
+        }
       });
 
-      // Create smooth transitions between scenes
-      let filterComplex = "";
+      await Promise.all(downloadPromises);
 
-      if (sceneVideos.length === 1) {
-        // Single video - just scale and format
-        filterComplex = `[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,fade=in:0:15,fade=out:st=5:d=15[outv]`;
-      } else {
-        // Multiple videos - apply fade in/out for smooth transitions
-        for (let i = 0; i < sceneVideos.length; i++) {
-          let fadeFilters = "";
+      // Create a list file for ffmpeg concat with absolute paths
+      const listContent = tempVideoFiles
+        .map(filePath => `file '${filePath.replace(/\\/g, '/')}'`)
+        .join('\n');
+      
+      await fs.promises.writeFile(listFilePath, listContent);
+      console.log("Created video list file:", listFilePath);
 
-          if (i === 0) {
-            // First video: fade in at start, fade out at end
-            fadeFilters = "fade=in:0:15,fade=out:st=5:d=15";
-          } else if (i === sceneVideos.length - 1) {
-            // Last video: fade in at start
-            fadeFilters = "fade=in:0:15";
-          } else {
-            // Middle videos: fade in at start, fade out at end
-            fadeFilters = "fade=in:0:15,fade=out:st=5:d=15";
-          }
+      // Merge videos using ffmpeg concat
+      await new Promise<void>((resolve, reject) => {
+        const command = ffmpeg()
+          .input(listFilePath)
+          .inputOptions(['-f', 'concat', '-safe', '0'])
+          .videoCodec('libx264')
+          .audioCodec('aac')
+          .outputOptions([
+            '-preset', 'medium',
+            '-crf', '23',
+            '-movflags', '+faststart'
+          ])
+          .output(outputPath);
 
-          filterComplex += `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,${fadeFilters}[v${i}];`;
-        }
+        command
+          .on('start', (commandLine) => {
+            console.log('Started ffmpeg with command:', commandLine);
+          })
+          .on('progress', (progress) => {
+            console.log(`Merging progress: ${progress.percent}%`);
+          })
+          .on('end', () => {
+            console.log('Video merging completed successfully');
+            resolve();
+          })
+          .on('error', (err) => {
+            console.error('FFmpeg error during video merge:', err);
+            reject(new Error(`Video merge failed: ${err.message}`));
+          })
+          .run();
+      });
 
-        // Concatenate all processed videos
-        filterComplex +=
-          sceneVideos.map((_, index) => `[v${index}]`).join("") +
-          `concat=n=${sceneVideos.length}:v=1:a=0[outv]`;
+      // Verify output file exists and has content
+      if (!fs.existsSync(outputPath)) {
+        throw new Error("Merged video file was not created");
       }
 
-      command
-        .complexFilter(filterComplex)
-        .outputOptions([
-          "-map [outv]",
-          "-c:v libx264",
-          "-preset medium",
-          "-crf 23",
-          "-r 30",
-          "-an",
-        ])
-        .output(outputPath)
-        .on("start", (commandLine) => {
-          console.log(
-            "FFmpeg command (video-only with smooth transitions):",
-            commandLine
-          );
-        })
-        .on("progress", (progress) => {
-          if (progress.percent && progress.percent > 0) {
-            console.log("Processing: " + progress.percent.toFixed(2) + "% done");
-          }
-        })
-        .on("end", () => {
-          console.log(
-            "Video merging with smooth transitions finished successfully"
-          );
-          
-          // Read the file as buffer and then delete the local file
-          try {
-            const videoBuffer = fs.readFileSync(outputPath);
-            
-            // Clean up the temporary file immediately after reading
-            fs.unlink(outputPath, (unlinkErr) => {
-              if (unlinkErr) {
-                console.warn("Failed to clean up temporary merged file:", unlinkErr);
-              } else {
-                console.log("Temporary merged video file cleaned up:", outputPath);
-              }
-            });
-            
-            resolve(videoBuffer);
-          } catch (readError) {
-            console.error("Failed to read merged video file:", readError);
-            // Try to clean up even on error
-            fs.unlink(outputPath, (unlinkErr) => {
-              if (unlinkErr) {
-                console.warn("Failed to clean up file after read error:", unlinkErr);
-              }
-            });
-            reject(readError);
-          }
-        })
-        .on("error", (err: any) => {
-          console.error("FFmpeg error:", err);
-          
-          // Clean up in case of error (async cleanup)
-          fs.unlink(outputPath, (unlinkErr) => {
-            if (unlinkErr) {
-              console.warn("Failed to clean up temporary file after FFmpeg error:", unlinkErr);
-            }
-          });
-          
-          reject(err);
-        })
-        .run();
-    });
+      const stats = await fs.promises.stat(outputPath);
+      if (stats.size === 0) {
+        throw new Error("Merged video file is empty");
+      }
+
+      console.log(`Merged video created: ${outputPath}, size: ${stats.size} bytes`);
+
+      // Read the merged video as buffer
+      const videoBuffer = await fs.promises.readFile(outputPath);
+
+      return videoBuffer;
+
+    } catch (error) {
+      console.error("Error in mergeScenes:", error);
+      throw error;
+    } finally {
+      // Clean up temporary directory and all files
+      try {
+        if (fs.existsSync(tempDir)) {
+          await fs.promises.rm(tempDir, { recursive: true, force: true });
+          console.log("Cleaned up temporary directory:", tempDir);
+        }
+      } catch (cleanupError) {
+        console.warn("Failed to clean up temporary directory:", cleanupError);
+      }
+    }
   }
 
   async generateVideos(sceneVideos: IScene[]): Promise<string[]> {

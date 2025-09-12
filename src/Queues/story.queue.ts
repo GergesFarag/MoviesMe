@@ -193,12 +193,24 @@ storyQueue.process(async (job) => {
     console.log("Merging video scenes...");
     let mergedVideoBuffer;
     try {
+      // Validate video URLs before merging
+      if (!videoUrls || videoUrls.length === 0) {
+        throw new AppError("No video URLs available for merging", 500);
+      }
+
+      // Check if all URLs are valid
+      const invalidUrls = videoUrls.filter(url => !url || typeof url !== 'string' || !url.startsWith('http'));
+      if (invalidUrls.length > 0) {
+        throw new AppError(`Invalid video URLs found: ${invalidUrls.length} invalid URLs`, 500);
+      }
+
+      console.log(`Merging ${videoUrls.length} video scenes:`, videoUrls);
       mergedVideoBuffer = await videoGenerationService.mergeScenes(
         videoUrls as string[]
       );
     } catch (mergeError) {
       console.error("Video merge error:", mergeError);
-      throw new AppError("Failed to merge video scenes", 500);
+      throw new AppError(`Failed to merge video scenes: ${mergeError instanceof Error ? mergeError.message : 'Unknown error'}`, 500);
     }
 
     if (!mergedVideoBuffer) {

@@ -1,6 +1,4 @@
 import { IStory } from "../Interfaces/story.interface";
-import { IScene } from "../Interfaces/scene.interface";
-
 interface IStoryDTO {
   _id: string;
   title: string;
