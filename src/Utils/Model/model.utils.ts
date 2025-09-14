@@ -21,6 +21,7 @@ export const updateJobProgress = async (
       progress,
       ...additionalData,
     });
+    
     if (io && event) {
       try {
         const payload = {
@@ -30,11 +31,50 @@ export const updateJobProgress = async (
           ...additionalData,
           timestamp: Date.now(),
         };
-        sendWebsocket(io, event, payload, `user:${job.data.userId}`);
-        console.log("Sending Job Status: ", payload);
+        
+        const roomName = `user:${job.data.userId}`;
+        
+        // Check if there are clients in the room before sending
+        const room = io.sockets.adapter.rooms.get(roomName);
+        if (room && room.size > 0) {
+          sendWebsocket(io, event, payload, roomName);
+          console.log(`✅ Job progress sent to ${room.size} client(s) in room ${roomName}:`, payload);
+        } else {
+          console.warn(`⚠️ No clients connected for user ${job.data.userId}, progress not sent:`, payload);
+          
+          // Store progress in job data for client to retrieve when reconnecting
+          await job.update({
+            ...(job.data || {}),
+            status,
+            progress,
+            lastProgressUpdate: payload,
+            ...additionalData,
+          });
+        }
       } catch (err) {
-        console.log("Error updating job progress:", err);
-        throw new AppError("Socket.io not initialized");
+        console.error("❌ Error updating job progress via WebSocket:", err);
+        
+        // Don't throw error - job should continue even if WebSocket fails
+        // Store the progress in the job data as fallback
+        try {
+          await job.update({
+            ...(job.data || {}),
+            status,
+            progress,
+            lastProgressUpdate: {
+              jobId: job.id,
+              status,
+              progress,
+              ...additionalData,
+              timestamp: Date.now(),
+              websocketError: true
+            },
+            ...additionalData,
+          });
+          console.log("💾 Progress stored in job data as fallback");
+        } catch (updateError) {
+          console.error("❌ Failed to store progress in job data:", updateError);
+        }
       }
     }
   }
