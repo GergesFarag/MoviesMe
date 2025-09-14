@@ -312,10 +312,6 @@ storyQueue.process(async (job) => {
           voiceOverText = story.scenes
             .map((scene) => scene.narration)
             .join(" ");
-          console.log(
-            "⚠️ Using fallback text for voice over:",
-            voiceOverText.substring(0, 200) + "..."
-          );
         }
 
         console.log("🎬 Calling composeSoundWithVideoBuffer...");
@@ -469,39 +465,91 @@ storyQueue.on("completed", async (job, result) => {
   if (job.data.userId) {
     const roomName = `user:${job.data.userId}`;
     console.log(`📤 Sending completion notification to room: ${roomName}`);
-    io.to(roomName).emit("story:completed", {
-      message: "Your story has been generated successfully!",
-      story: StoryDTO.toDTO(result),
-      jobId: job.opts.jobId,
-    });
+    
+    // Fix: Extract the story from the result object and ensure it has scenes
+    const story = result?.story;
+    if (!story) {
+      console.error("❌ No story found in result object:", result);
+      io.to(roomName).emit("story:failed", {
+        message: "Story generation completed but no story data found",
+        jobId: job.opts.jobId,
+        error: "Missing story data in result"
+      });
+      return;
+    }
+
+    // Ensure scenes array exists and is valid
+    if (!story.scenes || !Array.isArray(story.scenes)) {
+      console.error("❌ Story scenes are missing or invalid:", story);
+      io.to(roomName).emit("story:failed", {
+        message: "Story generation completed but scenes data is invalid",
+        jobId: job.opts.jobId,
+        error: "Invalid scenes data"
+      });
+      return;
+    }
+
+    try {
+      const storyDTO = StoryDTO.toDTO(story);
+      io.to(roomName).emit("story:completed", {
+        message: "Your story has been generated successfully!",
+        story: storyDTO,
+        jobId: job.opts.jobId,
+        finalVideoUrl: result.finalVideoUrl,
+        storyId: result.storyId
+      });
+    } catch (dtoError) {
+      console.error("❌ Error converting story to DTO:", dtoError);
+      io.to(roomName).emit("story:failed", {
+        message: "Story generation completed but failed to format response",
+        jobId: job.opts.jobId,
+        error: dtoError instanceof Error ? dtoError.message : "DTO conversion failed"
+      });
+    }
   }
   const notificationDTO = {
-    storyId: job.data._id as string,
-    jobId: job.opts.jobId as string,
-    status: job.data.status as string,
-    userId: job.data.userId as string,
+    storyId: String(job.data._id || ''),
+    jobId: String(job.opts.jobId || ''),
+    status: String(job.data.status || ''),
+    userId: String(job.data.userId || ''),
   };
   const user = await User.findById(job.data.userId);
 
-  const res = await sendNotificationToClient(
-    "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
-    "Model Processing Completed",
-    `Your video generated successfully`,
-    {
-      ...notificationDTO,
-      redirectTo: "/storiesDetails",
+  try {
+    const res = await sendNotificationToClient(
+      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+      "Model Processing Completed",
+      `Your video generated successfully`,
+      {
+        ...notificationDTO,
+        redirectTo: "/storiesDetails",
+      }
+    );
+    if (res) {
+      user?.notifications?.push({
+        title: "Model Processing Completed",
+        message: `Your video generated successfully`,
+        data: notificationDTO,
+        redirectTo: "/storiesDetails",
+        createdAt: new Date(),
+      });
+      await user?.save();
+      console.log("Push notification sent and saved to user notifications");
     }
-  );
-  if (res) {
-    user?.notifications?.push({
-      title: "Model Processing Completed",
-      message: `Your video generated successfully`,
-      data: notificationDTO,
-      redirectTo: "/storiesDetails",
-      createdAt: new Date(),
-    });
-    await user?.save();
-    console.log("Notification saved to user and saved in DB");
+  } catch (notificationError) {
+    console.error("Failed to send push notification:", notificationError);
+    // Still save the notification to user's database even if push fails
+    if (user) {
+      user.notifications?.push({
+        title: "Model Processing Completed",
+        message: `Your video generated successfully`,
+        data: notificationDTO,
+        redirectTo: "/storiesDetails",
+        createdAt: new Date(),
+      });
+      await user.save();
+      console.log("Notification saved to user DB despite push notification failure");
+    }
   }
   job.remove();
 });
@@ -543,32 +591,48 @@ storyQueue.on("failed", async (job, err) => {
   }
 
   const notificationDTO = {
-    storyId: job.data._id as string,
-    jobId: job.opts.jobId as string,
-    status: job.data.status as string,
-    userId: job.data.userId as string,
+    storyId: String(job.data._id || ''),
+    jobId: String(job.opts.jobId || ''),
+    status: String(job.data.status || ''),
+    userId: String(job.data.userId || ''),
   };
   const user = await User.findById(job.data.userId);
 
-  const res = await sendNotificationToClient(
-    "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
-    "Story Processing Completed",
-    `Your video generated successfully`,
-    {
-      ...notificationDTO,
-      redirectTo: "/storiesDetails",
+  try {
+    const res = await sendNotificationToClient(
+      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+      "Story Processing Failed",
+      `Your video failed to generate`,
+      {
+        ...notificationDTO,
+        redirectTo: "/storiesDetails",
+      }
+    );
+    if (res) {
+      user?.notifications?.push({
+        title: "Story Processing Failed",
+        message: `Your video failed to generate.`,
+        data: notificationDTO,
+        redirectTo: "/storiesDetails",
+        createdAt: new Date(),
+      });
+      await user?.save();
+      console.log("Failed story notification saved to user DB");
     }
-  );
-  if (res) {
-    user?.notifications?.push({
-      title: "Story Processing Failed",
-      message: `Your video failed to generate.`,
-      data: notificationDTO,
-      redirectTo: "/storiesDetails",
-      createdAt: new Date(),
-    });
-    await user?.save();
-    console.log("Notification saved to user and saved in DB");
+  } catch (notificationError) {
+    console.error("Failed to send failure notification:", notificationError);
+    // Still save the notification to user's database even if push fails
+    if (user) {
+      user.notifications?.push({
+        title: "Story Processing Failed",
+        message: `Your video failed to generate.`,
+        data: notificationDTO,
+        redirectTo: "/storiesDetails",
+        createdAt: new Date(),
+      });
+      await user.save();
+      console.log("Failed story notification saved to user DB despite push notification failure");
+    }
   }
 });
 

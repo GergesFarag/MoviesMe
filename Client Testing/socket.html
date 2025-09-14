@@ -253,6 +253,7 @@
             Connect & Join User Room
           </button>
           <button id="disconnectBtn">Disconnect</button>
+          <button id="healthCheckBtn" class="secondary">Health Check</button>
           <button id="clearBtn">Clear Log</button>
           <button id="copyBtn" class="secondary">Copy Log JSON</button>
         </div>
@@ -315,7 +316,7 @@
       </div>
     </div>
 
-   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
       const $ = (id) => document.getElementById(id);
       const apiUrlEl = $("apiUrl");
@@ -323,6 +324,7 @@
       const authTokenEl = $("authToken");
       const connectBtn = $("connectBtn");
       const disconnectBtn = $("disconnectBtn");
+      const healthCheckBtn = $("healthCheckBtn");
       const clearBtn = $("clearBtn");
       const copyBtn = $("copyBtn");
       const logEl = $("log");
@@ -416,16 +418,14 @@
           socket = null;
         }
 
-        // Build options with fallback transports
-        const opts = { 
-          transports: ["websocket", "polling"],
-          timeout: 20000,
-          forceNew: true,
-          reconnection: true,
-          reconnectionDelay: 1000,
-          reconnectionAttempts: 5,
-          maxReconnectionAttempts: 5
-        };
+        // Enhanced options for better connection stability
+        const opts = {
+          transports: ["websocket" , "polling"], // Allow both transports for better compatibility
+          pingInterval: 60000,
+          pingTimeout: 120000,
+          connectTimeout: 180000,
+          upgradeTimeout: 30000,
+        }
         if (token) opts.auth = { token };
 
         addLog("client:info", { message: "Attempting to connect...", url });
@@ -435,28 +435,52 @@
 
         socket.on("connect", () => {
           setStatus("ok", `Connected: ${socket.id}`);
-          addLog("connect", { id: socket.id, url, transport: socket.io.engine.transport.name });
+          addLog("connect", {
+            id: socket.id,
+            url,
+            transport: socket.io.engine.transport.name,
+          });
           socket.emit("join:user", userId);
           addLog("client:join", { room: `user:${userId}` });
         });
 
         socket.on("connect_error", (err) => {
           setStatus("err", "Connect error");
-          addLog("connect_error", { 
-            message: err?.message || "Unknown connection error", 
+          addLog("connect_error", {
+            message: err?.message || "Unknown connection error",
             data: err?.data,
             type: err?.type,
-            description: err?.description
+            description: err?.description,
           });
         });
 
         socket.on("disconnect", (reason) => {
           setStatus("warn", `Disconnected: ${reason}`);
-          addLog("disconnect", { reason });
-          
-          // Attempt reconnection for certain disconnect reasons
-          if (reason === "io server disconnect") {
-            addLog("client:info", { message: "Server disconnected. Attempting to reconnect..." });
+          addLog("disconnect", { 
+            reason,
+            transport: socket.io.engine.transport.name,
+            upgraded: socket.io.engine.upgraded,
+            readyState: socket.io.engine.readyState,
+            timestamp: new Date().toISOString()
+          });
+
+          // Enhanced reconnection logic based on disconnect reason
+          if (reason === "transport close") {
+            addLog("client:warn", {
+              message: "Transport closed unexpectedly. Checking connection...",
+              details: {
+                transport: socket.io.engine.transport.name,
+                upgraded: socket.io.engine.upgraded
+              }
+            });
+          } else if (reason === "ping timeout") {
+            addLog("client:warn", {
+              message: "Ping timeout detected. Network may be unstable.",
+            });
+          } else if (reason === "io server disconnect") {
+            addLog("client:info", {
+              message: "Server disconnected. Attempting to reconnect...",
+            });
           }
         });
 
@@ -480,18 +504,74 @@
         });
 
         // Listen to server events for this user
-        [
-          "story:progress",
-          "story:completed",
-          "story:failed"
-        ].forEach((ev) => socket.on(ev, (payload) => addLog(ev, payload)));
+        ["story:progress", "story:completed", "story:failed"].forEach((ev) =>
+          socket.on(ev, (payload) => addLog(ev, payload))
+        );
 
-        // Add heartbeat
-        setInterval(() => {
-          if (socket && socket.connected) {
-            socket.emit("ping");
+        // Enhanced event handlers for connection monitoring
+        socket.on("connection:confirmed", (data) => {
+          addLog("connection:confirmed", data);
+        });
+
+        socket.on("health:response", (data) => {
+          addLog("health:response", data);
+        });
+
+        socket.on("connection:alive", (data) => {
+          addLog("connection:alive", { 
+            connectedTime: Math.round(data.connectedTime / 1000) + "s",
+            timestamp: new Date(data.timestamp).toLocaleTimeString()
+          });
+        });
+
+        socket.on("socket:error", (error) => {
+          addLog("socket:error", error);
+        });
+
+        socket.on("pong", (data) => {
+          addLog("pong", data);
+        });
+
+        // Enhanced transport monitoring
+        socket.io.engine.on("upgrade", () => {
+          addLog("transport:upgrade", { 
+            transport: socket.io.engine.transport.name,
+            upgraded: socket.io.engine.upgraded
+          });
+        });
+
+        socket.io.engine.on("upgradeError", (error) => {
+          addLog("transport:upgradeError", { error: error.message });
+        });
+
+        // Enhanced heartbeat with connection monitoring
+        let heartbeatInterval;
+        const startHeartbeat = () => {
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+          
+          heartbeatInterval = setInterval(() => {
+            if (socket && socket.connected) {
+              socket.emit("ping");
+              
+              // Also request health check periodically
+              if (Math.random() < 0.1) { // 10% chance
+                socket.emit("health:check");
+              }
+            } else {
+              clearInterval(heartbeatInterval);
+            }
+          }, 25000);
+        };
+
+        socket.on("connect", () => {
+          startHeartbeat();
+        });
+
+        socket.on("disconnect", () => {
+          if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
           }
-        }, 25000);
+        });
       }
 
       function disconnect() {
@@ -504,9 +584,29 @@
         }
       }
 
+      function healthCheck() {
+        if (!socket || !socket.connected) {
+          addLog("client:error", { message: "Not connected to server" });
+          return;
+        }
+        
+        socket.emit("health:check");
+        addLog("client:info", { message: "Health check requested" });
+      }
+
+      function clearLog() {
+        allLogs = [];
+        logEl.innerHTML = "";
+      }
+
+      function copyLog() {
+        navigator.clipboard.writeText(JSON.stringify(allLogs, null, 2));
+      }
+
       // Wire buttons
       connectBtn.addEventListener("click", connect);
       disconnectBtn.addEventListener("click", disconnect);
+      healthCheckBtn.addEventListener("click", healthCheck);
       clearBtn.addEventListener("click", clearLog);
       copyBtn.addEventListener("click", copyLog);
     </script>
