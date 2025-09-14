@@ -17,6 +17,16 @@ import { StoryDTO } from "../DTOs/story.dto";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import User from "../Models/user.model";
 
+// Utility function to add timeout to promises
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new AppError(`${operation} timed out after ${timeoutMs}ms`, 408)), timeoutMs)
+    )
+  ]);
+};
+
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -26,12 +36,21 @@ export const storyQueue = new Queue("storyProcessing", {
     host: process.env.REDIS_HOST as string,
     port: redisPort,
     password: (process.env.REDIS_PASSWORD as string) || undefined,
+    maxRetriesPerRequest: 3,
   },
   defaultJobOptions: {
-    attempts: 2,
-    timeout: 300000,
+    attempts: 5, // Increased from 2 to 5
+    timeout: 300000, // 5 minutes - reduced from 10 minutes
+    backoff: {
+      type: 'exponential',
+      delay: 5000,
+    },
     removeOnComplete: 10, // Keep only 10 completed jobs
-    removeOnFail: 5, // Keep only 5 failed jobs
+    removeOnFail: 10, // Keep only 10 failed jobs
+  },
+  settings: {
+    stalledInterval: 30000, // Check for stalled jobs every 30s
+    maxStalledCount: 1, // Retry stalled jobs once
   },
 });
 
@@ -50,7 +69,14 @@ storyQueue.process(async (job) => {
     }
 
     console.log(`Starting story processing for jobId: ${jobData.jobId}`);
-    console.log("Job data:", jobData);
+    console.log("Job data:", { ...jobData, userId: "***", prompt: jobData.prompt.substring(0, 100) + "..." });
+
+    // Check if job is already being processed (duplicate prevention)
+    const existingJob = await Job.findOne({ jobId: jobData.jobId });
+    if (existingJob && existingJob.status === "completed") {
+      console.log(`Job ${jobData.jobId} already completed, skipping`);
+      return { message: "Job already completed", jobId: jobData.jobId };
+    }
 
     updateJobProgress(
       job,
@@ -213,8 +239,10 @@ storyQueue.process(async (job) => {
       }
 
       console.log(`Merging ${videoUrls.length} video scenes:`, videoUrls);
-      mergedVideoBuffer = await videoGenerationService.mergeScenes(
-        videoUrls as string[]
+      mergedVideoBuffer = await withTimeout(
+        videoGenerationService.mergeScenes(videoUrls as string[]),
+        20000,
+        "Video merging"
       );
     } catch (mergeError) {
       console.error("Video merge error:", mergeError);
@@ -315,11 +343,14 @@ storyQueue.process(async (job) => {
         }
 
         console.log("🎬 Calling composeSoundWithVideoBuffer...");
-        const composedBuffer =
-          await videoGenerationService.composeSoundWithVideoBuffer(
+        const composedBuffer = await withTimeout(
+          videoGenerationService.composeSoundWithVideoBuffer(
             finalVideoBuffer,
             voiceOverUrl
-          );
+          ),
+          90000, // 1.5 minutes timeout for audio composition
+          "Audio composition"
+        );
 
         if (!composedBuffer || composedBuffer.length === 0) {
           throw new AppError("Audio composition returned empty buffer", 500);
@@ -364,7 +395,11 @@ storyQueue.process(async (job) => {
     );
 
     const finalVideoUrl = (
-      await cloudUploadVideo(finalVideoBuffer, `story_videos/${jobData.jobId}`)
+      await withTimeout(
+        cloudUploadVideo(finalVideoBuffer, `story_videos/${jobData.jobId}`),
+        30000, // 30 seconds timeout for upload
+        "Video upload"
+      )
     ).secure_url;
 
     console.log("Final video URL: ", finalVideoUrl);
@@ -635,5 +670,40 @@ storyQueue.on("failed", async (job, err) => {
     }
   }
 });
+
+// Enhanced monitoring and logging
+storyQueue.on("waiting", (jobId) => {
+  console.log(`📋 Job ${jobId} is waiting in queue`);
+});
+
+storyQueue.on("active", (job) => {
+  console.log(`🚀 Job ${job.id} started processing at ${new Date().toISOString()}`);
+});
+
+storyQueue.on("stalled", (job) => {
+  console.warn(`⚠️ Job ${job.id} stalled - will be retried`);
+});
+
+storyQueue.on("progress", (job, progress) => {
+  console.log(`📊 Job ${job.id} progress: ${progress}%`);
+});
+
+storyQueue.on("error", (error) => {
+  console.error("❌ Queue error:", error);
+});
+
+// Log queue statistics periodically
+setInterval(async () => {
+  try {
+    const waiting = await storyQueue.getWaiting();
+    const active = await storyQueue.getActive();
+    const completed = await storyQueue.getCompleted();
+    const failed = await storyQueue.getFailed();
+    
+    console.log(`📈 Queue Stats - Waiting: ${waiting.length}, Active: ${active.length}, Completed: ${completed.length}, Failed: ${failed.length}`);
+  } catch (error) {
+    console.error("Failed to get queue statistics:", error);
+  }
+}, 30000); // Log every 30 seconds
 
 export default storyQueue;
