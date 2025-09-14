@@ -508,7 +508,7 @@ storyQueue.on("completed", async (job, result) => {
     }
   }
   const notificationDTO = {
-    storyId: String(job.data._id || ''),
+    storyId: String(result.storyId || ''),
     jobId: String(job.opts.jobId || ''),
     status: String(job.data.status || ''),
     userId: String(job.data.userId || ''),
@@ -591,7 +591,7 @@ storyQueue.on("failed", async (job, err) => {
   }
 
   const notificationDTO = {
-    storyId: String(job.data._id || ''),
+    storyId: String(job.data.storyId || ''),
     jobId: String(job.opts.jobId || ''),
     status: String(job.data.status || ''),
     userId: String(job.data.userId || ''),
