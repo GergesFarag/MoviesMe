@@ -1,5 +1,3 @@
-// Server-side WebSocket connection monitoring and statistics
-// Add this to track connection patterns and identify issues
 
 interface ConnectionStats {
   totalConnections: number;
