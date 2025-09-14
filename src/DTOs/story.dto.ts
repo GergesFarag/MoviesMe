@@ -45,7 +45,7 @@ class StoryDTO implements IStoryMapper {
 
   toAbstractDTO(): IStoryAbstactDTO {
     return {
-      _id: (this.story._id as any).toString(),
+      _id: this.story._id as string,
       title: this.story.title,
       prompt: this.story.prompt,
       status: this.story.status,
@@ -58,7 +58,7 @@ class StoryDTO implements IStoryMapper {
 
   toDTO(): IStoryDTO {
     return {
-      _id: (this.story._id as any).toString(),
+      _id: this.story._id as string,
       title: this.story.title,
       prompt: this.story.prompt,
       status: this.story.status,
