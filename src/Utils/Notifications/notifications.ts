@@ -53,14 +53,6 @@ export const sendNotificationToClient = async (
       dataKeys: Object.keys(stringifiedData),
       dataValues: stringifiedData
     });
-
-    try {
-      await firebaseAdmin.auth().listUsers(1); // Quick test call
-    } catch (authError) {
-      console.error("Firebase authentication test failed:", authError);
-      throw new Error(`Firebase authentication failed: ${authError}`);
-    }
-
     const response = await firebaseAdmin.messaging().send(message);
     console.log("Successfully sent message:", response);
     return response;
@@ -84,7 +76,6 @@ export const sendNotificationToClient = async (
         console.error("Data types:", Object.entries(stringifiedData).map(([k, v]) => `${k}: ${typeof v}`));
       }
     }
-
     throw error;
   }
 };

@@ -126,8 +126,8 @@ const storyController = {
         const response = await processStoryJobAsnc(storyData, userId, jobId);
         console.log("RESPONSE", response);
       } catch (error) {
-        console.error("Error starting story processing:", error);
         await Story.findByIdAndUpdate(createdStory._id, { status: "failed" });
+        throw new AppError("Failed to process story generation", 500);
       }
     }
   ),

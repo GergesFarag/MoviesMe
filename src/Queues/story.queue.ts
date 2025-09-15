@@ -30,14 +30,14 @@ export const storyQueue = new Queue("storyProcessing", {
     maxRetriesPerRequest: 3,
   },
   defaultJobOptions: {
-    attempts: 5, // Increased from 2 to 5
-    timeout: 300000, // 5 minutes - reduced from 10 minutes
+    attempts: 2, // Reduced from 5 to 2 to minimize multiple failure notifications
+    timeout: 300000, // 5 minutes
     backoff: {
       type: "exponential",
-      delay: 5000,
+      delay: 10000, // Increased delay between retries
     },
     removeOnComplete: 10, // Keep only 10 completed jobs
-    removeOnFail: 10, // Keep only 10 failed jobs
+    removeOnFail: 5, // Keep only 5 failed jobs
   },
   settings: {
     stalledInterval: 30000, // Check for stalled jobs every 30s
@@ -458,28 +458,12 @@ storyQueue.process(async (job) => {
       message: err instanceof Error ? err.message : "Unknown error",
       stack: err instanceof Error ? err.stack : undefined,
       jobId: job.opts.jobId,
+      attemptsMade: job.attemptsMade,
+      attemptsTotal: job.opts.attempts,
     });
 
-    if (job.opts.jobId) {
-      try {
-        await Job.findOneAndUpdate(
-          { jobId: job.opts.jobId as string },
-          { status: "failed", updatedAt: new Date() }
-        );
-
-        const Story = require("../Models/story.model").default;
-        await Story.findOneAndUpdate(
-          { jobId: job.opts.jobId as string },
-          { status: "failed", updatedAt: new Date() }
-        );
-
-        console.log(
-          `Updated job and story status to failed for jobId: ${job.opts.jobId}`
-        );
-      } catch (updateError) {
-        console.error("Failed to update failed job/story status:", updateError);
-      }
-    }
+    // Don't update database status here - let the 'failed' event handler do it
+    // This prevents race conditions and duplicate updates
 
     const errorMessage =
       err instanceof Error ? err.message : "Unknown error occurred";
@@ -577,7 +561,7 @@ storyQueue.on("completed", async (job, result) => {
         title: "Model Processing Completed",
         message: `Your video generated successfully`,
         data: notificationDTO,
-        redirectTo: "/storiesDetails",
+        redirectTo: "/storyDetails",
         createdAt: new Date(),
       });
       await user.save();
@@ -592,8 +576,17 @@ storyQueue.on("completed", async (job, result) => {
 storyQueue.on("failed", async (job, err) => {
   console.log(`Story job with ID ${job?.id} has failed.`);
   console.log("Error:", err);
+  console.log(`Attempt ${job?.attemptsMade} of ${job?.opts?.attempts}`);
 
-  // Update job status to failed in database
+  // Only handle final failure (no more retries)
+  if (job?.attemptsMade < (job?.opts?.attempts || 1)) {
+    console.log(`Job will be retried. Attempt ${job?.attemptsMade + 1} of ${job?.opts?.attempts}`);
+    return; // Don't send notifications or update status for non-final failures
+  }
+
+  console.log("Final failure - sending notifications and updating database");
+
+  // Update job status to failed in database (only on final failure)
   if (job?.opts?.jobId) {
     try {
       await Job.findOneAndUpdate(
@@ -613,66 +606,77 @@ storyQueue.on("failed", async (job, err) => {
           updatedAt: new Date(),
         }
       );
+      
+      console.log(`Updated job and story status to failed for jobId: ${job.opts.jobId}`);
     } catch (dbErr) {
       console.error("Failed to update job/story status in database:", dbErr);
     }
   }
 
+  // Send socket notification only on final failure
   const io = getIO();
   if (job?.data?.userId) {
-    const roomName = `user:${job.data.userId}`;
-    console.log(`📤 Sending failure notification to room: ${roomName}`);
-    io.to(roomName).emit("story:failed", {
-      message: "Story generation failed. Please try again.",
-      jobId: job.opts?.jobId,
-      error: err.message,
-    });
+    try {
+      const roomName = `user:${job.data.userId}`;
+      console.log(`📤 Sending final failure notification to room: ${roomName}`);
+      io.to(roomName).emit("story:failed", {
+        message: "Story generation failed. Please try again.",
+        jobId: job.opts?.jobId,
+        error: err.message,
+      });
+    } catch (socketError) {
+      console.error("Failed to send socket notification:", socketError);
+    }
   }
 
-  const notificationDTO = {
-    storyId: String(job.data.storyId || null),
-    jobId: String(job.opts.jobId || null),
-    status: "failed",
-    userId: String(job.data.userId || null),
-  };
-  const user = await User.findById(job.data.userId);
+  // Send push notification only on final failure
+  if (job?.data?.userId) {
+    try {
+      const notificationDTO = {
+        storyId: String(job.data.storyId || ""),
+        jobId: String(job.opts.jobId || ""),
+        status: "failed",
+        userId: String(job.data.userId || ""),
+      };
+      const user = await User.findById(job.data.userId);
 
-  try {
-    const userFCMToken = user?.FCMToken!;
-    const res = await sendNotificationToClient(
-      userFCMToken,
-      "Story Processing Failed",
-      `Your video failed to generate`,
-      {
-        ...notificationDTO,
-        redirectTo: null,
+      if (user && user.FCMToken) {
+        const res = await sendNotificationToClient(
+          user.FCMToken,
+          "Story Processing Failed",
+          `Your video failed to generate`,
+          {
+            ...notificationDTO,
+            redirectTo: "/storyDetails",
+          }
+        );
+        
+        if (res) {
+          user.notifications?.push({
+            title: "Story Processing Failed",
+            message: `Your video failed to generate.`,
+            data: notificationDTO,
+            redirectTo: "/storyDetails",
+            createdAt: new Date(),
+          });
+          await user.save();
+          console.log("Failed story notification saved to user DB");
+        }
+      } else if (user) {
+        // Save notification even if no FCM token
+        user.notifications?.push({
+          title: "Story Processing Failed",
+          message: `Your video failed to generate.`,
+          data: notificationDTO,
+          redirectTo: "/storyDetails",
+          createdAt: new Date(),
+        });
+        await user.save();
+        console.log("Failed story notification saved to user DB (no FCM token)");
       }
-    );
-    if (res) {
-      user?.notifications?.push({
-        title: "Story Processing Failed",
-        message: `Your video failed to generate.`,
-        data: notificationDTO,
-        redirectTo: null,
-        createdAt: new Date(),
-      });
-      await user?.save();
-      console.log("Failed story notification saved to user DB");
-    }
-  } catch (notificationError) {
-    console.error("Failed to send failure notification:", notificationError);
-    if (user) {
-      user.notifications?.push({
-        title: "Story Processing Failed",
-        message: `Your video failed to generate.`,
-        data: notificationDTO,
-        redirectTo: null,
-        createdAt: new Date(),
-      });
-      await user.save();
-      console.log(
-        "Failed story notification saved to user DB despite push notification failure"
-      );
+    } catch (notificationError) {
+      console.error("Failed to send push notification:", notificationError);
+      // Don't let notification failures crash the system
     }
   }
 });
@@ -698,6 +702,39 @@ storyQueue.on("progress", (job, progress) => {
 
 storyQueue.on("error", (error) => {
   console.error("❌ Queue error:", error);
+  // Prevent queue errors from crashing the server
+  try {
+    // Log additional context if available
+    console.error("Queue error details:", {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (logError) {
+    console.error("Failed to log queue error details:", logError);
+  }
+});
+
+// Add global error handling for the queue
+storyQueue.on("stalled", (job) => {
+  console.warn(`⚠️ Job ${job.id} stalled - will be retried`);
+  // Add additional logging for stalled jobs
+  console.warn("Stalled job details:", {
+    jobId: job.opts?.jobId,
+    attemptsMade: job.attemptsMade,
+    data: job.data?.userId ? { userId: job.data.userId } : {},
+  });
+});
+
+// Handle global promise rejections that might affect the queue
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log the error
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Log but don't exit - let the application handle it
 });
 
 // Log queue statistics periodically
