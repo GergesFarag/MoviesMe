@@ -18,25 +18,6 @@ import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import User from "../Models/user.model";
 import { title } from "process";
 
-const withTimeout = <T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  operation: string
-): Promise<T> => {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(
-        () =>
-          reject(
-            new AppError(`${operation} timed out after ${timeoutMs}ms`, 408)
-          ),
-        timeoutMs
-      )
-    ),
-  ]);
-};
-
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -253,11 +234,7 @@ storyQueue.process(async (job) => {
       }
 
       console.log(`Merging ${videoUrls.length} video scenes:`, videoUrls);
-      mergedVideoBuffer = await withTimeout(
-        videoGenerationService.mergeScenes(videoUrls as string[]),
-        20000,
-        "Video merging"
-      );
+      mergedVideoBuffer = await videoGenerationService.mergeScenes(videoUrls as string[]);
     } catch (mergeError) {
       console.error("Video merge error:", mergeError);
       throw new AppError(
@@ -357,13 +334,9 @@ storyQueue.process(async (job) => {
         }
 
         console.log("🎬 Calling composeSoundWithVideoBuffer...");
-        const composedBuffer = await withTimeout(
-          videoGenerationService.composeSoundWithVideoBuffer(
-            finalVideoBuffer,
-            voiceOverUrl
-          ),
-          90000, // 1.5 minutes timeout for audio composition
-          "Audio composition"
+        const composedBuffer = await videoGenerationService.composeSoundWithVideoBuffer(
+          finalVideoBuffer,
+          voiceOverUrl
         );
 
         if (!composedBuffer || composedBuffer.length === 0) {
@@ -409,11 +382,7 @@ storyQueue.process(async (job) => {
     );
 
     const finalVideoUrl = (
-      await withTimeout(
-        cloudUploadVideo(finalVideoBuffer, `story_videos/${jobData.jobId}`),
-        30000, // 30 seconds timeout for upload
-        "Video upload"
-      )
+      await cloudUploadVideo(finalVideoBuffer, `story_videos/${jobData.jobId}`)
     ).secure_url;
 
     console.log("Final video URL: ", finalVideoUrl);
@@ -429,7 +398,7 @@ storyQueue.process(async (job) => {
     const updatedStory = await updateCompletedStory(job.opts.jobId as string, {
       videoUrl: finalVideoUrl,
       scenes: story.scenes,
-      thumbnail: story.scenes[0]?.image || null, // Use null instead of empty string fallback
+      thumbnail: story.scenes[0]?.image || null, 
       location: jobData.location || null,
       style: jobData.style || null,
       title: story.title || null,
