@@ -16,7 +16,7 @@ interface IStoryDTO {
   voiceOver?: {
     sound: string | null;
     text: string | null;
-  };
+  } | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -92,10 +92,10 @@ class StoryDTO implements IStoryMapper {
         image: (scene?.image as string) || null,
       })),
       jobId: this.story.jobId || null,
-      voiceOver: {
-        sound: this.story.voiceOver?.sound || null,
-        text: this.story.voiceOver?.text || null,
-      },
+      voiceOver: this.story.voiceOver ? {
+        sound: this.story.voiceOver.sound || null,
+        text: this.story.voiceOver.text || null,
+      } : null,
       createdAt: this.story.createdAt,
       updatedAt: this.story.updatedAt,
     };
