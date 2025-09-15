@@ -28,7 +28,7 @@ interface IStoryAbstactDTO {
   jobId: string | null;
   isFav: boolean | null;
   thumbnail: string | null;
-  numOfScenes: number;
+  numOfScenes: number | null;
 }
 
 interface IStoryMapper {
@@ -61,7 +61,7 @@ class StoryDTO implements IStoryMapper {
       jobId: this.story.jobId || null,
       isFav: this.story.isFav || false,
       thumbnail: this.story.thumbnail || null,
-      numOfScenes: this.story.scenes.length,
+      numOfScenes: !this.story.scenes.length ? null : this.story.scenes.length,
     };
   }
 
@@ -92,10 +92,12 @@ class StoryDTO implements IStoryMapper {
         image: (scene?.image as string) || null,
       })),
       jobId: this.story.jobId || null,
-      voiceOver: this.story.voiceOver ? {
-        sound: this.story.voiceOver.sound || null,
-        text: this.story.voiceOver.text || null,
-      } : null,
+      voiceOver: this.story.voiceOver
+        ? {
+            sound: this.story.voiceOver.sound || null,
+            text: this.story.voiceOver.text || null,
+          }
+        : null,
       createdAt: this.story.createdAt,
       updatedAt: this.story.updatedAt,
     };
@@ -107,7 +109,7 @@ class StoryDTO implements IStoryMapper {
     }
     return new StoryDTO(story).toDTO();
   }
-  
+
   static toAbstractDTO(story: IStory): IStoryAbstactDTO {
     if (!story) {
       throw new Error("Cannot convert undefined or null story to AbstractDTO");

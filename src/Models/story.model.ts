@@ -49,7 +49,7 @@ const storySchema = new mongoose.Schema<IStory>(
     },
   },
   {
-    timestamps: true, // This automatically adds createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 
