@@ -93,9 +93,9 @@ const storyController = {
         {
           title: storyData.storyTitle || "Generating Story...",
           prompt: storyData.prompt,
-          genre: storyData.genere,
-          location: locationName,
-          style: styleName,
+          genre: storyData.genere || null,
+          location: locationName || null,
+          style: styleName || null,
           duration: storyData.storyDuration,
           thumbnail: storyData.image,
         }

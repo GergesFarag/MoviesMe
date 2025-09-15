@@ -174,14 +174,15 @@ export const createInitialStoryAndUpdateUser = async (
   storyData: {
     title: string;
     prompt: string;
-    genre?: string;
-    location?: string;
-    style?: string;
+    genre?: string | null;
+    location?: string | null;
+    style?: string | null;
     duration: number;
     thumbnail?: string;
   }
 ): Promise<IStory> => {
   // Create the story with pending status and basic data
+  // Set all non-completed fields to null until they have actual values
   const createdStory = await Story.create({
     userId,
     jobId,
@@ -189,13 +190,14 @@ export const createInitialStoryAndUpdateUser = async (
     prompt: storyData.prompt,
     status: "pending",
     isFav: false,
-    videoUrl: "", // Will be updated when job completes
+    videoUrl: null, // Will be set when video generation completes
     duration: storyData.duration,
-    genre: storyData.genre || "",
-    location: storyData.location || "",
-    style: storyData.style || "",
-    thumbnail: storyData.thumbnail || "",
+    genre: storyData.genre || null,
+    location: storyData.location || null,
+    style: storyData.style || null,
+    thumbnail: storyData.thumbnail || null, // Will be set when image generation completes
     scenes: [], // Will be populated when job completes
+    voiceOver: null, // Will be set only if voice over is requested and completed
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -228,15 +230,15 @@ export const updateCompletedStory = async (
   updateData: {
     videoUrl: string;
     scenes: any[];
-    thumbnail?: string;
-    location?: string;
-    style?: string;
-    title?: string;
-    genre?: string;
+    thumbnail?: string | null;
+    location?: string | null;
+    style?: string | null;
+    title?: string | null;
+    genre?: string | null;
     voiceOver?: {
-      sound: string;
-      text: string;
-    };
+      sound: string | null;
+      text: string | null;
+    } | null;
   }
 ): Promise<IStory | null> => {
   try {
@@ -282,13 +284,48 @@ export const updateCompletedStory = async (
     }
 
     // Update the existing story with completed data (allow updating from any status)
+    // Only set fields that have actual values, keeping null for incomplete fields
+    const updateFields: any = {
+      status: "completed",
+      updatedAt: new Date(),
+    };
+
+    // Only set fields that have actual non-null/non-empty values
+    if (updateData.videoUrl) {
+      updateFields.videoUrl = updateData.videoUrl;
+    }
+    
+    if (updateData.scenes && updateData.scenes.length > 0) {
+      updateFields.scenes = updateData.scenes;
+    }
+    
+    if (updateData.thumbnail) {
+      updateFields.thumbnail = updateData.thumbnail;
+    }
+    
+    if (updateData.location) {
+      updateFields.location = updateData.location;
+    }
+    
+    if (updateData.style) {
+      updateFields.style = updateData.style;
+    }
+    
+    if (updateData.title) {
+      updateFields.title = updateData.title;
+    }
+    
+    if (updateData.genre) {
+      updateFields.genre = updateData.genre;
+    }
+    
+    if (updateData.voiceOver && updateData.voiceOver.sound && updateData.voiceOver.text) {
+      updateFields.voiceOver = updateData.voiceOver;
+    }
+
     const updatedStory = await Story.findOneAndUpdate(
       { jobId },
-      {
-        ...updateData,
-        status: "completed",
-        updatedAt: new Date(),
-      },
+      updateFields,
       { new: true }
     );
 

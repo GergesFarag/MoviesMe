@@ -1,33 +1,33 @@
 import { IStory } from "../Interfaces/story.interface";
 interface IStoryDTO {
   _id: string;
-  title: string;
-  prompt: string;
-  status: string;
-  thumbnail: string;
-  isFav: boolean;
-  videoUrl: string;
-  duration: number;
-  style: string;
-  location: string;
-  genre: string;
-  scenes: { description: string; image: string }[];
-  jobId: string;
+  title: string | null;
+  prompt: string | null;
+  status: string | null;
+  thumbnail: string | null;
+  isFav: boolean | null;
+  videoUrl: string | null;
+  duration: number | null;
+  style: string | null;
+  location: string | null;
+  genre: string | null;
+  scenes: { description: string | null; image: string | null }[] | null;
+  jobId: string | null;
   voiceOver?: {
-    sound: string;
-    text: string;
+    sound: string | null;
+    text: string | null;
   };
   createdAt?: Date;
   updatedAt?: Date;
 }
 interface IStoryAbstactDTO {
   _id: string;
-  title: string;
-  prompt: string;
-  status: string;
-  jobId: string;
-  isFav: boolean;
-  thumbnail: string;
+  title: string | null;
+  prompt: string | null;
+  status: string | null;
+  jobId: string | null;
+  isFav: boolean | null;
+  thumbnail: string | null;
   numOfScenes: number;
 }
 
@@ -55,12 +55,12 @@ class StoryDTO implements IStoryMapper {
 
     return {
       _id: this.story._id as string,
-      title: this.story.title || "",
-      prompt: this.story.prompt || "",
+      title: this.story.title || null,
+      prompt: this.story.prompt || null,
       status: this.story.status || "unknown",
-      jobId: this.story.jobId || "",
+      jobId: this.story.jobId || null,
       isFav: this.story.isFav || false,
-      thumbnail: this.story.thumbnail || "",
+      thumbnail: this.story.thumbnail || null,
       numOfScenes: this.story.scenes.length,
     };
   }
@@ -77,24 +77,24 @@ class StoryDTO implements IStoryMapper {
 
     return {
       _id: this.story._id as string,
-      title: this.story.title || "",
-      prompt: this.story.prompt || "",
-      status: this.story.status || "unknown",
-      thumbnail: this.story.thumbnail || "",
-      isFav: this.story.isFav || false,
-      videoUrl: this.story.videoUrl || "",
-      duration: this.story.duration || 0,
-      style: this.story.style || "",
-      location: this.story.location || "",
-      genre: this.story.genre || "",
+      title: this.story.title || null,
+      prompt: this.story.prompt || null,
+      status: this.story.status || null,
+      thumbnail: this.story.thumbnail || null,
+      isFav: this.story.isFav || null,
+      videoUrl: this.story.videoUrl || null,
+      duration: this.story.duration || null,
+      style: this.story.style || null,
+      location: this.story.location || null,
+      genre: this.story.genre || null,
       scenes: this.story.scenes.map((scene) => ({
-        description: scene?.sceneDescription || "",
-        image: (scene?.image as string) || "",
+        description: scene?.sceneDescription || null,
+        image: (scene?.image as string) || null,
       })),
-      jobId: this.story.jobId || "",
+      jobId: this.story.jobId || null,
       voiceOver: {
-        sound: this.story.voiceOver?.sound || "",
-        text: this.story.voiceOver?.text || "",
+        sound: this.story.voiceOver?.sound || null,
+        text: this.story.voiceOver?.text || null,
       },
       createdAt: this.story.createdAt,
       updatedAt: this.story.updatedAt,

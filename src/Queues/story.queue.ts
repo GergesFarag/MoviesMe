@@ -16,14 +16,24 @@ import {
 import { StoryDTO } from "../DTOs/story.dto";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import User from "../Models/user.model";
+import { title } from "process";
 
-// Utility function to add timeout to promises
-const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
+const withTimeout = <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operation: string
+): Promise<T> => {
   return Promise.race([
     promise,
-    new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new AppError(`${operation} timed out after ${timeoutMs}ms`, 408)), timeoutMs)
-    )
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new AppError(`${operation} timed out after ${timeoutMs}ms`, 408)
+          ),
+        timeoutMs
+      )
+    ),
   ]);
 };
 
@@ -42,7 +52,7 @@ export const storyQueue = new Queue("storyProcessing", {
     attempts: 5, // Increased from 2 to 5
     timeout: 300000, // 5 minutes - reduced from 10 minutes
     backoff: {
-      type: 'exponential',
+      type: "exponential",
       delay: 5000,
     },
     removeOnComplete: 10, // Keep only 10 completed jobs
@@ -69,7 +79,11 @@ storyQueue.process(async (job) => {
     }
 
     console.log(`Starting story processing for jobId: ${jobData.jobId}`);
-    console.log("Job data:", { ...jobData, userId: "***", prompt: jobData.prompt.substring(0, 100) + "..." });
+    console.log("Job data:", {
+      ...jobData,
+      userId: "***",
+      prompt: jobData.prompt.substring(0, 100) + "...",
+    });
 
     // Check if job is already being processed (duplicate prevention)
     const existingJob = await Job.findOne({ jobId: jobData.jobId });
@@ -415,18 +429,18 @@ storyQueue.process(async (job) => {
     const updatedStory = await updateCompletedStory(job.opts.jobId as string, {
       videoUrl: finalVideoUrl,
       scenes: story.scenes,
-      thumbnail: story.scenes[0]?.image || jobData.image || "",
-      location: jobData.location || undefined,
-      style: jobData.style || undefined,
-      title: story.title || undefined,
-      genre: jobData.genere || undefined,
+      thumbnail: story.scenes[0]?.image || null, // Use null instead of empty string fallback
+      location: jobData.location || null,
+      style: jobData.style || null,
+      title: story.title || null,
+      genre: jobData.genere || null,
       voiceOver:
         voiceOverUrl && voiceOverText
           ? {
               sound: voiceOverUrl,
               text: voiceOverText,
             }
-          : undefined,
+          : null,
     });
 
     // Update the complete voiceOver object if we have voice over data
@@ -436,12 +450,20 @@ storyQueue.process(async (job) => {
         voiceOver: {
           voiceOverLyrics: jobData.voiceOver.voiceOverLyrics || null,
           voiceLanguage: jobData.voiceOver.voiceLanguage || null,
-          voiceGender: jobData.voiceOver.voiceGender,
+          voiceGender: jobData.voiceOver.voiceGender || null,
           sound: voiceOverUrl,
           text: voiceOverText,
         },
       });
       console.log("Complete voice over object updated in database");
+    } else if (updatedStory && !jobData.voiceOver) {
+      // Explicitly set voiceOver to null if no voice over was requested
+      console.log(
+        "No voice over requested, ensuring voiceOver field is null..."
+      );
+      await Story.findByIdAndUpdate(updatedStory._id, {
+        voiceOver: null,
+      });
     }
 
     console.log("Story updated in database:", updatedStory?._id);
@@ -500,7 +522,7 @@ storyQueue.on("completed", async (job, result) => {
   if (job.data.userId) {
     const roomName = `user:${job.data.userId}`;
     console.log(`📤 Sending completion notification to room: ${roomName}`);
-    
+
     // Fix: Extract the story from the result object and ensure it has scenes
     const story = result?.story;
     if (!story) {
@@ -508,7 +530,7 @@ storyQueue.on("completed", async (job, result) => {
       io.to(roomName).emit("story:failed", {
         message: "Story generation completed but no story data found",
         jobId: job.opts.jobId,
-        error: "Missing story data in result"
+        error: "Missing story data in result",
       });
       return;
     }
@@ -519,7 +541,7 @@ storyQueue.on("completed", async (job, result) => {
       io.to(roomName).emit("story:failed", {
         message: "Story generation completed but scenes data is invalid",
         jobId: job.opts.jobId,
-        error: "Invalid scenes data"
+        error: "Invalid scenes data",
       });
       return;
     }
@@ -531,33 +553,39 @@ storyQueue.on("completed", async (job, result) => {
         story: storyDTO,
         jobId: job.opts.jobId,
         finalVideoUrl: result.finalVideoUrl,
-        storyId: result.storyId
+        storyId: result.storyId,
       });
     } catch (dtoError) {
       console.error("❌ Error converting story to DTO:", dtoError);
       io.to(roomName).emit("story:failed", {
         message: "Story generation completed but failed to format response",
         jobId: job.opts.jobId,
-        error: dtoError instanceof Error ? dtoError.message : "DTO conversion failed"
+        error:
+          dtoError instanceof Error
+            ? dtoError.message
+            : "DTO conversion failed",
       });
     }
   }
   const notificationDTO = {
-    storyId: String(result.storyId || ''),
-    jobId: String(job.opts.jobId || ''),
-    status: String(job.data.status || ''),
-    userId: String(job.data.userId || ''),
+    storyId: String(result.storyId || ""),
+    jobId: String(job.opts.jobId || ""),
+    status: String(job.data.status || ""),
+    userId: String(job.data.userId || ""),
   };
   const user = await User.findById(job.data.userId);
 
   try {
+    const userFCMToken =
+      user?.FCMToken ||
+      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYY2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc";
     const res = await sendNotificationToClient(
-      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+      userFCMToken,
       "Model Processing Completed",
       `Your video generated successfully`,
       {
         ...notificationDTO,
-        redirectTo: "/storiesDetails",
+        redirectTo: "/storyDetails",
       }
     );
     if (res) {
@@ -565,7 +593,7 @@ storyQueue.on("completed", async (job, result) => {
         title: "Model Processing Completed",
         message: `Your video generated successfully`,
         data: notificationDTO,
-        redirectTo: "/storiesDetails",
+        redirectTo: "/storyDetails",
         createdAt: new Date(),
       });
       await user?.save();
@@ -583,7 +611,9 @@ storyQueue.on("completed", async (job, result) => {
         createdAt: new Date(),
       });
       await user.save();
-      console.log("Notification saved to user DB despite push notification failure");
+      console.log(
+        "Notification saved to user DB despite push notification failure"
+      );
     }
   }
   job.remove();
@@ -607,7 +637,11 @@ storyQueue.on("failed", async (job, err) => {
       const Story = require("../Models/story.model").default;
       await Story.findOneAndUpdate(
         { jobId: job.opts.jobId as string },
-        { status: "failed", updatedAt: new Date() }
+        {
+          status: "failed",
+          title: "Failed Story Generation!",
+          updatedAt: new Date(),
+        }
       );
     } catch (dbErr) {
       console.error("Failed to update job/story status in database:", dbErr);
@@ -626,21 +660,24 @@ storyQueue.on("failed", async (job, err) => {
   }
 
   const notificationDTO = {
-    storyId: String(job.data.storyId || ''),
-    jobId: String(job.opts.jobId || ''),
-    status: String(job.data.status || ''),
-    userId: String(job.data.userId || ''),
+    storyId: String(job.data.storyId || ""),
+    jobId: String(job.opts.jobId || ""),
+    status: String(job.data.status || ""),
+    userId: String(job.data.userId || ""),
   };
   const user = await User.findById(job.data.userId);
 
   try {
+    const userFCMToken =
+      user?.FCMToken ||
+      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYY2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc";
     const res = await sendNotificationToClient(
-      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+      userFCMToken,
       "Story Processing Failed",
       `Your video failed to generate`,
       {
         ...notificationDTO,
-        redirectTo: "/storiesDetails",
+        redirectTo: "/storyDetails",
       }
     );
     if (res) {
@@ -648,7 +685,7 @@ storyQueue.on("failed", async (job, err) => {
         title: "Story Processing Failed",
         message: `Your video failed to generate.`,
         data: notificationDTO,
-        redirectTo: "/storiesDetails",
+        redirectTo: "/storyDetails",
         createdAt: new Date(),
       });
       await user?.save();
@@ -662,11 +699,13 @@ storyQueue.on("failed", async (job, err) => {
         title: "Story Processing Failed",
         message: `Your video failed to generate.`,
         data: notificationDTO,
-        redirectTo: "/storiesDetails",
+        redirectTo: "/storyDetails",
         createdAt: new Date(),
       });
       await user.save();
-      console.log("Failed story notification saved to user DB despite push notification failure");
+      console.log(
+        "Failed story notification saved to user DB despite push notification failure"
+      );
     }
   }
 });
@@ -677,7 +716,9 @@ storyQueue.on("waiting", (jobId) => {
 });
 
 storyQueue.on("active", (job) => {
-  console.log(`🚀 Job ${job.id} started processing at ${new Date().toISOString()}`);
+  console.log(
+    `🚀 Job ${job.id} started processing at ${new Date().toISOString()}`
+  );
 });
 
 storyQueue.on("stalled", (job) => {
@@ -699,8 +740,10 @@ setInterval(async () => {
     const active = await storyQueue.getActive();
     const completed = await storyQueue.getCompleted();
     const failed = await storyQueue.getFailed();
-    
-    console.log(`📈 Queue Stats - Waiting: ${waiting.length}, Active: ${active.length}, Completed: ${completed.length}, Failed: ${failed.length}`);
+
+    console.log(
+      `📈 Queue Stats - Waiting: ${waiting.length}, Active: ${active.length}, Completed: ${completed.length}, Failed: ${failed.length}`
+    );
   } catch (error) {
     console.error("Failed to get queue statistics:", error);
   }
