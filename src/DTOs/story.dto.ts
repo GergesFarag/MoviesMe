@@ -61,7 +61,7 @@ class StoryDTO implements IStoryMapper {
       jobId: this.story.jobId || null,
       isFav: this.story.isFav || false,
       thumbnail: this.story.thumbnail || null,
-      numOfScenes: !this.story.scenes.length ? null : this.story.scenes.length,
+      numOfScenes: this.story.duration ? this.story.duration / 5 : 0,
     };
   }
 
