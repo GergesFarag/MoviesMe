@@ -1,7 +1,7 @@
 export interface INotification{
     title:string;
     message:string;
-    redirectTo:string;
+    redirectTo:string | null;
     data:any;
     createdAt:Date;
 }

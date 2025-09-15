@@ -129,7 +129,7 @@ taskQueue.on("completed", async (job, result: any) => {
     if (item) {
       const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
       const res = await sendNotificationToClient(
-        "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYE2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc", //! fix it later on
+        user?.FCMToken!,
         "Model Processing Completed",
         `Your video generated successfully`,
         {
@@ -143,7 +143,7 @@ taskQueue.on("completed", async (job, result: any) => {
           message: `Your video generated successfully`,
           data: notificationDTO,
           redirectTo: "/effectDetails",
-          createdAt: new Date()
+          createdAt: new Date(),
         });
         await user.save();
       }
@@ -161,12 +161,13 @@ taskQueue.on("failed", async (job, err) => {
       { status: "failed", error: err.message }
     );
 
-    // Clean up the failed job from Redis to free memory
     await job.remove();
 
     const user = await User.findById(jobUpdated?.userId);
     if (user) {
-      const item = user.effectsLib?.find((item) => item.jobId === job.opts.jobId);
+      const item = user.effectsLib?.find(
+        (item) => item.jobId === job.opts.jobId
+      );
       if (item) {
         item.status = "failed";
         item.updatedAt = new Date();
@@ -184,6 +185,31 @@ taskQueue.on("failed", async (job, err) => {
 
       if (job.data?.userId) {
         io.to(`user:${job.data.userId}`).emit("job:failed", payload);
+      }
+      const notificationDTO = {
+        storyId: null,
+        jobId: String(job.opts.jobId || null),
+        userId: String(job.data.userId || null),
+        status: "failed",
+      };
+      user.notifications?.push({
+        title: "Effect Processing Failed",
+        message: `Your effect failed to apply.`,
+        data: notificationDTO,
+        redirectTo: null,
+        createdAt: new Date(),
+      });
+      await user?.save();
+      if (user?.FCMToken) {
+        await sendNotificationToClient(
+          user.FCMToken,
+          "Effect Processing Failed",
+          `Your effect failed to apply.`,
+          {
+            ...notificationDTO,
+            redirectTo: null,
+          }
+        );
       }
     }
   } catch (error) {

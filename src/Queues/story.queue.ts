@@ -234,7 +234,9 @@ storyQueue.process(async (job) => {
       }
 
       console.log(`Merging ${videoUrls.length} video scenes:`, videoUrls);
-      mergedVideoBuffer = await videoGenerationService.mergeScenes(videoUrls as string[]);
+      mergedVideoBuffer = await videoGenerationService.mergeScenes(
+        videoUrls as string[]
+      );
     } catch (mergeError) {
       console.error("Video merge error:", mergeError);
       throw new AppError(
@@ -334,10 +336,11 @@ storyQueue.process(async (job) => {
         }
 
         console.log("🎬 Calling composeSoundWithVideoBuffer...");
-        const composedBuffer = await videoGenerationService.composeSoundWithVideoBuffer(
-          finalVideoBuffer,
-          voiceOverUrl
-        );
+        const composedBuffer =
+          await videoGenerationService.composeSoundWithVideoBuffer(
+            finalVideoBuffer,
+            voiceOverUrl
+          );
 
         if (!composedBuffer || composedBuffer.length === 0) {
           throw new AppError("Audio composition returned empty buffer", 500);
@@ -398,7 +401,7 @@ storyQueue.process(async (job) => {
     const updatedStory = await updateCompletedStory(job.opts.jobId as string, {
       videoUrl: finalVideoUrl,
       scenes: story.scenes,
-      thumbnail: story.scenes[0]?.image || null, 
+      thumbnail: story.scenes[0]?.image || null,
       location: jobData.location || null,
       style: jobData.style || null,
       title: story.title || null,
@@ -508,7 +511,7 @@ storyQueue.on("completed", async (job, result) => {
     if (!story.scenes || !Array.isArray(story.scenes)) {
       console.error("❌ Story scenes are missing or invalid:", story);
       io.to(roomName).emit("story:failed", {
-        message: "Story generation completed but scenes data is invalid",
+        message: "Story scenes data is invalid",
         jobId: job.opts.jobId,
         error: "Invalid scenes data",
       });
@@ -537,17 +540,15 @@ storyQueue.on("completed", async (job, result) => {
     }
   }
   const notificationDTO = {
-    storyId: String(result.storyId || ""),
-    jobId: String(job.opts.jobId || ""),
-    status: String(job.data.status || ""),
-    userId: String(job.data.userId || ""),
+    storyId: String(result.storyId || null),
+    jobId: String(job.opts.jobId || null),
+    status: String(result.story.status || null),
+    userId: String(job.data.userId || null),
   };
   const user = await User.findById(job.data.userId);
 
   try {
-    const userFCMToken =
-      user?.FCMToken ||
-      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYY2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc";
+    const userFCMToken = user?.FCMToken!;
     const res = await sendNotificationToClient(
       userFCMToken,
       "Model Processing Completed",
@@ -629,24 +630,22 @@ storyQueue.on("failed", async (job, err) => {
   }
 
   const notificationDTO = {
-    storyId: String(job.data.storyId || ""),
-    jobId: String(job.opts.jobId || ""),
-    status: String(job.data.status || ""),
-    userId: String(job.data.userId || ""),
+    storyId: String(job.data.storyId || null),
+    jobId: String(job.opts.jobId || null),
+    status: "failed",
+    userId: String(job.data.userId || null),
   };
   const user = await User.findById(job.data.userId);
 
   try {
-    const userFCMToken =
-      user?.FCMToken ||
-      "d9OD-zNgTcCcGdur0OiHhb:APA91bEPHYY2KcPjqSK3s9-5sUGTd5tff1N65hxm8VHA-jtvmXDcLvMbG3qYEYBSms0N987QvKQsmVYGgnnu-fqajJn71ihzPD_kWqI9auyWTq9eFa8WYxc";
+    const userFCMToken = user?.FCMToken!;
     const res = await sendNotificationToClient(
       userFCMToken,
       "Story Processing Failed",
       `Your video failed to generate`,
       {
         ...notificationDTO,
-        redirectTo: "/storyDetails",
+        redirectTo: null,
       }
     );
     if (res) {
@@ -654,7 +653,7 @@ storyQueue.on("failed", async (job, err) => {
         title: "Story Processing Failed",
         message: `Your video failed to generate.`,
         data: notificationDTO,
-        redirectTo: "/storyDetails",
+        redirectTo: null,
         createdAt: new Date(),
       });
       await user?.save();
@@ -662,13 +661,12 @@ storyQueue.on("failed", async (job, err) => {
     }
   } catch (notificationError) {
     console.error("Failed to send failure notification:", notificationError);
-    // Still save the notification to user's database even if push fails
     if (user) {
       user.notifications?.push({
         title: "Story Processing Failed",
         message: `Your video failed to generate.`,
         data: notificationDTO,
-        redirectTo: "/storyDetails",
+        redirectTo: null,
         createdAt: new Date(),
       });
       await user.save();
