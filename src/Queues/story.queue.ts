@@ -633,10 +633,10 @@ storyQueue.on("failed", async (job, err) => {
   if (job?.data?.userId) {
     try {
       const notificationDTO = {
-        storyId: String(job.data.storyId || ""),
-        jobId: String(job.opts.jobId || ""),
+        storyId: String(job.data.storyId || null),
+        jobId: String(job.opts.jobId || null),
         status: "failed",
-        userId: String(job.data.userId || ""),
+        userId: String(job.data.userId || null),
       };
       const user = await User.findById(job.data.userId);
 
