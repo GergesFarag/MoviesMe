@@ -49,8 +49,6 @@ export class OpenAIService {
         throw new AppError("No response content from OpenAI", 500);
       }
       
-      console.log("OPENAI RAW RESPONSE:", rawResponse);
-      
       let cleanResponse = rawResponse.trim();
       
       // Check if response appears to be truncated
