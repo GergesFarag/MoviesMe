@@ -32,11 +32,14 @@ export const runModel = async (
       await updateJobProgress(job, 30, "Submitting model data...", IO);
       await new Promise((res) => setTimeout((res), 2000)); 
     }
-
+    const payload = {
+    "enable_base64_output": false,
+    "image": data.image
+  };
     const response = await fetch(url, {
       method: "POST",
       headers: headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
 
     if (response.ok) {
