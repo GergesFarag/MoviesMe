@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import AppError from "../Utils/Errors/AppError";
 import { IStoryResponse } from "../Interfaces/storyResponse.interface";
 import { generateSysPrompt } from "../Utils/Format/generateSysPrompt";
+import { cloudUploadAudio } from "../Utils/APIs/cloudinary";
+import { streamToBuffer } from "../Utils/Format/streamToBuffer";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 export class OpenAIService {
   private client: OpenAI;
@@ -160,6 +162,35 @@ export class OpenAIService {
       return narrativeText;
     } catch (err: any) {
       throw new AppError(err.message, err.status || 500);
+    }
+  }
+
+  // Add OpenAI TTS as fallback for ElevenLabs
+  async generateTTS(text: string, voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy'): Promise<string> {
+    try {
+      console.log(`Generating TTS with OpenAI - Voice: ${voice}, Text length: ${text.length}`);
+      
+      const mp3 = await this.client.audio.speech.create({
+        model: "tts-1",
+        voice: voice,
+        input: text.substring(0, 4096), // OpenAI TTS has 4096 character limit
+      });
+
+      // Convert the response to buffer
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      
+      // Upload to cloudinary
+      const uploadResult = await cloudUploadAudio(buffer);
+      
+      console.log('OpenAI TTS generation completed successfully');
+      return uploadResult.secure_url;
+      
+    } catch (error: any) {
+      console.error('OpenAI TTS Error:', error);
+      throw new AppError(
+        `OpenAI TTS generation failed: ${error.message}`,
+        error.status || 500
+      );
     }
   }
 }

@@ -27,3 +27,13 @@ export const getVoiceCacheStats = () => {
     stats: voiceCache.getStats()
   };
 };
+
+export const clearVoiceCache = (): void => {
+  voiceCache.flushAll();
+  console.log('Voice cache cleared');
+};
+
+export const clearVoiceCacheByKey = (text: string, voiceId: string): boolean => {
+  const cacheKey = generateVoiceCacheKey(text, voiceId);
+  return voiceCache.del(cacheKey) > 0;
+};

@@ -7,6 +7,9 @@ import { FirebaseAppError } from "firebase-admin/app";
 import AudioModel from "../Models/audioModel.model";
 import { TPaginationQuery } from "../types/custom";
 import paginator from "../Utils/Pagination/paginator";
+import { VoiceGenerationService } from "../Services/voiceGeneration.service";
+import { clearAllVoiceCaches, getRecoveryInstructions, logEnvironmentForDebugging } from "../Utils/Recovery/voiceServiceRecovery";
+import { getEnvironmentInfo } from "../Utils/Environment/environmentDetection";
 
 const adminController = {
   getAllUsers: catchError(async (req: Request, res: Response) => {
@@ -92,5 +95,35 @@ const adminController = {
       .status(200)
       .json({ message: "Audio models retrieved successfully", data: models });
   }),
+
+  // Voice service management endpoints
+  clearVoiceCache: catchError(async (req: Request, res: Response) => {
+    clearAllVoiceCaches();
+    res.status(200).json({ 
+      message: "Voice cache cleared successfully",
+      instructions: "Cache has been cleared. Try voice generation again."
+    });
+  }),
+
+  getVoiceServiceStatus: catchError(async (req: Request, res: Response) => {
+    const envInfo = getEnvironmentInfo(req);
+    const recoveryInstructions = getRecoveryInstructions();
+    
+    logEnvironmentForDebugging();
+    
+    res.status(200).json({
+      message: "Voice service status retrieved",
+      data: {
+        environment: envInfo,
+        recoveryInstructions,
+        apiKeys: {
+          elevenLabsConfigured: !!process.env.ELEVENLABS_API_KEY,
+          openAiConfigured: !!process.env.OPENAI_API_KEY,
+          fallbackEnabled: process.env.USE_OPENAI_TTS_FALLBACK === 'true'
+        }
+      }
+    });
+  }),
+
 };
 export default adminController;
