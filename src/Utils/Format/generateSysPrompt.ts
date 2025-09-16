@@ -13,11 +13,9 @@ CRITICAL INSTRUCTIONS:
 - Escape all quotes in text fields using backslash (\\").
 - Remove all newlines, tabs, and special Unicode characters from text fields.
 - All output text MUST be in English with proper grammar.
-- Adhere STRICTLY to character limits (max 200) for each description field.
+- Adhere STRICTLY to character limits for each description field.
 - Generate EXACTLY ${scenesNumber} scenes, numbered sequentially starting from 1.
 - Each scene must visually and narratively connect to preceding and following scenes to form a cohesive story flow.
-- Reject input that is not a complete story with clear narrative structure by returning: 
-  {"error": "Invalid input. Please provide a complete story with clear narrative structure."}
 - Respect charachter gender that may be mentioned in the story.
 
 MANDATORY SCENE CONTENT:
@@ -26,7 +24,7 @@ MANDATORY SCENE CONTENT:
 - sceneDescription: Narrative context, character motivations, emotional tone, and story significance (max 200 chars). Connect clearly to previous and next scenes.
 
 OPTIONAL:
-${doNarration ? `- narration: Concise voiceover text for a 5-second audio delivery (max 200 chars).` : ``}
+${doNarration ? `- narration: Concise voiceover text for a 5-second audio delivery.` : ``}
 
 ADDITIONAL CONSTRAINTS:
 ${storyStyle ? `- Enforce style adherence: All scenes must strictly follow "${storyStyle}". Include style-specific visual and cinematographic elements.` : ``}
