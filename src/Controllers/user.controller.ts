@@ -369,13 +369,19 @@ const userController = {
     if (!user) {
       throw new AppError("User not found", 404);
     }
-
     const notifications =
       Sorting.sortItems(user.notifications!, "newest") || [];
+
+    const validNotifications = notifications.filter((notification) => {
+      if (notification.expiresAt) {
+        return new Date(notification.expiresAt) > new Date();
+      }
+    });
+    
     res.status(200).json({
       message: "User notifications retrieved successfully",
       data: {
-        notifications,
+        notifications: validNotifications,
       },
     });
   }),

@@ -3,7 +3,7 @@ export const wavespeedBase = async (
   url: string,
   headers: HeadersInit,
   payload: any
-) => {
+): Promise<string | null> => {
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -33,6 +33,10 @@ export const wavespeedBase = async (
 
           if (status === "completed") {
             const resultUrl = data.outputs[0];
+            if (!resultUrl) {
+              console.error("No output URL found in completed task");
+              return null;
+            }
             return resultUrl;
           } else if (status === "failed") {
             console.error("Task failed:", data.error);
@@ -44,16 +48,18 @@ export const wavespeedBase = async (
             }
           }
         } else {
-          console.error("Error:", response.status, JSON.stringify(result));
-          break;
+          console.error("Error checking task status:", response.status, JSON.stringify(result));
+          return null;
         }
 
         await new Promise((resolve) => setTimeout(resolve, 2000)); // Increased to 2 seconds
       }
     } else {
-      console.error(`Error: ${response.status}, ${await response.text()}`);
+      console.error(`Initial request failed: ${response.status}, ${await response.text()}`);
+      return null;
     }
   } catch (error) {
     console.error(`Request failed: ${error}`);
+    return null;
   }
 };

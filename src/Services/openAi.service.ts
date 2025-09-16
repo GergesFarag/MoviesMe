@@ -28,32 +28,30 @@ export class OpenAIService {
 
   async generateScenes(prompt: string): Promise<IStoryResponse> {
     try {
-      const response = await this.client.responses.create({
-        model: "gpt-4o-mini",
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: prompt,
-              },
-            ],
-          },
+      const response = await this.client.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [
           {
             role: "system",
-            content: [
-              {
-                type: "input_text",
-                text: this.SYSTEM_PROMPT,
-              },
-            ],
+            content: this.SYSTEM_PROMPT,
+          },
+          {
+            role: "user",
+            content: prompt,
           },
         ],
-        max_output_tokens: 2000,
+        max_tokens: 4000,
+        temperature: 0.7,
       });
-      console.log("Parsed response:", JSON.parse(response.output_text as string));
-      let cleanResponse = response.output_text.trim();
+      
+      const rawResponse = response.choices[0]?.message?.content;
+      if (!rawResponse) {
+        throw new AppError("No response content from OpenAI", 500);
+      }
+      
+      console.log("OPENAI RAW RESPONSE:", rawResponse);
+      
+      let cleanResponse = rawResponse.trim();
       
       // Check if response appears to be truncated
       if (!cleanResponse.endsWith('}') && !cleanResponse.endsWith(']}')) {
@@ -76,6 +74,7 @@ export class OpenAIService {
         );
       }
 
+      // Remove markdown code blocks if present
       if (cleanResponse.startsWith("```json")) {
         cleanResponse = cleanResponse
           .replace(/```json\s*/, "")
@@ -86,13 +85,15 @@ export class OpenAIService {
           .replace(/```\s*/, "")
           .replace(/\s*```$/, "");
       }
-
+      
+      console.log("OPENAI CLEAN RESPONSE:", cleanResponse);
+      
       let parsedResponse;
       try {
         parsedResponse = JSON.parse(cleanResponse);
       } catch (parseErr) {
         console.error("JSON Parse Error:", parseErr);
-        console.error("Raw response:", response.output_text);
+        console.error("Clean response:", cleanResponse);
         throw new AppError(
           `Invalid JSON response from AI model: ${
             parseErr instanceof Error
@@ -104,10 +105,18 @@ export class OpenAIService {
       }
 
       if (parsedResponse.error) {
-        throw new AppError(parsedResponse.error);
+        throw new AppError(parsedResponse.error, 500);
       }
+      
+      // Validate the response structure
+      if (!parsedResponse.title || !parsedResponse.scenes || !Array.isArray(parsedResponse.scenes)) {
+        throw new AppError("Invalid response structure from AI model", 500);
+      }
+      
+      console.log("OPENAI PARSED RESPONSE:", parsedResponse);
       return parsedResponse as IStoryResponse;
     } catch (err: any) {
+      console.error("OpenAI service error:", err);
       if (err instanceof AppError) {
         throw err;
       }
@@ -123,37 +132,34 @@ export class OpenAIService {
     language: string
   ): Promise<string> {
     try {
-      const response = await this.client.responses.create({
+      const response = await this.client.chat.completions.create({
         model: "gpt-4o-mini",
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: `${sceneDescription.join("\n")}`,
-              },
-            ],
-          },
+        messages: [
           {
             role: "system",
-            content: [
-              {
-                type: "input_text",
-                text: `You are a cinematic narrator and translator.
+            content: `You are a cinematic narrator and translator.
                     TASK:
                     Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language. or leave it in English if the language is not supported.
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
-              },
-            ],
+          },
+          {
+            role: "user",
+            content: sceneDescription.join("\n"),
           },
         ],
-        max_output_tokens: 400,
+        max_tokens: 400,
+        temperature: 0.7,
       });
-      return response.output_text as string;
+      
+      const narrativeText = response.choices[0]?.message?.content;
+      if (!narrativeText) {
+        throw new AppError("No narrative text generated from OpenAI", 500);
+      }
+      
+      return narrativeText;
     } catch (err: any) {
-      throw new AppError(err.message, err.status);
+      throw new AppError(err.message, err.status || 500);
     }
   }
 }

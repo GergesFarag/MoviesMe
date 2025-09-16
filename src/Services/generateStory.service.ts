@@ -8,6 +8,7 @@ import { IStoryResponse } from "../Interfaces/storyResponse.interface";
 import storyQueue from "../Queues/story.queue";
 import { StoryProcessingDTO } from "../DTOs/storyRequest.dto";
 import AppError from "../Utils/Errors/AppError";
+import Job from "../Models/job.model";
 
 // Rate limiting for job creation
 const jobCreationCache = new Map<string, number[]>();
@@ -69,6 +70,20 @@ export const processStoryJobAsnc = async (
   }
 
   if (jobId) {
+    // Check if job already exists and prevent duplicate creation
+    const existingJob = await Job.findOne({ jobId });
+    if (existingJob) {
+      if (existingJob.status === "failed") {
+        throw new AppError("Cannot retry failed job. Please create a new story.", 400);
+      }
+      if (existingJob.status === "completed") {
+        throw new AppError("Job already completed.", 400);
+      }
+      if (existingJob.status === "pending") {
+        throw new AppError("Job is already being processed.", 409);
+      }
+    }
+    
     await createJobForStory(userId, jobId);
   }
 

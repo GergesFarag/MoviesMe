@@ -27,7 +27,7 @@ export const taskQueue = new Queue("modelProcessing", {
     password: (process.env.REDIS_PASSWORD as string) || undefined,
   },
   defaultJobOptions: {
-    attempts: 3,
+    attempts: 1,
     timeout: 300000,
     removeOnComplete: 10, // Keep only 10 completed jobs
     removeOnFail: 5, // Keep only 5 failed jobs

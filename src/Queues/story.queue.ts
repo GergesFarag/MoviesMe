@@ -33,22 +33,20 @@ export const storyQueue = new Queue("storyProcessing", {
     maxRetriesPerRequest: 3,
   },
   defaultJobOptions: {
-    attempts: 2, // Reduced from 5 to 2 to minimize multiple failure notifications
-    timeout: 300000, // 5 minutes
-    backoff: {
-      type: "exponential",
-      delay: 10000, // Increased delay between retries
-    },
-    removeOnComplete: 10, // Keep only 10 completed jobs
-    removeOnFail: 5, // Keep only 5 failed jobs
+    attempts: 1,
+    timeout: 300000,
+    removeOnComplete: 10,
+    removeOnFail: 5,
   },
   settings: {
-    stalledInterval: 30000, // Check for stalled jobs every 30s
-    maxStalledCount: 1, // Retry stalled jobs once
+    stalledInterval: 30000,
   },
 });
 
 storyQueue.process(async (job) => {
+  let story: IStoryResponse;
+  let imageUrls: string[] = [];
+
   try {
     const jobData: IStoryProcessingDTO & { userId: string; jobId: string } =
       job.data;
@@ -63,17 +61,31 @@ storyQueue.process(async (job) => {
     }
 
     console.log(`Starting story processing for jobId: ${jobData.jobId}`);
-    console.log("Job data:", {
-      ...jobData,
-      userId: "***",
-      prompt: jobData.prompt.substring(0, 100) + "...",
-    });
 
-    // Check if job is already being processed (duplicate prevention)
+    // Check if job already exists and is completed or failed
     const existingJob = await Job.findOne({ jobId: jobData.jobId });
-    if (existingJob && existingJob.status === "completed") {
-      console.log(`Job ${jobData.jobId} already completed, skipping`);
-      return { message: "Job already completed", jobId: jobData.jobId };
+    if (existingJob) {
+      if (existingJob.status === "completed") {
+        console.log(`Job ${jobData.jobId} already completed, skipping`);
+        return { message: "Job already completed", jobId: jobData.jobId };
+      }
+      if (existingJob.status === "failed") {
+        console.log(`Job ${jobData.jobId} already failed, not retrying`);
+        throw new AppError("Job already failed and retries are disabled", 400);
+      }
+    }
+
+    // Check if story already exists and is completed or failed  
+    const existingStory = await Story.findOne({ jobId: jobData.jobId });
+    if (existingStory) {
+      if (existingStory.status === "completed") {
+        console.log(`Story ${jobData.jobId} already completed, skipping`);
+        return { message: "Story already completed", jobId: jobData.jobId };
+      }
+      if (existingStory.status === "failed") {
+        console.log(`Story ${jobData.jobId} already failed, not retrying`);
+        throw new AppError("Story already failed and retries are disabled", 400);
+      }
     }
 
     updateJobProgress(
@@ -94,51 +106,14 @@ storyQueue.process(async (job) => {
     );
 
     console.log("Calling OpenAI service to generate scenes...");
-    let story: IStoryResponse;
     try {
       story = await openAIService.generateScenes(jobData.prompt);
     } catch (openAIError) {
       console.error("OpenAI service error:", openAIError);
       throw new AppError("Failed to generate story scenes with OpenAI", 500);
     }
-    // story = {
-    //   title: "The Mirage's Curse",
-    //   scenes: [
-    //     {
-    //       sceneNumber: 1,
-    //       narration:
-    //         "Under the scorching sun, the guide leads a reluctant treasure hunter through endless dunes, shadows looming ominously.",
-    //       imageDescription:
-    //         "A vast desert landscape with golden dunes, a skilled guide in traditional attire, and a ruthless treasure hunter in tattered clothes.",
-    //       videoDescription:
-    //         "Wide shot of the desert with a steady camera, slowly panning to reveal the characters silhouetted against the sun.",
-    //       sceneDescription:
-    //         "The relentless sun beats down as the guide, weathered yet determined, walks ahead, while the treasure hunter trails closely, eyes glinting with greed.",
-    //     },
-    //     {
-    //       sceneNumber: 2,
-    //       narration:
-    //         "Amidst swirling sands, they encounter a mysterious nomad, whose secrets and wisdom spark distrust and ambition.",
-    //       imageDescription:
-    //         "A cloaked nomad appears at dusk, surrounded by swirling sand, eyes reflecting ancient knowledge and mystery.",
-    //       videoDescription:
-    //         "Close-up of the nomad rising from the shadows, the camera rotates around to capture the intensity of the moment.",
-    //       sceneDescription:
-    //         "The nomad's eerie smile cuts through the twilight, revealing cryptic hints about the oasis that reveals one's deepest fears and desires.",
-    //     },
-    //     {
-    //       sceneNumber: 3,
-    //       narration:
-    //         "As the oasis manifests, each character confronts their inner demons, greed fracturing their fragile trust.",
-    //       imageDescription:
-    //         "A shimmering oasis appears under a starlit sky, revealing distorted reflections of fears and ambitions.",
-    //       videoDescription:
-    //         "The camera zooms into the oasis, focusing on each character's reflection, which morphs into dark, haunting visions.",
-    //       sceneDescription:
-    //         "The oasis pulses with life, water glistening, as shadows of the characters loom over them, revealing what they truly desire and fear.",
-    //     },
-    //   ],
-    // };
+
+    // Validate story generation
     if (
       !story ||
       !story.scenes ||
@@ -155,9 +130,8 @@ storyQueue.process(async (job) => {
         500
       );
     }
-
     console.log("Story generated successfully:", story);
-
+    // Generate images for scenes
     updateJobProgress(
       job,
       30,
@@ -165,24 +139,61 @@ storyQueue.process(async (job) => {
       getIO(),
       "story:progress"
     );
+
     const imageGenerationService = new ImageGenerationService();
-    const imageUrls = await imageGenerationService.generateImagesForScenes(
-      story.scenes as IScene[]
-    );
-    if (!imageUrls || imageUrls.length !== story.scenes.length) {
-      throw new AppError("Failed to generate images for the story scenes", 500);
+
+    if (jobData.image) {
+      console.log("Using provided reference image for scene generation");
+      imageUrls = await imageGenerationService.generateImagesForScenes(
+        story.scenes as IScene[],
+        jobData.image
+      );
+    } else {
+      console.log("Generating first image from description, then using it as reference");
+      const firstRefImage =
+        await imageGenerationService.generateImageFromDescription(
+          story.scenes[0].imageDescription
+        );
+
+      if (!firstRefImage) {
+        throw new AppError("Failed to generate first reference image", 500);
+      }
+
+      imageUrls = await imageGenerationService.generateImagesForScenes(
+        story.scenes as IScene[],
+        firstRefImage
+      );
     }
-    // const imageUrls = [
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/3f8a46aff2e24c24b69ca151ddbaacb1/1.png",
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/6f5ad9ba54004448a22ef6e1ed02decd/1.png",
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/931765a8b11447e7b922a5cf0b007030/1.png",
-    // ];
+
+    // Validate image generation results
+    if (!imageUrls || imageUrls.length !== story.scenes.length) {
+      throw new AppError(
+        `Failed to generate images for the story scenes. Expected ${story.scenes.length} images, got ${imageUrls?.length || 0}`,
+        500
+      );
+    }
+
+    // Validate that all images are valid URLs
+    const invalidImages = imageUrls.filter(
+      (url, index) => !url || typeof url !== "string" || !url.startsWith("http")
+    );
+
+    if (invalidImages.length > 0) {
+      throw new AppError(
+        `Invalid image URLs generated: ${invalidImages.length} out of ${imageUrls.length} images are invalid`,
+        500
+      );
+    }
+
+    // Assign images to scenes
     story.scenes = story.scenes.map((scene, index) => ({
       ...scene,
-      image: imageUrls[index] || "",
+      image: imageUrls[index],
     }));
 
-    console.log("JOB DATA IMG: \n", imageUrls);
+    console.log("Successfully generated images for all scenes:", imageUrls);
+
+    // Continue with video generation
     updateJobProgress(
       job,
       50,
@@ -203,11 +214,6 @@ storyQueue.process(async (job) => {
       throw new AppError("Failed to generate videos for the story scenes", 500);
     }
     console.log("JOB DATA VIDEOs: \n", videoUrls);
-    // const videoUrls = [
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/4616cf5fefc6455a9858e1914f6b2be1/1.mp4",
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ebae2df9ad034ae4be9883d1ef9f3c7d/1.mp4",
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/52544d2b11b3402e9e562811bfd669bf/1.mp4",
-    // ];
 
     updateJobProgress(
       job,
@@ -264,8 +270,6 @@ storyQueue.process(async (job) => {
     let finalVideoBuffer = mergedVideoBuffer;
 
     //Starting Voice Over
-    // let voiceOverUrl =
-    //   "https://res.cloudinary.com/dggkd3bfz/video/upload/v1757442453/pu3strlgov6fn4b8wfyz.mp3";
     let voiceOverUrl = "";
     let voiceOverText = "";
 
@@ -419,7 +423,6 @@ storyQueue.process(async (job) => {
           : null,
     });
 
-    // Update the complete voiceOver object if we have voice over data
     if (updatedStory && jobData.voiceOver && voiceOverUrl && voiceOverText) {
       console.log("Updating complete voice over object in story...");
       await Story.findByIdAndUpdate(updatedStory._id, {
@@ -454,24 +457,22 @@ storyQueue.process(async (job) => {
       storyId: updatedStory?._id,
       story: updatedStory,
     };
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error in story processing:", err);
-    console.error("Job data:", job.data);
-    console.error("Job options:", job.opts);
-    console.error("Full error details:", {
-      message: err instanceof Error ? err.message : "Unknown error",
-      stack: err instanceof Error ? err.stack : undefined,
-      jobId: job.opts.jobId,
-      attemptsMade: job.attemptsMade,
-      attemptsTotal: job.opts.attempts,
-    });
 
-    // Don't update database status here - let the 'failed' event handler do it
-    // This prevents race conditions and duplicate updates
+    // Update job progress to indicate failure
+    updateJobProgress(
+      job,
+      0,
+      `Story processing failed: ${
+        err instanceof Error ? err.message : "Unknown error"
+      }`,
+      getIO(),
+      "story:failed"
+    );
 
-    const errorMessage =
-      err instanceof Error ? err.message : "Unknown error occurred";
-    throw new AppError(`Story processing failed: ${errorMessage}`, 500);
+    // Re-throw the error to mark the job as failed
+    throw err;
   }
 });
 
@@ -578,19 +579,13 @@ storyQueue.on("completed", async (job, result) => {
 });
 
 storyQueue.on("failed", async (job, err) => {
-  console.log(`Story job with ID ${job?.id} has failed.`);
+  console.log(`Story job with ID ${job?.id} has failed - NO RETRIES.`);
   console.log("Error:", err);
-  console.log(`Attempt ${job?.attemptsMade} of ${job?.opts?.attempts}`);
+  
+  // Since retries are disabled, immediately handle the failure
+  console.log("Processing final failure - sending notifications and updating database");
 
-  // Only handle final failure (no more retries)
-  if (job?.attemptsMade < (job?.opts?.attempts || 1)) {
-    console.log(`Job will be retried. Attempt ${job?.attemptsMade + 1} of ${job?.opts?.attempts}`);
-    return; // Don't send notifications or update status for non-final failures
-  }
-
-  console.log("Final failure - sending notifications and updating database");
-
-  // Update job status to failed in database (only on final failure)
+  // Update job status to failed in database
   if (job?.opts?.jobId) {
     try {
       await Job.findOneAndUpdate(
@@ -610,19 +605,21 @@ storyQueue.on("failed", async (job, err) => {
           updatedAt: new Date(),
         }
       );
-      
-      console.log(`Updated job and story status to failed for jobId: ${job.opts.jobId}`);
+
+      console.log(
+        `Updated job and story status to failed for jobId: ${job.opts.jobId}`
+      );
     } catch (dbErr) {
       console.error("Failed to update job/story status in database:", dbErr);
     }
   }
 
-  // Send socket notification only on final failure
+  // Send socket notification
   const io = getIO();
   if (job?.data?.userId) {
     try {
       const roomName = `user:${job.data.userId}`;
-      console.log(`📤 Sending final failure notification to room: ${roomName}`);
+      console.log(`📤 Sending failure notification to room: ${roomName}`);
       io.to(roomName).emit("story:failed", {
         message: "Story generation failed. Please try again.",
         jobId: job.opts?.jobId,
@@ -633,7 +630,7 @@ storyQueue.on("failed", async (job, err) => {
     }
   }
 
-  // Send push notification only on final failure
+  // Send push notification
   if (job?.data?.userId) {
     try {
       const notificationDTO = {
@@ -654,7 +651,7 @@ storyQueue.on("failed", async (job, err) => {
             redirectTo: "/storyDetails",
           }
         );
-        
+
         if (res) {
           user.notifications?.push({
             title: "Story Processing Failed",
@@ -676,7 +673,9 @@ storyQueue.on("failed", async (job, err) => {
           createdAt: new Date(),
         });
         await user.save();
-        console.log("Failed story notification saved to user DB (no FCM token)");
+        console.log(
+          "Failed story notification saved to user DB (no FCM token)"
+        );
       }
     } catch (notificationError) {
       console.error("Failed to send push notification:", notificationError);
@@ -697,7 +696,7 @@ storyQueue.on("active", (job) => {
 });
 
 storyQueue.on("stalled", (job) => {
-  console.warn(`⚠️ Job ${job.id} stalled - will be retried`);
+  console.warn(`⚠️ Job ${job.id} stalled - retries disabled`);
 });
 
 storyQueue.on("progress", (job, progress) => {
@@ -721,23 +720,22 @@ storyQueue.on("error", (error) => {
 
 // Add global error handling for the queue
 storyQueue.on("stalled", (job) => {
-  console.warn(`⚠️ Job ${job.id} stalled - will be retried`);
+  console.warn(`⚠️ Job ${job.id} stalled - will NOT be retried (retries disabled)`);
   // Add additional logging for stalled jobs
   console.warn("Stalled job details:", {
     jobId: job.opts?.jobId,
-    attemptsMade: job.attemptsMade,
     data: job.data?.userId ? { userId: job.data.userId } : {},
   });
 });
 
 // Handle global promise rejections that might affect the queue
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
   // Don't exit the process, just log the error
 });
 
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
   // Log but don't exit - let the application handle it
 });
 

@@ -3,5 +3,6 @@ export interface INotification{
     message:string;
     redirectTo:string | null;
     data:any;
-    createdAt:Date;
+    createdAt?:Date;
+    expiresAt?:Date;
 }
