@@ -85,6 +85,7 @@ SCENE FORMAT (3 scenes only):
   "scenes": [
   "sceneNumber": <1 to 3>,
   "imageDescription": "<Main subject, detailed setting, lighting, camera composition, cinematic style>",
+  "narration": "<Concise voiceover text for a 5-second audio delivery>",
   "videoDescription": "<Camera movement, timing, effects, transitions, character acting and motion>",
   "sceneDescription": "<Narrative context, character motivations, emotional tone, and story significance>"
   ]
