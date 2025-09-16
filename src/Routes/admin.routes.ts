@@ -17,13 +17,4 @@ adminRouter
   .get(adminController.getAllModels)
   .post(adminController.addModels);
 
-// Voice service management routes
-adminRouter
-  .route("/voice/clear-cache")
-  .post(adminController.clearVoiceCache);
-
-adminRouter
-  .route("/voice/status")
-  .get(adminController.getVoiceServiceStatus);
-
 export default adminRouter;
