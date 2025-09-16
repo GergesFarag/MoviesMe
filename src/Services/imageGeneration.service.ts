@@ -53,15 +53,20 @@ export class ImageGenerationService {
 
   async generateImagesForScenes(
     scenes: IScene[],
-    refImage: string
+    refImage: string,
+    skipFirstImage: boolean
   ): Promise<string[]> {
     const imageUrls: string[] = [];
     let currentRefImage = refImage;
-    
+    let scene = null;
     for (let i = 0; i < scenes.length; i++) {
-      const scene = scenes[i];
-      
+      scene = scenes[i];
       try {
+        if(skipFirstImage && i === 0) {
+          console.log(`Skipping image generation for first scene as per flag. Using provided reference image.`);
+          imageUrls.push(currentRefImage);
+          continue;
+        }
         console.log(`Generating image for scene ${i + 1}/${scenes.length}: ${scene.imageDescription.substring(0, 100)}...`);
         
         const imageUrl = await this.generateImageFromRefImage(

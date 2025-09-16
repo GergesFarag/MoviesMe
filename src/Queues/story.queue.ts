@@ -146,7 +146,8 @@ storyQueue.process(async (job) => {
       console.log("Using provided reference image for scene generation");
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
-        jobData.image
+        jobData.image,
+        false
       );
     } else {
       console.log("Generating first image from description, then using it as reference");
@@ -161,7 +162,8 @@ storyQueue.process(async (job) => {
 
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
-        firstRefImage
+        firstRefImage,
+        true
       );
     }
 
