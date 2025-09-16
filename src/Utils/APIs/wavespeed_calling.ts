@@ -27,109 +27,93 @@ export const runModel = async (
     modelType,
     data
   );
-  if (job && IO) {
-    await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
-    await updateJobProgress(job, 30, "Getting Dummy Data...", IO , "job:progress");
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // simulate delay
-    await updateJobProgress(job, 50, "Running Model...", IO, "job:progress");
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // simulate delay
-    await updateJobProgress(job, 80, "Getting Response..." , IO, "job:progress");
-    await new Promise((resolve) => setTimeout(resolve, 4000)); // simulate delay
+  try {
+    if (job) {
+      await updateJobProgress(job, 30, "Submitting model data...", IO);
+      await new Promise((res) => setTimeout((res), 2000)); 
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(data),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      const requestId = result.data.id;
+
+      console.log(`Task submitted successfully. Request ID: ${requestId}`);
+
+      if (job) {
+        await updateJobProgress(job, 50, "Waiting..", IO, "model_progress", { requestId });
+      }
+
+      while (true) {
+        const statusResponse = await fetch(
+          `https://api.wavespeed.ai/api/v3/predictions/${requestId}/result`,
+          {
+            headers: {
+              Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+            },
+          }
+        );
+
+        if (statusResponse.ok) {
+          const result = await statusResponse.json();
+          const data = result.data;
+          const status = data.status;
+
+          if (job) {
+            await updateJobProgress(job, 70, "Processing...", IO, "model_progress", { requestId });
+          }
+
+          if (status === "completed") {
+            const resultUrl = data.outputs[0];
+            console.log("Task completed successfully. Result URL:", resultUrl);
+            return resultUrl;
+          } else if (status === "failed") {
+            if (job) {
+              await updateJobProgress(job, 0, "Model processing failed.", IO, "model_error", { error: data.error });
+            }
+            console.error("Task failed:", data.error);
+            sendNotificationToClient(FCM, "Model Processing Failed", `Your video failed to generate`, { error: data.error || "Unknown error" });
+            return null;
+          } else {
+            console.log("Task still processing. Current status:", status);
+          }
+        } else {
+          console.error(
+            "Error with status check:",
+            statusResponse.status,
+            await statusResponse.text()
+          );
+
+          if (job) {
+            await updateJobProgress(job, 0, "API error while checking status.", IO, "model_error", {
+              error: statusResponse.status,
+            });
+          }
+
+          throw new AppError("Wavespeed API request failed during status check", 500);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Wait before re-checking
+      }
+    } else {
+      console.error(`Error submitting task: ${response.status}, ${await response.text()}`);
+      if (job) {
+        await updateJobProgress(job, 0, "Error submitting task.", IO, "model_error", {
+          error: response.status,
+        });
+      }
+    }
+  } catch (error) {
+    if (job) {
+      await updateJobProgress(job, 0, "An error occurred during model processing.", IO, "model_error", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+    console.error(`Request failed: ${error}`);
   }
-
-  if (job && IO) {
-    await updateJobProgress(job, 100, "Success", IO , "job:progress");
-  }
-
-  return "Dummy Result";
-
-  // try {
-  //   if (job) {
-  //     await updateJobProgress(job, 30, "Submitting model data...");
-  //     await new Promise((res) => setTimeout((res), 2000)); // Simulate submit delay
-  //   }
-
-  //   const response = await fetch(url, {
-  //     method: "POST",
-  //     headers: headers,
-  //     body: JSON.stringify(payload),
-  //   });
-
-  //   if (response.ok) {
-  //     const result = await response.json();
-  //     const requestId = result.data.id;
-
-  //     console.log(`Task submitted successfully. Request ID: ${requestId}`);
-
-  //     if (job) {
-  //       await updateJobProgress(job, 50, "Waiting..", { requestId });
-  //     }
-
-  //     while (true) {
-  //       const statusResponse = await fetch(
-  //         `https://api.wavespeed.ai/api/v3/predictions/${requestId}/result`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-  //           },
-  //         }
-  //       );
-
-  //       if (statusResponse.ok) {
-  //         const result = await statusResponse.json();
-  //         const data = result.data;
-  //         const status = data.status;
-
-  //         if (job) {
-  //           await updateJobProgress(job, 70, "Processing...", { requestId });
-  //         }
-
-  //         if (status === "completed") {
-  //           const resultUrl = data.outputs[0];
-  //           console.log("Task completed successfully. Result URL:", resultUrl);
-  //           return resultUrl;
-  //         } else if (status === "failed") {
-  //           if (job) {
-  //             await updateJobProgress(job, 0, "Model processing failed.", { error: data.error });
-  //           }
-  //           console.error("Task failed:", data.error);
-  //           sendNotificationToClient(clientFCMToken,"Model Processing Failed", `Your video failed to generate`);
-  //           return null;
-  //         } else {
-  //           console.log("Task still processing. Current status:", status);
-  //         }
-  //       } else {
-  //         console.error(
-  //           "Error with status check:",
-  //           statusResponse.status,
-  //           await statusResponse.text()
-  //         );
-
-  //         if (job) {
-  //           await updateJobProgress(job, 0, "API error while checking status.", {
-  //             error: statusResponse.status,
-  //           });
-  //         }
-
-  //         throw new AppError("Wavespeed API request failed during status check", 500);
-  //       }
-
-  //       await new Promise((resolve) => setTimeout(resolve, 500)); // Wait before re-checking
-  //     }
-  //   } else {
-  //     console.error(`Error submitting task: ${response.status}, ${await response.text()}`);
-  //     if (job) {
-  //       await updateJobProgress(job, 0, "Error submitting task.", {
-  //         error: response.status,
-  //       });
-  //     }
-  //   }
-  // } catch (error) {
-  //   if (job) {
-  //     await updateJobProgress(job, 0, "An error occurred during model processing.", {
-  //       error: error instanceof Error ? error.message : "Unknown error",
-  //     });
-  //   }
-  //   console.error(`Request failed: ${error}`);
-  // }
 };

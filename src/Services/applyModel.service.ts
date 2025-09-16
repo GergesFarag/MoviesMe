@@ -39,7 +39,7 @@ export const processModelJobAsync = async (
         modelData: model,
         userId: (user as any)._id,
         data: { image: imageUrl.secure_url, ...rest },
-        FCM: "cpywthHXSCiYHZ4Y67K3ts:APA91bGhv_kUbjyPzVBDS5PZXjoJ7Sc3JAd1PZXI7KHRUe6feGMfmaUaWkf1CV662rbZCVR19JptmBzAqSjx83Ujeowidll_Bo_PU5-a1Bmz7YJzVEzgtfE", //! fix it later on
+        FCM: user.FCMToken
       },
       {
         jobId: jobId,
