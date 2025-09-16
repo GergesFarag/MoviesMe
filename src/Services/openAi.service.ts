@@ -48,50 +48,12 @@ export class OpenAIService {
       if (!rawResponse) {
         throw new AppError("No response content from OpenAI", 500);
       }
-      
-      let cleanResponse = rawResponse.trim();
-      
-      // Check if response appears to be truncated
-      if (!cleanResponse.endsWith('}') && !cleanResponse.endsWith(']}')) {
-        throw new AppError(
-          "AI response was truncated. The response appears incomplete. Please try with a shorter story or fewer scenes.",
-          500
-        );
-      }
-      
-      // Basic JSON structure validation
-      const openBraces = (cleanResponse.match(/\{/g) || []).length;
-      const closeBraces = (cleanResponse.match(/\}/g) || []).length;
-      const openBrackets = (cleanResponse.match(/\[/g) || []).length;
-      const closeBrackets = (cleanResponse.match(/\]/g) || []).length;
-      
-      if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
-        throw new AppError(
-          "AI response contains malformed JSON structure. Mismatched braces or brackets detected.",
-          500
-        );
-      }
-
-      // Remove markdown code blocks if present
-      if (cleanResponse.startsWith("```json")) {
-        cleanResponse = cleanResponse
-          .replace(/```json\s*/, "")
-          .replace(/\s*```$/, "");
-      }
-      if (cleanResponse.startsWith("```")) {
-        cleanResponse = cleanResponse
-          .replace(/```\s*/, "")
-          .replace(/\s*```$/, "");
-      }
-      
-      console.log("OPENAI CLEAN RESPONSE:", cleanResponse);
-      
+      console.log("OpenAI RAW RESPONSE:", rawResponse);
       let parsedResponse;
       try {
-        parsedResponse = JSON.parse(cleanResponse);
+        parsedResponse = JSON.parse(rawResponse);
       } catch (parseErr) {
         console.error("JSON Parse Error:", parseErr);
-        console.error("Clean response:", cleanResponse);
         throw new AppError(
           `Invalid JSON response from AI model: ${
             parseErr instanceof Error

@@ -92,7 +92,7 @@ SCENE FORMAT (3 scenes only):
 }
 
 OUTPUT RULES:
-- JSON array ONLY
+- JSON ONLY
 - English only
 - Visually rich and AI-optimized
 `;
