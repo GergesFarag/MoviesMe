@@ -45,12 +45,6 @@ export class VoiceGenerationService {
     try {
       this.client = new ElevenLabsClient({ 
         apiKey: ELEVENLABS_API_KEY,
-        // Add custom headers to avoid abuse detection
-        headers: {
-            'User-Agent': 'TtoMProject/1.0.0 (https://ttov.onrender.com/)',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-US,en;q=0.9',
-        }
       });
     } catch (error) {
       console.log("err", error);
