@@ -49,7 +49,7 @@ export const runModel = async (
       console.log(`Task submitted successfully. Request ID: ${requestId}`);
 
       if (job) {
-        await updateJobProgress(job, 50, "Waiting..", IO, "model_progress", { requestId });
+        await updateJobProgress(job, 60, "Processing...", IO, "model_progress", { requestId });
       }
 
       while (true) {
@@ -66,10 +66,6 @@ export const runModel = async (
           const result = await statusResponse.json();
           const data = result.data;
           const status = data.status;
-
-          if (job) {
-            await updateJobProgress(job, 70, "Processing...", IO, "model_progress", { requestId });
-          }
 
           if (status === "completed") {
             const resultUrl = data.outputs[0];
