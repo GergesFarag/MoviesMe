@@ -17,7 +17,7 @@ class ElevenLabsRateLimiter {
   constructor() {
     // More conservative rate limiting for cloud environments (default: 5 seconds)
     // Render and other cloud services need longer delays to avoid abuse detection
-    const baseInterval = IS_PRODUCTION ? "8000" : "3000";
+    const baseInterval = IS_PRODUCTION ? "10000" : "40000";
     this.minInterval = parseInt(process.env.ELEVENLABS_RATE_LIMIT_MS || baseInterval, 10);
     console.log(`ElevenLabs rate limiter initialized with ${this.minInterval}ms interval (Production: ${IS_PRODUCTION})`);
   }
