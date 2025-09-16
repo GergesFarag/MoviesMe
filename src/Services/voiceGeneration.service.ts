@@ -3,7 +3,6 @@ import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { getVoiceId } from "../Utils/Database/optimizedOps";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import { cloudUploadAudio } from "../Utils/APIs/cloudinary";
-import { UploadApiResponse } from "cloudinary";
 import { streamToBuffer } from "../Utils/Format/streamToBuffer";
 import { getCachedVoice, setCachedVoice, clearVoiceCache } from "../Utils/Cache/voiceCache";
 import { OpenAIService } from "./openAi.service";
@@ -14,19 +13,14 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const IS_RENDER = process.env.RENDER === 'true' || process.env.RENDER_SERVICE_NAME;
 const USE_OPENAI_FALLBACK = process.env.USE_OPENAI_TTS_FALLBACK === 'true' || IS_RENDER;
 
-// Rate limiting for ElevenLabs API calls
 class ElevenLabsRateLimiter {
   private lastCallTime: number = 0;
   private readonly minInterval: number;
 
   constructor() {
-    // More conservative rate limiting for cloud environments (default: 5 seconds)
-    // Render and other cloud services need longer delays to avoid abuse detection
-    const baseInterval = IS_PRODUCTION ? "8000" : "3000";
-    // Extra delay for Render specifically
-    const renderInterval = IS_RENDER ? "12000" : baseInterval;
-    this.minInterval = parseInt(process.env.ELEVENLABS_RATE_LIMIT_MS || renderInterval, 10);
-    console.log(`ElevenLabs rate limiter initialized with ${this.minInterval}ms interval (Production: ${IS_PRODUCTION}, Render: ${IS_RENDER})`);
+    const baseInterval = IS_PRODUCTION ? "10000" : "40000";
+    this.minInterval = parseInt(process.env.ELEVENLABS_RATE_LIMIT_MS || baseInterval, 10);
+    console.log(`ElevenLabs rate limiter initialized with ${this.minInterval}ms interval (Production: ${IS_PRODUCTION})`);
   }
 
   async waitForNextCall(): Promise<void> {
