@@ -55,7 +55,7 @@ const storyController = {
         throw new AppError("Prompt and story duration are required", 400);
       }
       let storyData: IStoryRequest = { ...req.body } as IStoryRequest;
-
+      console.log("Story Data: " , storyData);
       if (storyData.genere && !checkGenereExists(storyData.genere)) {
         throw new AppError("Invalid genere provided", 400);
       }

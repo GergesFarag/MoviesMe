@@ -131,6 +131,42 @@ storyQueue.process(async (job) => {
       );
     }
     console.log("Story generated successfully:", story);
+        //Starting Voice Over
+    let voiceOverUrl = "";
+    let voiceOverText = "";
+
+    if (jobData.voiceOver) {
+      console.log("Processing voice over...");
+
+      // Generate narration text from story scenes
+      const voiceOverNarration = story.scenes
+        .map((scene) => scene.narration)
+        .join(" ");
+
+      // Use provided lyrics if available, otherwise use generated narration
+      voiceOverText = jobData.voiceOver.voiceOverLyrics || voiceOverNarration;
+
+      // Update the voiceOver object with the text
+      jobData.voiceOver.text = voiceOverText;
+      jobData.voiceOver.sound = voiceOverUrl;
+
+      console.log("Voice Over Text: ", voiceOverText);
+      console.log("Voice Over Narration: ", voiceOverNarration);
+
+      const voiceOverService = new VoiceGenerationService();
+      voiceOverUrl = await voiceOverService.generateVoiceOver(
+        jobData.voiceOver,
+        voiceOverNarration
+      );
+    }
+    console.log("Voice Over URL: ", voiceOverUrl);
+    console.log("Voice Over Text length: ", voiceOverText?.length || 0);
+    console.log("Job Data Voice Over: ", !!jobData.voiceOver);
+    console.log(
+      "Will compose audio: ",
+      !!(jobData.voiceOver && voiceOverUrl && voiceOverText)
+    );
+
     // Generate images for scenes
     updateJobProgress(
       job,
@@ -270,49 +306,6 @@ storyQueue.process(async (job) => {
       mergedVideoBuffer.length
     );
     let finalVideoBuffer = mergedVideoBuffer;
-
-    //Starting Voice Over
-    let voiceOverUrl = "";
-    let voiceOverText = "";
-
-    if (jobData.voiceOver) {
-      updateJobProgress(
-        job,
-        90,
-        `Generating voice over for the story`,
-        getIO(),
-        "story:progress"
-      );
-      console.log("Processing voice over...");
-
-      // Generate narration text from story scenes
-      const voiceOverNarration = story.scenes
-        .map((scene) => scene.narration)
-        .join(" ");
-
-      // Use provided lyrics if available, otherwise use generated narration
-      voiceOverText = jobData.voiceOver.voiceOverLyrics || voiceOverNarration;
-
-      // Update the voiceOver object with the text
-      jobData.voiceOver.text = voiceOverText;
-      jobData.voiceOver.sound = voiceOverUrl;
-
-      console.log("Voice Over Text: ", voiceOverText);
-      console.log("Voice Over Narration: ", voiceOverNarration);
-
-      const voiceOverService = new VoiceGenerationService();
-      voiceOverUrl = await voiceOverService.generateVoiceOver(
-        jobData.voiceOver,
-        voiceOverNarration
-      );
-    }
-    console.log("Voice Over URL: ", voiceOverUrl);
-    console.log("Voice Over Text length: ", voiceOverText?.length || 0);
-    console.log("Job Data Voice Over: ", !!jobData.voiceOver);
-    console.log(
-      "Will compose audio: ",
-      !!(jobData.voiceOver && voiceOverUrl && voiceOverText)
-    );
 
     // Compose video with sound directly using buffer (no upload needed)
     if (jobData.voiceOver && voiceOverUrl) {

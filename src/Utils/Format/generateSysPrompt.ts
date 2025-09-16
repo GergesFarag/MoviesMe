@@ -48,6 +48,7 @@ SCENE CONSTRUCTION RULES:
 - Balance wide establishing shots with intimate character moments
 - Include dynamic visual elements suitable for motion and animation
 - Design scene transitions that feel natural and maintain story momentum
+- Make sure to respect the charachter's gender and aspect
 
 DESCRIPTION SPECIFICATIONS:
 
