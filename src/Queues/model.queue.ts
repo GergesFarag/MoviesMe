@@ -55,13 +55,12 @@ taskQueue.process(async (job) => {
     );
     modelType = modelType === "bytedance" ? "image-effects" : modelType;
     const dataToBeSent = {
-      result,
       userId,
       modelType:
         reverseModelTypeMapper[
           modelType as keyof typeof reverseModelTypeMapper
         ] || modelType,
-      resultURL: data.image,
+      resultURL: result,
       modelName: modelData.name,
       isVideo: modelData.isVideo,
       modelThumbnail: modelData.thumbnail,

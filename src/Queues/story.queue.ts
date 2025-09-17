@@ -176,14 +176,14 @@ storyQueue.process(async (job) => {
       "story:progress"
     );
 
-    const imageGenerationService = new ImageGenerationService();
+    const imageGenerationService = new ImageGenerationService(true);
 
     if (jobData.image) {
       console.log("Using provided reference image for scene generation");
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
         jobData.image,
-        false
+        true
       );
     } else {
       console.log("Generating first image from description, then using it as reference");
@@ -199,7 +199,7 @@ storyQueue.process(async (job) => {
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
         firstRefImage,
-        true
+        false
       );
     }
 
@@ -679,23 +679,8 @@ storyQueue.on("failed", async (job, err) => {
   }
 });
 
-// Enhanced monitoring and logging
-storyQueue.on("waiting", (jobId) => {
-  console.log(`📋 Job ${jobId} is waiting in queue`);
-});
-
-storyQueue.on("active", (job) => {
-  console.log(
-    `🚀 Job ${job.id} started processing at ${new Date().toISOString()}`
-  );
-});
-
 storyQueue.on("stalled", (job) => {
   console.warn(`⚠️ Job ${job.id} stalled - retries disabled`);
-});
-
-storyQueue.on("progress", (job, progress) => {
-  console.log(`📊 Job ${job.id} progress: ${progress}%`);
 });
 
 storyQueue.on("error", (error) => {

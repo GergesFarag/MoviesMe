@@ -45,7 +45,7 @@ export class VideoGenerationService {
     audioUrl: string
   ): Promise<Buffer> {
     if (!videoBuffer || videoBuffer.length === 0) {
-      throw new AppError("Valid video buffer is required" , 400);
+      throw new AppError("Valid video buffer is required", 400);
     }
     if (!audioUrl) {
       throw new AppError("Audio URL is required", 400);
@@ -77,7 +77,6 @@ export class VideoGenerationService {
 
       const videoStats = await fs.promises.stat(tempVideoPath);
       const audioStats = await fs.promises.stat(tempAudioPath);
- 
 
       if (videoStats.size === 0) {
         throw new Error("Video file is empty");
@@ -127,7 +126,10 @@ export class VideoGenerationService {
               err
             );
             reject(
-              new AppError(`Audio composition with buffer failed: ${err.message}`, 500)
+              new AppError(
+                `Audio composition with buffer failed: ${err.message}`,
+                500
+              )
             );
           })
           .run();
@@ -190,7 +192,10 @@ export class VideoGenerationService {
       return Buffer.from(buffer);
     } catch (error) {
       console.error(`Error downloading ${type}:`, error);
-      throw new AppError(`Failed to download ${type} from ${url}: ${error}`, 500);
+      throw new AppError(
+        `Failed to download ${type} from ${url}: ${error}`,
+        500
+      );
     }
   }
 
@@ -312,16 +317,18 @@ export class VideoGenerationService {
 
   async generateVideos(sceneVideos: IScene[]): Promise<string[]> {
     const videoUrls: string[] = [];
-    await Promise.all(
-      sceneVideos.map(async (scene: IScene, index: number) => {
+    for (const scene of sceneVideos) {
+      try {
         const videoUrl = await this.generateVideoFromDescription(
           scene.videoDescription,
           scene.image!,
           5
         );
         videoUrls.push(videoUrl);
-      })
-    );
+      } catch (error) {
+        console.error("Error generating video for scene:", error);
+      }
+    }
     return videoUrls;
   }
 }

@@ -51,9 +51,12 @@ export class OpenAIService {
       console.log("OpenAI RAW RESPONSE:", rawResponse);
       let parsedResponse;
       try {
-        parsedResponse = JSON.parse(rawResponse);
+        // Sanitize the JSON response to fix common AI formatting issues
+        const sanitizedResponse = this.sanitizeJSON(rawResponse);
+        parsedResponse = JSON.parse(sanitizedResponse);
       } catch (parseErr) {
         console.error("JSON Parse Error:", parseErr);
+        console.error("Raw response:", rawResponse);
         throw new AppError(
           `Invalid JSON response from AI model: ${
             parseErr instanceof Error
@@ -85,6 +88,23 @@ export class OpenAIService {
         err.status || 500
       );
     }
+  }
+
+  private sanitizeJSON(jsonString: string): string {
+    // Remove any markdown code blocks if present
+    let sanitized = jsonString.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+    
+    // Replace single quotes with double quotes for property names and string values
+    // This is a simple regex that may not cover all cases but handles common issues
+    sanitized = sanitized.replace(/'([^']*)'/g, '"$1"');
+    
+    // Fix unquoted property names (simple cases)
+    sanitized = sanitized.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+    
+    // Remove trailing commas before closing braces/brackets
+    sanitized = sanitized.replace(/,(\s*[}\]])/g, '$1');
+    
+    return sanitized;
   }
 
   async generateNarrativeText(

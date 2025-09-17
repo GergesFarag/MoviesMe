@@ -39,8 +39,9 @@ export const wavespeedBase = async (
             }
             return resultUrl;
           } else if (status === "failed") {
-            console.error("Task failed:", data.error);
-            return null;
+            const errorMessage = data.error || "Task failed without specific error message";
+            console.error("Task failed:", errorMessage);
+            throw new Error(`Image generation failed: ${errorMessage}`);
           } else {
             // Only log every 10th check to reduce spam
             if (Math.random() < 0.1) {
@@ -48,15 +49,17 @@ export const wavespeedBase = async (
             }
           }
         } else {
-          console.error("Error checking task status:", response.status, JSON.stringify(result));
-          return null;
+          const errorData = await response.text();
+          console.error("Error checking task status:", response.status, errorData);
+          throw new Error(`Status check failed: ${response.status} - ${errorData}`);
         }
 
         await new Promise((resolve) => setTimeout(resolve, 2000)); // Increased to 2 seconds
       }
     } else {
-      console.error(`Initial request failed: ${response.status}, ${await response.text()}`);
-      return null;
+      const errorText = await response.text();
+      console.error(`Initial request failed: ${response.status}, ${errorText}`);
+      throw new Error(`Image generation request failed: ${response.status} - ${errorText}`);
     }
   } catch (error) {
     console.error(`Request failed: ${error}`);
