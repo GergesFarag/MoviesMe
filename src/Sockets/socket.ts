@@ -271,7 +271,6 @@ export const sendWebsocket = (
       event: event
     };
     
-    // Track activity for debugging transport close issues
     const activityInfo = {
       event,
       timestamp: Date.now(),
@@ -281,7 +280,6 @@ export const sendWebsocket = (
     if (to) {
       const room = io.sockets.adapter.rooms.get(to);
       if (room && room.size > 0) {
-        // Mark activity on all sockets in the room
         room.forEach(socketId => {
           const socket = io.sockets.sockets.get(socketId);
           if (socket) {
@@ -294,10 +292,8 @@ export const sendWebsocket = (
         console.log(`📡 WebSocket event '${event}' sent to room '${to}' (${room.size} clients)`);
       } else {
         console.warn(`⚠️ No clients in room '${to}' for event '${event}'`);
-        // Store the message for when client reconnects (optional implementation)
       }
     } else {
-      // Mark activity on all connected sockets
       io.sockets.sockets.forEach(socket => {
         socket.data = socket.data || {};
         socket.data.lastActivity = activityInfo;
@@ -308,8 +304,6 @@ export const sendWebsocket = (
     }
   } catch (error) {
     console.error(`🚨 Error sending WebSocket event '${event}':`, error);
-    
-    // Try to emit error notification to the specific room/client
     try {
       const errorPayload = {
         error: "Failed to send progress update",

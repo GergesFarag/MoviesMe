@@ -67,7 +67,7 @@ taskQueue.process(async (job) => {
       jobId: job.id,
       duration: modelData.isVideo ? 0 : 0,
     };
-    sendWebsocket(getIO(), "job:completed", dataToBeSent, `user:${userId}`);
+
     // let notificationData = {
     //   URL: data.image,
     //   modelType: modelData.name,
@@ -124,6 +124,14 @@ taskQueue.on("completed", async (job, result: any) => {
 
     user.effectsLib = updatedItems;
     await user.save();
+    updateJobProgress(
+      job,
+      100,
+      "Your Effect is ready!",
+      getIO(),
+      "job:completed",
+      result
+    );
     const item = await getItemFromUser(user.id, result.jobId);
     if (item) {
       const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
