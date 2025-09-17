@@ -138,7 +138,7 @@ taskQueue.on("completed", async (job, result: any) => {
       const res = await sendNotificationToClient(
         user?.FCMToken!,
         "Model Processing Completed",
-        `Your video generated successfully`,
+        `Your effect generated successfully`,
         {
           ...notificationDTO,
           redirectTo: "/effectDetails",
@@ -147,7 +147,7 @@ taskQueue.on("completed", async (job, result: any) => {
       if (res) {
         user.notifications?.push({
           title: "Model Processing Completed",
-          message: `Your video generated successfully`,
+          message: `Your effect generated successfully`,
           data: notificationDTO,
           redirectTo: "/effectDetails",
           createdAt: new Date(),
