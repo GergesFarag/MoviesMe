@@ -48,7 +48,6 @@ export const updateJobProgress = async (
             status,
             progress,
             lastProgressUpdate: payload,
-            ...additionalData,
           });
         }
       } catch (err) {
@@ -68,8 +67,7 @@ export const updateJobProgress = async (
               ...additionalData,
               timestamp: Date.now(),
               websocketError: true
-            },
-            ...additionalData,
+            }
           });
           console.log("💾 Progress stored in job data as fallback");
         } catch (updateError) {

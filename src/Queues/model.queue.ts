@@ -38,6 +38,7 @@ taskQueue.process(async (job) => {
   try {
     const { modelData, userId, data, FCM } = job.data;
     updateJobProgress(job, 10, "Start Processing...", getIO(), "job:progress");
+    await new Promise((res) => setTimeout(res, 2000));
     if (!modelData) {
       throw new AppError("Model Data not found", 404);
     }
@@ -124,14 +125,14 @@ taskQueue.on("completed", async (job, result: any) => {
 
     user.effectsLib = updatedItems;
     await user.save();
-    updateJobProgress(
-      job,
-      100,
-      "Your Effect is ready!",
-      getIO(),
-      "job:completed",
-      result
-    );
+    // updateJobProgress(
+    //   job,
+    //   100,
+    //   "Your Effect is ready!",
+    //   getIO(),
+    //   "job:completed",
+    //   result
+    // );
     const item = await getItemFromUser(user.id, result.jobId);
     if (item) {
       const notificationDTO = NotificationItemDTO.toNotificationDTO(item);

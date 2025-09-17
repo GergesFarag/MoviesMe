@@ -76,13 +76,15 @@ export const runModel = async (
           const status = data.status;
 
           if (status === "completed") {
+            updateJobProgress(job!, 90, "Finalizing...", IO, "job:progress");
+            await new Promise((res) => setTimeout(res, 2000));
             const resultUrl = data.outputs[0];
             updateJobProgress(
               job!,
               100,
               "Processing completed",
               IO,
-              "job:progress",
+              "job:progress"
             );
             return resultUrl;
           } else if (status === "failed") {
