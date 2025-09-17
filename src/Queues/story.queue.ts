@@ -33,7 +33,6 @@ export const storyQueue = new Queue("storyProcessing", {
     maxRetriesPerRequest: 3,
   },
   defaultJobOptions: {
-    attempts: 1,
     timeout: 300000,
     removeOnComplete: 10,
     removeOnFail: 5,
@@ -75,7 +74,6 @@ storyQueue.process(async (job) => {
       }
     }
 
-    // Check if story already exists and is completed or failed  
     const existingStory = await Story.findOne({ jobId: jobData.jobId });
     if (existingStory) {
       if (existingStory.status === "completed") {
@@ -113,7 +111,6 @@ storyQueue.process(async (job) => {
       throw new AppError("Failed to generate story scenes with OpenAI", 500);
     }
 
-    // Validate story generation
     if (
       !story ||
       !story.scenes ||
@@ -131,43 +128,25 @@ storyQueue.process(async (job) => {
       );
     }
     console.log("Story generated successfully:", story);
-        //Starting Voice Over
+
     let voiceOverUrl = "";
     let voiceOverText = "";
 
     if (jobData.voiceOver) {
       console.log("Processing voice over...");
-
-      // Generate narration text from story scenes
       const voiceOverNarration = story.scenes
         .map((scene) => scene.narration)
         .join(" ");
 
-      // Use provided lyrics if available, otherwise use generated narration
       voiceOverText = jobData.voiceOver.voiceOverLyrics || voiceOverNarration;
-
-      // Update the voiceOver object with the text
       jobData.voiceOver.text = voiceOverText;
       jobData.voiceOver.sound = voiceOverUrl;
-
-      console.log("Voice Over Text: ", voiceOverText);
-      console.log("Voice Over Narration: ", voiceOverNarration);
-
       const voiceOverService = new VoiceGenerationService();
       voiceOverUrl = await voiceOverService.generateVoiceOver(
         jobData.voiceOver,
         voiceOverNarration
       );
     }
-    console.log("Voice Over URL: ", voiceOverUrl);
-    console.log("Voice Over Text length: ", voiceOverText?.length || 0);
-    console.log("Job Data Voice Over: ", !!jobData.voiceOver);
-    console.log(
-      "Will compose audio: ",
-      !!(jobData.voiceOver && voiceOverUrl && voiceOverText)
-    );
-
-    // Generate images for scenes
     updateJobProgress(
       job,
       30,
@@ -182,8 +161,7 @@ storyQueue.process(async (job) => {
       console.log("Using provided reference image for scene generation");
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
-        jobData.image,
-        true
+        jobData.image
       );
     } else {
       console.log("Generating first image from description, then using it as reference");
@@ -198,8 +176,7 @@ storyQueue.process(async (job) => {
 
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
-        firstRefImage,
-        false
+        firstRefImage
       );
     }
 
@@ -211,7 +188,6 @@ storyQueue.process(async (job) => {
       );
     }
 
-    // Validate that all images are valid URLs
     const invalidImages = imageUrls.filter(
       (url, index) => !url || typeof url !== "string" || !url.startsWith("http")
     );
@@ -223,15 +199,12 @@ storyQueue.process(async (job) => {
       );
     }
 
-    // Assign images to scenes
     story.scenes = story.scenes.map((scene, index) => ({
       ...scene,
       image: imageUrls[index],
     }));
 
     console.log("Successfully generated images for all scenes:", imageUrls);
-
-    // Continue with video generation
     updateJobProgress(
       job,
       50,
@@ -239,7 +212,7 @@ storyQueue.process(async (job) => {
       getIO(),
       "story:progress"
     );
-
+    
     story.scenes.forEach((scene, index) => {
       scene.image = imageUrls[index];
     });
@@ -455,7 +428,6 @@ storyQueue.process(async (job) => {
   } catch (err: any) {
     console.error("Error in story processing:", err);
 
-    // Update job progress to indicate failure
     updateJobProgress(
       job,
       0,
@@ -466,7 +438,6 @@ storyQueue.process(async (job) => {
       "story:failed"
     );
 
-    // Re-throw the error to mark the job as failed
     throw err;
   }
 });
@@ -479,7 +450,6 @@ storyQueue.on("completed", async (job, result) => {
     const roomName = `user:${job.data.userId}`;
     console.log(`📤 Sending completion notification to room: ${roomName}`);
 
-    // Fix: Extract the story from the result object and ensure it has scenes
     const story = result?.story;
     if (!story) {
       console.error("❌ No story found in result object:", result);
