@@ -42,7 +42,7 @@ export class ItemDTO implements IItemMapper {
       modelName: this.item.modelName,
       isVideo: this.item.isVideo,
       jobId: this.item.jobId.toString(),
-      thumbnail: this.item.effectThumbnail,
+      thumbnail: this.item.effectThumbnail || this.item.URL,
       status: this.item.status,
       isFavorite: this.item.isFav,
       duration: this.item.duration,

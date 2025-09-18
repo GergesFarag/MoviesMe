@@ -4,25 +4,32 @@ import { getVoiceId } from "../Utils/Database/optimizedOps";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import { cloudUploadAudio } from "../Utils/APIs/cloudinary";
 import { streamToBuffer } from "../Utils/Format/streamToBuffer";
-import { getCachedVoice, setCachedVoice, clearVoiceCache } from "../Utils/Cache/voiceCache";
+import {
+  getCachedVoice,
+  setCachedVoice,
+  clearVoiceCache,
+} from "../Utils/Cache/voiceCache";
+import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
+import { Readable } from "stream";
+import { downloadFile } from "../Utils/Format/downloadFile";
 
-const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY as string) || "";
-
+// const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY as string) || "";
+const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 export class VoiceGenerationService {
-  private client: ElevenLabsClient;
+  // private client: ElevenLabsClient;
 
   constructor() {
-    try {
-      this.client = new ElevenLabsClient({ 
-        apiKey: ELEVENLABS_API_KEY,
-      });
-    } catch (error) {
-      console.log("err", error);
-      throw new AppError(
-        "ElevenLabs Client initialization failed",
-        HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
-      );
-    }
+    // try {
+    //   this.client = new ElevenLabsClient({
+    //     apiKey: ELEVENLABS_API_KEY,
+    //   });
+    // } catch (error) {
+    //   console.log("err", error);
+    //   throw new AppError(
+    //     "ElevenLabs Client initialization failed",
+    //     HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
+    //   );
+    // }
   }
 
   async generateVoiceOver(
@@ -42,38 +49,51 @@ export class VoiceGenerationService {
       );
     }
     if (!data?.voiceOverLyrics) data!.voiceOverLyrics = narration as string;
-    
+
     const finalVoiceId = voiceId || "CwhRBWXzGAHq8TQ4Fs17";
-    
 
     const cachedAudio = getCachedVoice(data!.voiceOverLyrics, finalVoiceId);
     if (cachedAudio) {
       console.log("Using cached voice generation");
       return cachedAudio;
     }
-      try {
-        const audio = await this.client.textToSpeech.convert(
-          finalVoiceId,
-          {
-            text: data!.voiceOverLyrics,
-            outputFormat: "mp3_44100_128",
-          }
-        );
-
-        const audioBuffer = await streamToBuffer(audio);
-        const uploadResult = await cloudUploadAudio(audioBuffer);
-
-        setCachedVoice(data!.voiceOverLyrics, finalVoiceId, uploadResult.secure_url);
-        
-        return uploadResult.secure_url;
-        
-      } catch (error: any) {
+    try {
+      const url = "https://api.wavespeed.ai/api/v3/elevenlabs/flash-v2";
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+      };
+      const payload = {
+        similarity: 1,
+        stability: 0.5,
+        text: data!.voiceOverLyrics,
+        use_speaker_boost: true,
+        voice_id: "Roger",
+      };
+      const audio = await wavespeedBase(url, headers, payload);
+      if(!audio) {
         throw new AppError(
-          `Voice generation failed: ${error.message || 'Unknown error'}`,
+          "Voice generation failed",
           HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
         );
       }
+      const audioBuffer = await downloadFile(audio, "audio");
+      const uploadResult = await cloudUploadAudio(audioBuffer);
+
+      setCachedVoice(
+        data!.voiceOverLyrics,
+        finalVoiceId,
+        uploadResult.secure_url
+      );
+
+      return uploadResult.secure_url;
+    } catch (error: any) {
+      throw new AppError(
+        `Voice generation failed: ${error.message || "Unknown error"}`,
+        HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
+      );
     }
+  }
 
   clearCache(): void {
     clearVoiceCache();

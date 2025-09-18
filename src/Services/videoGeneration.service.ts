@@ -6,6 +6,7 @@ import { IScene } from "../Interfaces/scene.interface";
 import fs from "fs";
 import { Readable } from "stream";
 import AppError from "../Utils/Errors/AppError";
+import { downloadFile } from "../Utils/Format/downloadFile";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
 const baseURL = "https://api.wavespeed.ai/api/v3";
@@ -64,7 +65,7 @@ export class VideoGenerationService {
       await fs.promises.mkdir(tempDir, { recursive: true });
 
       const [downloadedAudioBuffer] = await Promise.all([
-        this.downloadFile(audioUrl, "audio"),
+        downloadFile(audioUrl, "audio"),
       ]);
 
       const tempVideoPath = path.join(tempDir, "input_video.mp4");
@@ -166,36 +167,6 @@ export class VideoGenerationService {
       } catch (cleanupError) {
         console.warn("Failed to clean up temporary directory:", cleanupError);
       }
-    }
-  }
-
-  private async downloadFile(
-    url: string,
-    type: "video" | "audio"
-  ): Promise<Buffer> {
-    try {
-      console.log(`Downloading ${type} from:`, url);
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new AppError(
-          `Failed to download ${type}: ${response.status} ${response.statusText}`,
-          500
-        );
-      }
-
-      const buffer = await response.arrayBuffer();
-      console.log(
-        `Downloaded ${type} successfully, size: ${buffer.byteLength} bytes`
-      );
-
-      return Buffer.from(buffer);
-    } catch (error) {
-      console.error(`Error downloading ${type}:`, error);
-      throw new AppError(
-        `Failed to download ${type} from ${url}: ${error}`,
-        500
-      );
     }
   }
 
