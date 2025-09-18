@@ -57,17 +57,14 @@ export class VoiceGenerationService {
       return cachedAudio;
     }
     try {
-      const url = "https://api.wavespeed.ai/api/v3/elevenlabs/flash-v2";
+      const url = "https://api.wavespeed.ai/api/v3/minimax/speech-02-hd";
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${WAVESPEED_API_KEY}`,
       };
       const payload = {
-        similarity: 1,
-        stability: 0.5,
         text: data!.voiceOverLyrics,
-        use_speaker_boost: true,
-        voice_id: voiceId || "Roger",
+        voice_id: voiceId || "Friendly_Person",
       };
       const audio = await wavespeedBase(url, headers, payload);
       if(!audio) {
@@ -76,16 +73,13 @@ export class VoiceGenerationService {
           HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
         );
       }
-      const audioBuffer = await downloadFile(audio, "audio");
-      const uploadResult = await cloudUploadAudio(audioBuffer);
-
       setCachedVoice(
         data!.voiceOverLyrics,
         voiceId as string,
-        uploadResult.secure_url
+        audio
       );
 
-      return uploadResult.secure_url;
+      return audio;
     } catch (error: any) {
       throw new AppError(
         `Voice generation failed: ${error.message || "Unknown error"}`,

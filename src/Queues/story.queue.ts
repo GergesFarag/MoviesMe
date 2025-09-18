@@ -443,8 +443,8 @@ storyQueue.process(async (job) => {
 
     throw err;
   }
-}
-);
+
+});
 
 storyQueue.on("completed", async (job, result) => {
   console.log(`Story job with ID ${job.id} has been completed.`);
