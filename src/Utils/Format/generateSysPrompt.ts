@@ -57,7 +57,8 @@ export const generateSysPrompt = (
 
   ${
     doNarration
-      ? `- narration: Concise voiceover text for a 5-second audio delivery. Must be in ${langauge}.`
+      ? `- narration: Concise voiceover text for a 5-second audio delivery. Must be in ${langauge}. \n
+      Important: make the narration words fit in 5 seconds, use approximately 15-25 words.`
       : ``
   }
 
