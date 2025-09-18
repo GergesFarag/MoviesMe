@@ -97,7 +97,6 @@ export class VideoGenerationService {
             "0:v:0", // Map first video stream
             "-map",
             "1:a:0", // Map first audio stream
-            "-shortest", // End when shortest input ends
             "-avoid_negative_ts",
             "make_zero",
             "-fflags",

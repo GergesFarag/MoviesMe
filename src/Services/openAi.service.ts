@@ -50,14 +50,8 @@ export class OpenAIService {
       if (!rawResponse) {
         throw new AppError("No response content from OpenAI", 500);
       }
-      console.log("OpenAI RAW RESPONSE:", rawResponse);
-      console.log("Raw response length:", rawResponse.length);
-      console.log("Raw response first 200 chars:", rawResponse.substring(0, 200));
-      console.log("Raw response last 200 chars:", rawResponse.substring(Math.max(0, rawResponse.length - 200)));
-      
       let parsedResponse;
       try {
-        // First, try to parse the raw response directly
         try {
           parsedResponse = JSON.parse(rawResponse);
         } catch (directParseErr) {
@@ -69,10 +63,7 @@ export class OpenAIService {
           try {
             parsedResponse = JSON.parse(sanitizedResponse);
           } catch (sanitizedParseErr) {
-            // Try additional JSON fixing
-            console.log("Sanitized parse failed, trying additional fixes...");
             const fixedResponse = this.fixCommonJSONIssues(sanitizedResponse);
-            console.log("Fixed response:", fixedResponse);
             parsedResponse = JSON.parse(fixedResponse);
           }
         }
