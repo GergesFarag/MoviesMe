@@ -1,6 +1,6 @@
 import { IStoryRequest } from "../Interfaces/storyRequest.interface";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
-import { getVoiceId } from "../Utils/Database/optimizedOps";
+import {getVoiceName } from "../Utils/Database/optimizedOps";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import { cloudUploadAudio } from "../Utils/APIs/cloudinary";
 import { streamToBuffer } from "../Utils/Format/streamToBuffer";
@@ -12,6 +12,7 @@ import {
 import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
 import { Readable } from "stream";
 import { downloadFile } from "../Utils/Format/downloadFile";
+import { language } from "@elevenlabs/elevenlabs-js/api/resources/dubbing/resources/resource";
 
 // const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY as string) || "";
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
@@ -38,7 +39,7 @@ export class VoiceGenerationService {
   ): Promise<string> {
     let voiceId: string | null = null;
     if (data?.voiceGender) {
-      voiceId = await getVoiceId(data!.voiceGender);
+      voiceId = await getVoiceName(data!.voiceGender);
       if (!voiceId)
         throw new AppError("No voiceId found", HTTP_STATUS_CODE.NOT_FOUND);
     }
@@ -50,9 +51,7 @@ export class VoiceGenerationService {
     }
     if (!data?.voiceOverLyrics) data!.voiceOverLyrics = narration as string;
 
-    const finalVoiceId = voiceId || "CwhRBWXzGAHq8TQ4Fs17";
-
-    const cachedAudio = getCachedVoice(data!.voiceOverLyrics, finalVoiceId);
+    const cachedAudio = getCachedVoice(data!.voiceOverLyrics, voiceId as string);
     if (cachedAudio) {
       console.log("Using cached voice generation");
       return cachedAudio;
@@ -68,7 +67,7 @@ export class VoiceGenerationService {
         stability: 0.5,
         text: data!.voiceOverLyrics,
         use_speaker_boost: true,
-        voice_id: "Roger",
+        voice_id: voiceId || "Roger",
       };
       const audio = await wavespeedBase(url, headers, payload);
       if(!audio) {
@@ -82,7 +81,7 @@ export class VoiceGenerationService {
 
       setCachedVoice(
         data!.voiceOverLyrics,
-        finalVoiceId,
+        voiceId as string,
         uploadResult.secure_url
       );
 

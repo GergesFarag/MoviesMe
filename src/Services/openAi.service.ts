@@ -13,6 +13,7 @@ export class OpenAIService {
     storyStyle?: string,
     storyGenere?: string,
     storyLocation?: string,
+    language: string = "English",
     doNarration: boolean = false
   ) {
     this.client = new OpenAI({ apiKey: OPENAI_API_KEY });
@@ -22,6 +23,7 @@ export class OpenAIService {
       storyStyle,
       storyGenere,
       storyLocation,
+      language,
       doNarration
     );
   }

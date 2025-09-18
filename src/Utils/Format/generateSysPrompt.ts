@@ -8,6 +8,8 @@ export const generateSysPrompt = (
   storyGenre?: string,
 
   storyLocation?: string,
+  
+  langauge: string = "English",
 
   doNarration: boolean = false
 ): string => {
@@ -55,11 +57,9 @@ export const generateSysPrompt = (
 
   ${
     doNarration
-      ? `- narration: Concise voiceover text for a 5-second audio delivery.`
+      ? `- narration: Concise voiceover text for a 5-second audio delivery. Must be in ${langauge}.`
       : ``
   }
-
-
 
   ADDITIONAL CONSTRAINTS:
 

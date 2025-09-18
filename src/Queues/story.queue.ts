@@ -99,6 +99,7 @@ storyQueue.process(async (job) => {
       jobData.style,
       jobData.genere,
       jobData.location,
+      jobData.voiceOver?.voiceLanguage || "English",
       jobData.voiceOver?.voiceOverLyrics ? false : true
     );
 

@@ -69,14 +69,14 @@ export const getItemFromUser = async (
   return item || null;
 };
 
-export const getVoiceId = async (
+export const getVoiceName = async (
   voiceGender: "male" | "female" | "kid"
 ): Promise<string | null> => {
   const item = await AudioModel.findOne({ gender: voiceGender }).lean();
   if (!item) {
     throw new AppError("No audio model found", HTTP_STATUS_CODE.NOT_FOUND);
   }
-  return item.elevenLabsId || null;
+  return item.name || null;
 };
 
 export const getModelCallApi = async (modelId: string): Promise<string|null> => {
