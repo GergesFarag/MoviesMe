@@ -5,6 +5,7 @@ import { getIO } from "../../Sockets/socket";
 import { processModelData, updateJobProgress } from "../Model/model.utils";
 import { DefaultEventsMap, Server } from "socket.io";
 import { sendNotificationToClient } from "../Notifications/notifications";
+import { cloudUploadURL } from "./cloudinary";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
@@ -38,10 +39,34 @@ export const runModel = async (
       );
       await new Promise((res) => setTimeout(res, 2000));
     }
-    const payload = {
+    
+    // Build payload based on model requirements
+    const payload: any = {
       enable_base64_output: false,
       image: data.image,
     };
+    
+    // Add additional parameters that might be required by certain models
+    if (data.prompt) {
+      payload.prompt = data.prompt;
+    }
+    
+    if (data.duration) {
+      payload.duration = data.duration;
+    }
+    
+    if (data.seed !== undefined) {
+      payload.seed = data.seed;
+    }
+    
+    // Add BGM parameter for video models that require it
+    // Some video generation models require background music
+    if (modelType.includes('video') || modelType.includes('bytedance')) {
+      payload.bgm = data.bgm || null; // Use provided BGM or null as default
+    }
+    
+    console.log("Sending payload to Wavespeed:", JSON.stringify(payload, null, 2));
+    
     const response = await fetch(url, {
       method: "POST",
       headers: headers,
@@ -55,9 +80,7 @@ export const runModel = async (
       console.log(`Task submitted successfully. Request ID: ${requestId}`);
 
       if (job) {
-        await updateJobProgress(job, 60, "Processing...", IO, "job:progress", {
-          requestId,
-        });
+        await updateJobProgress(job, 60, "Processing...", IO, "job:progress");
       }
 
       while (true) {
@@ -76,13 +99,14 @@ export const runModel = async (
           const status = data.status;
 
           if (status === "completed") {
-            updateJobProgress(job!, 90, "Finalizing...", IO, "job:progress");
-            await new Promise((res) => setTimeout(res, 2000));
+            updateJobProgress(job!, 80, "Finalizing...", IO, "job:progress");
+            await new Promise((res) => setTimeout(res, 2000)); // Simulate finalization delay
             const resultUrl = data.outputs[0];
+            
             updateJobProgress(
               job!,
               100,
-              "Processing completed",
+              "Processing Completed!",
               IO,
               "job:progress"
             );
@@ -94,8 +118,7 @@ export const runModel = async (
                 0,
                 "Model processing failed.",
                 IO,
-                "model_error",
-                { error: data.error }
+                "model_error"
               );
             }
             console.error("Task failed:", data.error);
@@ -106,8 +129,6 @@ export const runModel = async (
               { error: data.error || "Unknown error" }
             );
             return null;
-          } else {
-            console.log("Task still processing. Current status:", status);
           }
         } else {
           console.error(
@@ -122,10 +143,7 @@ export const runModel = async (
               0,
               "API error while checking status.",
               IO,
-              "model_error",
-              {
-                error: statusResponse.status,
-              }
+              "model_error"
             );
           }
 
@@ -147,10 +165,7 @@ export const runModel = async (
           0,
           "Error submitting task.",
           IO,
-          "model_error",
-          {
-            error: response.status,
-          }
+          "model_error"
         );
       }
     }
@@ -161,10 +176,7 @@ export const runModel = async (
         0,
         "An error occurred during model processing.",
         IO,
-        "model_error",
-        {
-          error: error instanceof Error ? error.message : "Unknown error",
-        }
+        "model_error"
       );
     }
     console.error(`Request failed: ${error}`);

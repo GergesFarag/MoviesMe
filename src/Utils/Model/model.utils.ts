@@ -5,36 +5,63 @@ import { formatModelName } from "../Format/modelNames";
 import { DefaultEventsMap, Server } from "socket.io";
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
+// Helper function to safely update job with retries
+const safeJobUpdate = async (job: Bull.Job, data: any, retries = 2): Promise<void> => {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const jobExists = await job.isActive() || await job.isWaiting() || await job.isDelayed();
+      if (jobExists) {
+        await job.update(data);
+        return; // Success
+      } else {
+        console.warn(`⚠️ Job ${job.id} no longer exists in queue`);
+        return;
+      }
+    } catch (error) {
+      if (i === retries) {
+        throw error; // Final attempt failed
+      }
+      console.warn(`⚠️ Job update attempt ${i + 1} failed, retrying...`, error);
+      await new Promise(resolve => setTimeout(resolve, 100 * (i + 1))); // Exponential backoff
+    }
+  }
+};
+
 export const updateJobProgress = async (
   job: Bull.Job,
   progress: number,
   status: string,
   io?: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   event?: string,
-  additionalData: Record<string, any> = {}
 ) => {
   if (job) {
-    await job.progress(progress);
-    await job.update({
-      ...(job.data || {}),
-      status,
-      progress,
-      ...additionalData,
-    });
+    try {
+      await job.progress(progress);
+      
+      const updatedData = {
+        ...(job.data || {}),
+        status,
+        progress,
+        lastUpdate: Date.now(),
+      };
+      
+      await safeJobUpdate(job, updatedData);
+    } catch (updateError) {
+      console.error(`❌ Error updating job ${job.id} data:`, updateError);
+    }
     
     if (io && event) {
       try {
+        const jobId = job.opts.jobId || job.id;
         const payload = {
-          jobId: job.id,
+          jobId: jobId,
           status,
           progress,
-          ...additionalData,
           timestamp: Date.now(),
         };
         
         const roomName = `user:${job.data.userId}`;
         
-        // Check if there are clients in the room before sending
         const room = io.sockets.adapter.rooms.get(roomName);
         if (room && room.size > 0) {
           sendWebsocket(io, event, payload, roomName);
@@ -42,37 +69,23 @@ export const updateJobProgress = async (
         } else {
           console.warn(`⚠️ No clients connected for user ${job.data.userId}, progress not sent:`, payload);
           
-          // Store progress in job data for client to retrieve when reconnecting
-          await job.update({
-            ...(job.data || {}),
-            status,
-            progress,
-            lastProgressUpdate: payload,
-          });
+          // Only update job if it still exists
+          try {
+            const jobExists = await job.isActive() || await job.isWaiting() || await job.isDelayed();
+            if (jobExists) {
+              await job.update({
+                ...(job.data || {}),
+                status,
+                progress,
+                lastProgressUpdate: payload,
+              });
+            }
+          } catch (updateError) {
+            console.warn(`⚠️ Could not update job ${jobId} with progress:`, updateError);
+          }
         }
       } catch (err) {
         console.error("❌ Error updating job progress via WebSocket:", err);
-        
-        // Don't throw error - job should continue even if WebSocket fails
-        // Store the progress in the job data as fallback
-        try {
-          await job.update({
-            ...(job.data || {}),
-            status,
-            progress,
-            lastProgressUpdate: {
-              jobId: job.id,
-              status,
-              progress,
-              ...additionalData,
-              timestamp: Date.now(),
-              websocketError: true
-            }
-          });
-          console.log("💾 Progress stored in job data as fallback");
-        } catch (updateError) {
-          console.error("❌ Failed to store progress in job data:", updateError);
-        }
       }
     }
   }

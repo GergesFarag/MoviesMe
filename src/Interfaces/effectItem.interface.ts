@@ -9,6 +9,7 @@ export interface IEffectItem {
   isVideo: boolean;
   modelThumbnail: string;
   jobId: JobId;
+  effectThumbnail: string;
   status: string;
   isFav: boolean;
   duration: number;

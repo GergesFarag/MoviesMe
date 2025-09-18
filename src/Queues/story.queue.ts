@@ -16,7 +16,6 @@ import {
 import { StoryDTO } from "../DTOs/story.dto";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import User from "../Models/user.model";
-import { title } from "process";
 import { ImageGenerationService } from "../Services/imageGeneration.service";
 import { IScene } from "../Interfaces/scene.interface";
 import { VoiceGenerationService } from "../Services/voiceGeneration.service";
@@ -161,7 +160,8 @@ storyQueue.process(async (job) => {
       console.log("Using provided reference image for scene generation");
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
-        jobData.image
+        jobData.image,
+        false
       );
     } else {
       console.log("Generating first image from description, then using it as reference");
@@ -176,7 +176,8 @@ storyQueue.process(async (job) => {
 
       imageUrls = await imageGenerationService.generateImagesForScenes(
         story.scenes as IScene[],
-        firstRefImage
+        firstRefImage,
+        true
       );
     }
 
@@ -668,28 +669,6 @@ storyQueue.on("error", (error) => {
   }
 });
 
-// Add global error handling for the queue
-storyQueue.on("stalled", (job) => {
-  console.warn(`⚠️ Job ${job.id} stalled - will NOT be retried (retries disabled)`);
-  // Add additional logging for stalled jobs
-  console.warn("Stalled job details:", {
-    jobId: job.opts?.jobId,
-    data: job.data?.userId ? { userId: job.data.userId } : {},
-  });
-});
-
-// Handle global promise rejections that might affect the queue
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  // Don't exit the process, just log the error
-});
-
-process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
-  // Log but don't exit - let the application handle it
-});
-
-// Log queue statistics periodically
 setInterval(async () => {
   try {
     const waiting = await storyQueue.getWaiting();
@@ -703,6 +682,6 @@ setInterval(async () => {
   } catch (error) {
     console.error("Failed to get queue statistics:", error);
   }
-}, 30000); // Log every 30 seconds
+}, 45000);
 
 export default storyQueue;

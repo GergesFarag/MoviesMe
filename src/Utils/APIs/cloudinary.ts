@@ -35,6 +35,34 @@ export const cloudUpload = async (
   });
 };
 
+export const cloudUploadURL = async (
+  imageUrl: string,
+  publicId?: string
+): Promise<UploadApiResponse> => {
+  return new Promise((resolve, reject) => {
+    const uploadOptions = {
+      resource_type: "auto" as const,
+      public_id: publicId,
+      overwrite: false,
+      quality: "auto:good",
+    };
+    cloudinary.uploader.upload(
+      imageUrl,
+      uploadOptions,
+      (error, result) => {
+        if (error) {
+          console.log("Cloudinary URL Upload Error:", error);
+          reject(new AppError("Cloudinary URL upload failed", 500));
+        } else if (!result) {
+          reject(new AppError("Cloudinary URL upload returned no result", 500));
+        } else {
+          resolve(result as UploadApiResponse);
+        }
+      }
+    );
+  });
+};
+
 export const cloudUploadAudio = async (
   audioBuffer: Buffer,
   publicId?: string
@@ -104,9 +132,14 @@ export const generateImageHash = (buffer: Buffer): string => {
   return crypto.createHash("md5").update(buffer).digest("hex");
 };
 
-export const deleteCloudinaryResource = async (publicId: string, resourceType: "image" | "video" | "raw" = "image") => {
+export const deleteCloudinaryResource = async (
+  publicId: string,
+  resourceType: "image" | "video" | "raw" = "image"
+) => {
   try {
-    const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
     console.log(`Cloudinary resource deleted: ${publicId}`, result);
     return result;
   } catch (error) {

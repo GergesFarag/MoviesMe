@@ -56,12 +56,13 @@ export const processModelJobAsync = async (
     }
 
     const modelType = filterModelType(model);
-
+  
     const itemData = {
       URL: imageUrl.url,
       modelType: modelType === "bytedance" ? "image-effects" : modelType,
       jobId: job.id.toString(),
       status: "pending",
+      previewURL: imageUrl.secure_url,
       isFav: false,
       modelName: model.name,
       isVideo: model.isVideo,

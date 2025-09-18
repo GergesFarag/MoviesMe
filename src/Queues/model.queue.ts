@@ -9,13 +9,11 @@ import {
 import IAiModel from "../Interfaces/aiModel.interface";
 import Job from "../Models/job.model";
 import { getIO } from "../Sockets/socket";
-import Queue from "bull";
 import { updateJobProgress } from "../Utils/Model/model.utils";
-import { sendWebsocket } from "../Sockets/socket";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
-import { IEffectItem } from "../Interfaces/effectItem.interface";
 import { NotificationItemDTO } from "../DTOs/item.dto";
 import { getItemFromUser } from "../Utils/Database/optimizedOps";
+import Queue from "bull";
 const redisPort = (process.env.REDIS_PORT as string)
   ? parseInt(process.env.REDIS_PORT as string, 10)
   : 6379;
@@ -25,12 +23,21 @@ export const taskQueue = new Queue("modelProcessing", {
     host: process.env.REDIS_HOST as string,
     port: redisPort,
     password: (process.env.REDIS_PASSWORD as string) || undefined,
+    connectTimeout: 10000,
   },
   defaultJobOptions: {
     attempts: 1,
     timeout: 300000,
     removeOnComplete: 10, // Keep only 10 completed jobs
     removeOnFail: 5, // Keep only 5 failed jobs
+    backoff: {
+      type: "exponential",
+      delay: 2000,
+    },
+  },
+  settings: {
+    stalledInterval: 30000,
+    retryProcessDelay: 5000,
   },
 });
 
@@ -54,7 +61,16 @@ taskQueue.process(async (job) => {
       job,
       getIO()
     );
+  if(!result){
+      throw new AppError("Model processing Result Failed", 500);
+  }
     modelType = modelType === "bytedance" ? "image-effects" : modelType;
+    
+    // Generate thumbnail for video results
+    const effectThumbnail = modelData.isVideo 
+      ? modelData.thumbnail
+      : result;
+    
     const dataToBeSent = {
       userId,
       modelType:
@@ -65,9 +81,11 @@ taskQueue.process(async (job) => {
       modelName: modelData.name,
       isVideo: modelData.isVideo,
       modelThumbnail: modelData.thumbnail,
+      effectThumbnail,
       jobId: job.id,
       duration: modelData.isVideo ? 0 : 0,
     };
+    updateJobProgress(job, 100, "Processing completed", getIO(), "job:progress");
 
     // let notificationData = {
     //   URL: data.image,
@@ -89,15 +107,34 @@ taskQueue.process(async (job) => {
 
 taskQueue.on("completed", async (job, result: any) => {
   try {
+    // Update job status in database
     await Job.findOneAndUpdate(
       { jobId: result.jobId },
       { status: "completed" }
     );
 
-    await job.remove();
+    // Safe job removal with error handling
+    try {
+      const jobExists = await job.isActive() || await job.isWaiting() || await job.isDelayed() || await job.isCompleted();
+      if (jobExists) {
+        await job.remove();
+      } else {
+        console.warn(`⚠️ Job ${job.id} no longer exists in queue, skipping removal`);
+      }
+    } catch (removeError) {
+      console.warn(`⚠️ Failed to remove job ${job.id}:`, removeError);
+    }
 
     const user = await User.findById(result.userId);
-    if (!user) return;
+    if (!user) {
+      console.error("User not found for userId:", result.userId);
+      return;
+    }
+
+    if (!user.effectsLib || user.effectsLib.length === 0) {
+      console.error("User effectsLib is empty for userId:", result.userId);
+      return;
+    }
 
     const updatedItems = user?.effectsLib?.map((item) => {
       if (item.jobId === result.jobId) {
@@ -109,8 +146,14 @@ taskQueue.on("completed", async (job, result: any) => {
           console.error("Model type is missing for jobId:", result.jobId);
         }
 
+        if (!result.resultURL) {
+          console.error("Result URL is missing for jobId:", result.jobId);
+          throw new AppError("Result URL is missing", 500);
+        }
+
         item.URL = result.resultURL;
         item.status = "completed";
+        item.effectThumbnail = result.effectThumbnail || result.resultURL;
         item.modelType = modelType;
         item.duration = result.duration || 0;
         item.updatedAt = new Date();
@@ -123,16 +166,24 @@ taskQueue.on("completed", async (job, result: any) => {
       return item;
     });
 
+    // Check if any item was actually updated
+    const updatedItem = updatedItems?.find(item => item.jobId === result.jobId);
+    if (!updatedItem) {
+      console.error("No item found with jobId:", result.jobId);
+      return;
+    }
+
     user.effectsLib = updatedItems;
-    await user.save();
-    // updateJobProgress(
-    //   job,
-    //   100,
-    //   "Your Effect is ready!",
-    //   getIO(),
-    //   "job:completed",
-    //   result
-    // );
+    
+    // Validate the user before saving
+    try {
+      await user.validate();
+      await user.save();
+      console.log(`✅ Successfully saved user ${user.id} with updated effectsLib`);
+    } catch (validationError) {
+      console.error(`❌ Validation error when saving user ${user.id}:`, validationError);
+      throw validationError;
+    }
     const item = await getItemFromUser(user.id, result.jobId);
     if (item) {
       const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
@@ -164,18 +215,29 @@ taskQueue.on("completed", async (job, result: any) => {
 taskQueue.on("failed", async (job, err) => {
   try {
     console.error(`Job ${job.id} failed with error: ${err.message}`);
+
+    // Use consistent job ID handling
+    const jobId = job.opts.jobId || job.id;
     const jobUpdated = await Job.findOneAndUpdate(
-      { jobId: job.opts.jobId },
+      { jobId: jobId },
       { status: "failed", error: err.message }
     );
 
-    await job.remove();
+    // Safe job removal with error handling
+    try {
+      const jobExists = await job.isActive() || await job.isWaiting() || await job.isDelayed() || await job.isFailed();
+      if (jobExists) {
+        await job.remove();
+      } else {
+        console.warn(`⚠️ Job ${job.id} no longer exists in queue, skipping removal`);
+      }
+    } catch (removeError) {
+      console.warn(`⚠️ Failed to remove failed job ${job.id}:`, removeError);
+    }
 
     const user = await User.findById(jobUpdated?.userId);
     if (user) {
-      const item = user.effectsLib?.find(
-        (item) => item.jobId === job.opts.jobId
-      );
+      const item = user.effectsLib?.find((item) => item.jobId === jobId);
       if (item) {
         item.status = "failed";
         item.updatedAt = new Date();
@@ -196,7 +258,7 @@ taskQueue.on("failed", async (job, err) => {
       }
       const notificationDTO = {
         storyId: null,
-        jobId: String(job.opts.jobId || null),
+        jobId: String(jobId),
         userId: String(job.data.userId || null),
         status: "failed",
       };

@@ -19,6 +19,7 @@ import { Sorting } from "../Utils/Sorting/sorting";
 import mongoose from "mongoose";
 import { IStory } from "../Interfaces/story.interface";
 import { totalmem } from "os";
+import { log } from "console";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -144,6 +145,7 @@ const userController = {
       paginatedItems = paginator(userLib, page, limit);
     }
     const itemsDTO = ItemDTO.toListDTO(paginatedItems);
+    console.log("Last item" , itemsDTO[0]);
     res.status(200).json({
       message: "User items retrieved successfully",
       data: {

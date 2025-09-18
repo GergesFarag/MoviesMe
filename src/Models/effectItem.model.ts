@@ -44,6 +44,10 @@ const effectItemSchema = new mongoose.Schema(
       required: [true, "Model thumbnail is required"],
       trim: true,
     },
+    effectThumbnail: {
+      type: String,
+      trim: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

@@ -12,19 +12,23 @@ userRouter
     imageUpload.single("profilePicture"),
     userController.updateProfile
   );
-  userRouter.route("/effect/fav").post(authMiddle, userController.toggleEffectFav);
-  userRouter.route("/story/fav").post(authMiddle, userController.toggleStoryFav);
-  
-  userRouter
-    .route("/notifications")
-    .get(authMiddle, userController.getNotifications);
+userRouter
+  .route("/effect/fav")
+  .post(authMiddle, userController.toggleEffectFav);
+userRouter.route("/story/fav").post(authMiddle, userController.toggleStoryFav);
 
-  userRouter.route("/lib/effects").get(authMiddle, userController.getUserLibrary);
-  userRouter.route("/lib/effects/:itemId").delete(authMiddle, userController.deleteItem);
+userRouter
+  .route("/notifications")
+  .get(authMiddle, userController.getNotifications);
 
-  userRouter
-    .route("/lib/stories")
-    .get(authMiddle, userController.getUserStoriesLibrary);
+userRouter.route("/lib/effects").get(authMiddle, userController.getUserLibrary);
+userRouter
+  .route("/lib/effects/:itemId")
+  .delete(authMiddle, userController.deleteItem);
+
+userRouter
+  .route("/lib/stories")
+  .get(authMiddle, userController.getUserStoriesLibrary);
 
 userRouter
   .route("/lib/stories/:storyId")
