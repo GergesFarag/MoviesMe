@@ -1,8 +1,11 @@
-interface IJSONValidator {
+export interface IJSONValidator {
     validateJSON: (jsonString: string) => boolean;
     sanitizeJSON: (jsonString: string) => string;
     fixCommonJSONIssues: (jsonString: string) => string;
 }
-interface IValidation{
+export interface IValidator{
     JSONValidator: IJSONValidator;
+    // SchemaValidator: any;
+    // InputSanitizer: any;
+    // BusinessValidator: any;
 }

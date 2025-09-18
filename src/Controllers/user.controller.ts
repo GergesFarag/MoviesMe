@@ -206,7 +206,6 @@ const userController = {
   }),
 
   getUserStory: catchError(async (req, res) => {
-    const userId = req.user!.id;
     const { storyId } = req.params;
 
     if (!storyId) {
@@ -218,8 +217,7 @@ const userController = {
     }
 
     const story = await Story.findOne({
-      _id: storyId,
-      userId: userId,
+      _id: storyId
     }).lean();
 
     if (!story) {

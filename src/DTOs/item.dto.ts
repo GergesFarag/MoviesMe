@@ -73,7 +73,7 @@ export class NotificationItemDTO implements IItemMapper {
       modelName: item.modelName,
       isVideo: String(item.isVideo),
       jobId: String(item.jobId),
-      thumbnail: item.modelThumbnail,
+      thumbnail: item.effectThumbnail || item.URL,
       status: item.status,
       isFavorite: String(item.isFav),
       duration: item.duration.toString(),

@@ -32,7 +32,7 @@ userRouter
 
 userRouter
   .route("/lib/stories/:storyId")
-  .get(authMiddle, userController.getUserStory)
+  .get(userController.getUserStory)
   .delete(authMiddle, userController.deleteUserStory);
 
 export default userRouter;
