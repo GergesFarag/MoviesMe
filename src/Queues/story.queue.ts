@@ -81,7 +81,10 @@ storyQueue.process(async (job) => {
       }
       if (existingStory.status === "failed") {
         console.log(`Story ${jobData.jobId} already failed, not retrying`);
-        throw new AppError("Story already failed and retries are disabled", 400);
+        throw new AppError(
+          "Story already failed and retries are disabled",
+          400
+        );
       }
     }
 
@@ -128,7 +131,6 @@ storyQueue.process(async (job) => {
       );
     }
     console.log("Story generated successfully:", story);
-
     let voiceOverUrl = "";
     let voiceOverText = "";
 
@@ -166,7 +168,9 @@ storyQueue.process(async (job) => {
         false
       );
     } else {
-      console.log("Generating first image from description, then using it as reference");
+      console.log(
+        "Generating first image from description, then using it as reference"
+      );
       const firstRefImage =
         await imageGenerationService.generateImageFromDescription(
           story.scenes[0].imageDescription
@@ -186,7 +190,9 @@ storyQueue.process(async (job) => {
     // Validate image generation results
     if (!imageUrls || imageUrls.length !== story.scenes.length) {
       throw new AppError(
-        `Failed to generate images for the story scenes. Expected ${story.scenes.length} images, got ${imageUrls?.length || 0}`,
+        `Failed to generate images for the story scenes. Expected ${
+          story.scenes.length
+        } images, got ${imageUrls?.length || 0}`,
         500
       );
     }
@@ -215,7 +221,7 @@ storyQueue.process(async (job) => {
       getIO(),
       "story:progress"
     );
-    
+
     story.scenes.forEach((scene, index) => {
       scene.image = imageUrls[index];
     });
@@ -443,7 +449,6 @@ storyQueue.process(async (job) => {
 
     throw err;
   }
-
 });
 
 storyQueue.on("completed", async (job, result) => {
@@ -550,9 +555,11 @@ storyQueue.on("completed", async (job, result) => {
 storyQueue.on("failed", async (job, err) => {
   console.log(`Story job with ID ${job?.id} has failed - NO RETRIES.`);
   console.log("Error:", err);
-  
+
   // Since retries are disabled, immediately handle the failure
-  console.log("Processing final failure - sending notifications and updating database");
+  console.log(
+    "Processing final failure - sending notifications and updating database"
+  );
 
   // Update job status to failed in database
   if (job?.opts?.jobId) {

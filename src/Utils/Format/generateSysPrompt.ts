@@ -109,9 +109,9 @@ export const generateSysPrompt = (
 
       }
 
-      // Repeat exactly ${scenesNumber} times with sequential sceneNumber
-
-    ]
+      // Generate EXACTLY ${scenesNumber} scenes with sequential sceneNumber (1, 2, 3, etc.)
+      // NO trailing commas after the last scene object
+      // Ensure proper JSON syntax with commas between array elements    ]
 
   }
 
