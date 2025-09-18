@@ -1,6 +1,6 @@
 import { Router } from "express";
 import userController from "../Controllers/user.controller";
-import { authMiddle } from "../Middlewares/auth.middleware";
+import { authMiddle, optionalAuth } from "../Middlewares/auth.middleware";
 import { imageUpload, upload } from "../Config/multer";
 const userRouter = Router();
 
@@ -32,7 +32,7 @@ userRouter
 
 userRouter
   .route("/lib/stories/:storyId")
-  .get(userController.getUserStory)
+  .get(optionalAuth, userController.getUserStory)
   .delete(authMiddle, userController.deleteUserStory);
 
 export default userRouter;

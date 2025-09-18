@@ -16,7 +16,6 @@ export interface IUser {
   effectsLib?: IEffectItem[];
   storiesLib?: ObjectId[];
   jobs?: { _id: ObjectId; jobId: string }[];
-  stories?: ObjectId[];
   notifications?: INotification[] | null;
   userLocation?: string | null;
   isMale?: boolean | null;

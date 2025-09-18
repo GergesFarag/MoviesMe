@@ -16,7 +16,7 @@ import { ItemDTO } from "../DTOs/item.dto";
 import { IStoryDTO, StoryDTO } from "../DTOs/story.dto";
 import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types/custom";
 import { Sorting } from "../Utils/Sorting/sorting";
-import mongoose from "mongoose";
+import mongoose, { ObjectId } from "mongoose";
 import { IStory } from "../Interfaces/story.interface";
 import { totalmem } from "os";
 import { log } from "console";
@@ -145,7 +145,7 @@ const userController = {
       paginatedItems = paginator(userLib, page, limit);
     }
     const itemsDTO = ItemDTO.toListDTO(paginatedItems);
-    console.log("Last item" , itemsDTO[0]);
+    console.log("Last item", itemsDTO[0]);
     res.status(200).json({
       message: "User items retrieved successfully",
       data: {
@@ -206,8 +206,9 @@ const userController = {
   }),
 
   getUserStory: catchError(async (req, res) => {
+    const userId = req.user?.id;
     const { storyId } = req.params;
-
+    let couldBeDeleted = false;
     if (!storyId) {
       throw new AppError("Story ID is required", 400);
     }
@@ -215,9 +216,15 @@ const userController = {
     if (!mongoose.Types.ObjectId.isValid(storyId)) {
       throw new AppError("Invalid story ID format", 400);
     }
-
+    if (userId) {
+      console.log("USER ID" , userId);
+      const user = await User.findById(userId).select("storiesLib").lean();
+      if (user?.storiesLib?.find((s: ObjectId) => s.toString() === storyId)) {
+        couldBeDeleted = true;
+      }
+    }
     const story = await Story.findOne({
-      _id: storyId
+      _id: storyId,
     }).lean();
 
     if (!story) {
@@ -226,7 +233,7 @@ const userController = {
 
     res.status(200).json({
       message: "Story Fetched Successfully",
-      data: StoryDTO.toDTO(story as IStory),
+      data: { ...StoryDTO.toDTO(story as IStory), couldBeDeleted },
     });
   }),
 
@@ -377,7 +384,7 @@ const userController = {
         return new Date(notification.expiresAt) > new Date();
       }
     });
-    
+
     res.status(200).json({
       message: "User notifications retrieved successfully",
       data: {
