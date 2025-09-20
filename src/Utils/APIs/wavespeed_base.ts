@@ -3,7 +3,7 @@ export const wavespeedBase = async (
   url: string,
   headers: HeadersInit,
   payload: any
-): Promise<string | null> => {
+): Promise<string | null | string[]> => {
   try {
     const response = await fetch(url, {
       method: "POST",

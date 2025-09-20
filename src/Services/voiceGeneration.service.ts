@@ -64,7 +64,7 @@ export class VoiceGenerationService {
         voice_id: voiceId || "Friendly_Person",
         speed: 1.20,
       };
-      const audio = await wavespeedBase(url, headers, payload);
+      const audio = await wavespeedBase(url, headers, payload) as string;
       if (!audio) {
         throw new AppError(
           "Voice generation failed",

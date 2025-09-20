@@ -100,6 +100,7 @@ export class Validator implements IValidator {
       }
     },
   };
+  
   TextValidator = {
     sanitizeImageDescription(description: string): string {
       const sensitiveTerms = {

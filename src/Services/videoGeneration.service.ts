@@ -32,7 +32,7 @@ export class VideoGenerationService {
       prompt: videoDescription,
       seed: -1,
     };
-    const resultUrl = await wavespeedBase(url, headers, payload);
+    const resultUrl = await wavespeedBase(url, headers, payload) as string;
     if (!resultUrl) {
       throw new AppError(
         `Failed to generate video from description: ${videoDescription}`

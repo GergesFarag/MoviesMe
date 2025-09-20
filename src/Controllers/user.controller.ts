@@ -367,16 +367,25 @@ const userController = {
 
   getNotifications: catchError(async (req, res) => {
     const userId = req.user!.id;
-
+    const filter: string[] = (req.query.category as string).trim().toLowerCase().split(",");
+    if (!filter) {
+      throw new AppError("Category filter is required", 400);
+    }
     const user = await User.findById(userId);
 
     if (!user) {
       throw new AppError("User not found", 404);
     }
-    const notifications =
-      Sorting.sortItems(user.notifications!, "newest") || [];
+    let filteredNotifications = user.notifications!;
+    if (!filter.includes('all')) {
+      filteredNotifications = user.notifications!.filter((notification) => {
+        return filter.includes(notification.category!);
+      });
+    }
 
-    const validNotifications = notifications.filter((notification) => {
+    Sorting.sortItems(filteredNotifications, "newest") || [];
+
+    const validNotifications = filteredNotifications.filter((notification) => {
       if (notification.expiresAt) {
         return new Date(notification.expiresAt) > new Date();
       }

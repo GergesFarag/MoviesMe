@@ -23,6 +23,7 @@ MANDATORY SCENE CONTENT:
 - imageDescription: Describe the key elements in the scene, including the location, time, characters, and decor.
 - videoDescription: Describe the movement of the objects in the scene, the camera movement, the speed of events, and the character's interactions.
 - sceneDescription: Very concise narrative context that describe the scene in words that fit in 4 seconds of voice narration.
+- scenePrompt: A concise prompt to generate an image representing the scene, focusing on the main visual elements.
 
 ADDITIONAL CONSTRAINTS:
 ${

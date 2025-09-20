@@ -2,13 +2,14 @@ import { Images } from "openai/resources/images";
 import { IScene } from "../Interfaces/scene.interface";
 import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
 import { Validator } from "./validation.service";
+import AppError from "../Utils/Errors/AppError";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
 const baseURL = "https://api.wavespeed.ai/api/v3";
 
 export class ImageGenerationService {
   private enableContentSanitization: boolean;
-  private validator:Validator;
+  private validator: Validator;
   constructor(enableContentSanitization: boolean = true) {
     this.enableContentSanitization = enableContentSanitization;
     this.validator = new Validator();
@@ -33,7 +34,7 @@ export class ImageGenerationService {
       prompt: finalDescription,
     };
 
-    const resultUrl = await wavespeedBase(url, headers, payload);
+    const resultUrl = await wavespeedBase(url, headers, payload) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from description: ${finalDescription}`
@@ -63,7 +64,7 @@ export class ImageGenerationService {
       prompt: finalDescription,
     };
 
-    const resultUrl = await wavespeedBase(url, headers, payload);
+    const resultUrl = await wavespeedBase(url, headers, payload) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from reference image: ${finalDescription}`
@@ -81,7 +82,7 @@ export class ImageGenerationService {
     let currentRefImage = refImage;
     let scene = null;
     for (let i = 0; i < scenes.length; i++) {
-      if(skipFirstIteration && i === 0){
+      if (skipFirstIteration && i === 0) {
         imageUrls.push(refImage);
         continue;
       }
@@ -118,5 +119,29 @@ export class ImageGenerationService {
     }
 
     return imageUrls;
+  }
+
+  async generateSeedreamImages(
+    scenePrompt: string[],
+    refImages?: string[]
+  ): Promise<string[]> {
+    const url = `${baseURL}/bytedance/seedream-v4/edit-sequential`;
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+    };
+    const payload = {
+      enable_base64_output: false,
+      enable_sync_mode: false,
+      images: refImages?.length !== 0 ? refImages : [],
+      max_images: scenePrompt.length,
+      prompt: scenePrompt.join(", "),
+      size: "2048*2048",
+    };
+    const images = await wavespeedBase(url, headers, payload) as string[];
+    if (!images || images.length === 0) {
+      throw new AppError("Failed to generate seedream images");
+    }
+    return images;
   }
 }
