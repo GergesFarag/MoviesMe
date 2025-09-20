@@ -189,6 +189,7 @@ taskQueue.on("completed", async (job, result: any) => {
         {
           ...notificationDTO,
           redirectTo: "/effectDetails",
+          category: 'activities',
         }
       );
       if (res) {
@@ -275,6 +276,7 @@ taskQueue.on("failed", async (job, err) => {
           {
             ...notificationDTO,
             redirectTo: null,
+            category: 'activities',
           }
         );
       }

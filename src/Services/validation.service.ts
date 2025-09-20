@@ -100,4 +100,127 @@ export class Validator implements IValidator {
       }
     },
   };
+  TextValidator = {
+    sanitizeImageDescription(description: string): string {
+      const sensitiveTerms = {
+        // Violence/destruction related
+        "broken glass": "scattered items",
+        ransacked: "disorganized",
+        violated: "disturbed",
+        "devastated expression": "concerned expression",
+        shattered: "scattered",
+        chaotic: "busy",
+        wreckage: "items",
+        disarray: "scattered belongings",
+        threshold: "doorway",
+
+        // Emotional distress
+        grief: "contemplation",
+        despair: "thoughtfulness",
+        helplessness: "reflection",
+        isolation: "solitude",
+        weary: "tired",
+        "red eyes": "tired eyes",
+        "red and weary": "tired and thoughtful",
+
+        // Physical distress
+        "tear rolling down": "looking down thoughtfully",
+        "head in hands": "resting head thoughtfully",
+        overwhelmed: "contemplative",
+        frozen: "standing still",
+        shock: "surprise",
+        disbelief: "surprise",
+
+        // Dark/negative descriptions
+        "harsh shadow": "dramatic lighting",
+        "dimly lit": "softly lit",
+        "torn sofa": "worn sofa",
+        "scattered belongings": "various items",
+        devastated: "concerned",
+
+        // Crime-related terms
+        burglar: "visitor",
+        robbed: "visited",
+        robbery: "incident",
+        theft: "incident",
+        crime: "incident",
+        victim: "person",
+
+        // Additional emotional terms
+        anguish: "concern",
+        suffering: "contemplation",
+        distress: "concern",
+        trauma: "experience",
+        pain: "concern",
+      };
+
+      let sanitized = description;
+
+      // Replace sensitive terms (case insensitive)
+      Object.entries(sensitiveTerms).forEach(([sensitive, replacement]) => {
+        const regex = new RegExp(sensitive, "gi");
+        sanitized = sanitized.replace(regex, replacement);
+      });
+
+      // Additional safety measures
+      // Remove any remaining potentially problematic phrases
+      const problematicPhrases = [
+        /has been (violated|ransacked|robbed)/gi,
+        /broken into/gi,
+        /crime scene/gi,
+        /evidence of/gi,
+      ];
+
+      problematicPhrases.forEach((regex) => {
+        sanitized = sanitized.replace(regex, "has been disturbed");
+      });
+
+      // If description still seems problematic, provide a generic safe version
+      const warningTerms = [
+        "blood",
+        "violence",
+        "attack",
+        "assault",
+        "murder",
+        "death",
+        "kill",
+      ];
+      const hasWarningTerms = warningTerms.some((term) =>
+        sanitized.toLowerCase().includes(term.toLowerCase())
+      );
+
+      if (hasWarningTerms) {
+        console.warn(
+          "Description contains potentially sensitive content, using generic description"
+        );
+        // Extract basic elements and create a safe description
+        const isIndoor =
+          sanitized.toLowerCase().includes("apartment") ||
+          sanitized.toLowerCase().includes("room") ||
+          sanitized.toLowerCase().includes("indoor");
+        const hasCharacter =
+          sanitized.toLowerCase().includes("dr. amir") ||
+          sanitized.toLowerCase().includes("man");
+
+        if (isIndoor && hasCharacter) {
+          sanitized =
+            "A thoughtful middle-aged man in casual clothes standing in a modern apartment interior with soft lighting, photorealistic style";
+        } else if (hasCharacter) {
+          sanitized =
+            "A contemplative middle-aged man in casual clothes, soft natural lighting, photorealistic portrait style";
+        } else {
+          sanitized =
+            "A peaceful indoor scene with soft natural lighting, modern interior design, photorealistic style";
+        }
+      }
+
+      if (description !== sanitized) {
+        console.log(`Sanitized description for content safety:`);
+        console.log(`Original: ${description.substring(0, 200)}...`);
+        console.log(`Sanitized: ${sanitized.substring(0, 200)}...`);
+      }
+
+      return sanitized;
+    },
+  };
 }
