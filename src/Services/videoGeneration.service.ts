@@ -68,6 +68,12 @@ export class VideoGenerationService {
         downloadFile(audioUrl, "audio"),
       ]);
 
+      console.log(`🎵 Downloaded audio buffer size: ${downloadedAudioBuffer.length} bytes`);
+
+      if (!downloadedAudioBuffer || downloadedAudioBuffer.length === 0) {
+        throw new AppError("Downloaded audio buffer is empty", 500);
+      }
+
       const tempVideoPath = path.join(tempDir, "input_video.mp4");
       const tempAudioPath = path.join(tempDir, "input_audio.mp3");
 
@@ -76,8 +82,16 @@ export class VideoGenerationService {
         fs.promises.writeFile(tempAudioPath, downloadedAudioBuffer),
       ]);
 
+      console.log(`📁 Created temporary files:`);
+      console.log(`  Video: ${tempVideoPath}`);
+      console.log(`  Audio: ${tempAudioPath}`);
+
       const videoStats = await fs.promises.stat(tempVideoPath);
       const audioStats = await fs.promises.stat(tempAudioPath);
+
+      console.log(`📊 File sizes:`);
+      console.log(`  Video: ${videoStats.size} bytes`);
+      console.log(`  Audio: ${audioStats.size} bytes`);
 
       if (videoStats.size === 0) {
         throw new Error("Video file is empty");
@@ -92,11 +106,13 @@ export class VideoGenerationService {
           .input(tempAudioPath)
           .videoCodec("copy") // Copy video stream without re-encoding (much faster)
           .audioCodec("aac")
+          .audioChannels(2) // Ensure stereo audio
+          .audioFrequency(44100) // Standard audio frequency
           .outputOptions([
             "-map",
             "0:v:0", // Map first video stream
             "-map",
-            // Map first audio stream
+            "1:a:0", // Map first audio stream
             "-shortest", // Stop when the shortest input ends (cut audio if video ends)
             "-avoid_negative_ts",
             "make_zero",
@@ -115,6 +131,12 @@ export class VideoGenerationService {
               commandLine
             );
           })
+          .on("progress", (progress) => {
+            console.log(`⏳ FFmpeg progress: ${progress.percent}% done`);
+          })
+          .on("stderr", (stderrLine) => {
+            console.log(`📝 FFmpeg stderr: ${stderrLine}`);
+          })
           .on("end", () => {
             console.log(
               "✅ Audio composition with video buffer completed successfully"
@@ -126,6 +148,10 @@ export class VideoGenerationService {
               "❌ FFmpeg error during audio composition with buffer:",
               err
             );
+            console.error("❌ Error details:", {
+              message: err.message,
+              stack: err.stack,
+            });
             reject(
               new AppError(
                 `Audio composition with buffer failed: ${err.message}`,

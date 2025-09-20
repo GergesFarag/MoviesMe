@@ -198,11 +198,11 @@ export class OpenAIService {
             role: "system",
             content: `You are a cinematic narrator and translator.
                     TASK:
-                    Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language that fit in ${
-              sceneDescription.length * 2
-            } seconds of narration with average words ${
-              4 * sceneDescription.length
-            } words.
+                    Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language.
+                    
+                    CRITICAL CONSTRAINTS:
+                    - Voice narration time must fit exactly in ${sceneDescription.length * 4} seconds (approximately 4 seconds per scene).
+                    
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
           },
