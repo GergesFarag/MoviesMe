@@ -289,13 +289,9 @@ storyQueue.process(async (job) => {
       );
     }
 
-    console.log(
-      "Video scenes merged successfully, buffer size:",
-      mergedVideoBuffer.length
-    );
     let finalVideoBuffer = mergedVideoBuffer;
 
-    // Compose video with sound directly using buffer (no upload needed)
+    // Compose video with sound directly using buffer
     if (jobData.voiceOver && voiceOverUrl) {
       updateJobProgress(
         job,
@@ -306,7 +302,6 @@ storyQueue.process(async (job) => {
       );
 
       console.log("🎵 Starting audio composition...");
-      console.log("Video buffer size:", finalVideoBuffer.length);
       console.log("Audio URL:", voiceOverUrl);
       console.log(
         "Voice over text preview:",
@@ -436,7 +431,6 @@ storyQueue.process(async (job) => {
 
     return {
       finalVideoUrl,
-      storyId: updatedStory?._id,
       story: updatedStory,
     };
   } catch (err: any) {
