@@ -155,7 +155,6 @@ storyQueue.process(async (job) => {
         jobData.voiceOver,
         voiceOverText
       );
-      throw new Error("intended error 😒");
     }
     console.log("Voice over URL:", voiceOverUrl);
     updateJobProgress(
@@ -389,7 +388,6 @@ storyQueue.process(async (job) => {
       "story:completed"
     );
 
-    console.log("Updating story in database...");
     const updatedStory = await updateCompletedStory(job.opts.jobId as string, {
       videoUrl: finalVideoUrl,
       scenes: story.scenes,
