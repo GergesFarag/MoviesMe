@@ -189,6 +189,7 @@ export class OpenAIService {
     sceneDescription: string[],
     language: string
   ): Promise<string> {
+    console.log("language:" , language);
     try {
       const response = await this.client.chat.completions.create({
         model: "gpt-4o-mini",
@@ -198,8 +199,8 @@ export class OpenAIService {
             content: `You are a cinematic narrator and translator.
                     TASK:
                     Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language that fit in ${
-              sceneDescription.length * 5
-            } seconds of narration.
+              sceneDescription.length * 4
+            } seconds of narration with average words ${8 * sceneDescription.length} words.
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
           },

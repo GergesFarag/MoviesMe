@@ -146,7 +146,7 @@ storyQueue.process(async (job) => {
       } else {
         voiceOverText = await openAIService.generateNarrativeText(
           story.scenes.map((s) => s.sceneDescription),
-          jobData.voiceOver.voiceLanguage || "English"
+          jobData.voiceOver.voiceLanguage?.split(" ")[1] || "English"
         );
       }
       jobData.voiceOver.text = voiceOverText;
@@ -155,6 +155,7 @@ storyQueue.process(async (job) => {
         jobData.voiceOver,
         voiceOverText
       );
+      throw new Error("intended error 😒");
     }
     console.log("Voice over URL:", voiceOverUrl);
     updateJobProgress(
@@ -330,7 +331,7 @@ storyQueue.process(async (job) => {
         const composedBuffer =
           await videoGenerationService.composeSoundWithVideoBuffer(
             finalVideoBuffer,
-            voiceOverUrl
+            voiceOverUrl 
           );
 
         if (!composedBuffer || composedBuffer.length === 0) {
@@ -410,9 +411,9 @@ storyQueue.process(async (job) => {
       console.log("Updating complete voice over object in story...");
       await Story.findByIdAndUpdate(updatedStory._id, {
         voiceOver: {
-          voiceOverLyrics: jobData.voiceOver.voiceOverLyrics || null,
-          voiceLanguage: jobData.voiceOver.voiceLanguage || null,
-          voiceGender: jobData.voiceOver.voiceGender || null,
+          voiceOverLyrics: jobData.voiceOver["voiceOverLyrics"] || null,
+          voiceLanguage: jobData.voiceOver["voiceLanguage"] || null,
+          voiceGender: jobData.voiceOver["voiceGender"] || null,
           sound: voiceOverUrl,
           text: voiceOverText,
         },
