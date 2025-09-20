@@ -518,6 +518,7 @@ storyQueue.on("completed", async (job, result) => {
       {
         ...notificationDTO,
         redirectTo: "/storyDetails",
+        category: 'activities',
       }
     );
     if (res) {
@@ -626,6 +627,7 @@ storyQueue.on("failed", async (job, err) => {
           {
             ...notificationDTO,
             redirectTo: "/storyDetails",
+            category: 'activities',
           }
         );
 

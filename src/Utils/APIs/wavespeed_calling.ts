@@ -126,7 +126,10 @@ export const runModel = async (
               FCM,
               "Model Processing Failed",
               `Your video failed to generate`,
-              { error: data.error || "Unknown error" }
+              { error: data.error,
+                redirectTo: null,
+                category: 'activities'
+               }
             );
             return null;
           }

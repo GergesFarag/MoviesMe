@@ -17,7 +17,6 @@ const notificationSchema = new Schema<INotification>(
     },
     category: {
       type: String,
-      required: true,
       enum: ["systemUpdates", "activities", "transactions", "promotions"],
     },
   },
