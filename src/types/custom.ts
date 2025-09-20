@@ -16,3 +16,5 @@ export type TUserLibraryQuery = TPaginationQuery & {
   isFav?: string;
   sortBy?: TSort;
 };
+
+export type TNotificationCategory = 'systemUpdates' | 'activities' | 'transactions' | 'promotions';

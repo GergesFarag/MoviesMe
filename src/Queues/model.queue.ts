@@ -198,6 +198,7 @@ taskQueue.on("completed", async (job, result: any) => {
           data: notificationDTO,
           redirectTo: "/effectDetails",
           createdAt: new Date(),
+          category: 'activities',
         });
         await user.save();
       }
@@ -263,6 +264,7 @@ taskQueue.on("failed", async (job, err) => {
         data: notificationDTO,
         redirectTo: null,
         createdAt: new Date(),
+        category: 'activities',
       });
       await user?.save();
       if (user?.FCMToken) {

@@ -11,9 +11,14 @@ const notificationSchema = new Schema<INotification>(
     expiresAt: {
       type: Date,
       required: true,
-      default: function() {
+      default: function () {
         return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       },
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: ["systemUpdates", "activities", "transactions", "promotions"],
     },
   },
   {

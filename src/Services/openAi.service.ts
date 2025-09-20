@@ -201,7 +201,7 @@ export class OpenAIService {
                     Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language.
                     
                     CRITICAL CONSTRAINTS:
-                    - Voice narration time must fit exactly in ${sceneDescription.length * 4} seconds (approximately 4 seconds per scene).
+                    - Voice narration time must fit exactly in ${sceneDescription.length * 3} seconds (approximately 4 seconds per scene).
                     
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
@@ -215,6 +215,7 @@ export class OpenAIService {
         temperature: 0.7,
       });
       const narrativeText = response.choices[0]?.message?.content;
+      console.log("Narrative Text: " , narrativeText);
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);
       }

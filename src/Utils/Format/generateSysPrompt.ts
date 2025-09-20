@@ -3,7 +3,7 @@ export const generateSysPrompt = (
   storyTitle: string = "Generated Story Title",
   storyStyle: string = "realistic",
   storyGenre?: string,
-  storyLocation?: string,
+  storyLocation?: string
 ): string => {
   const prompt = `You are an expert cinematic scene generator focused on creating EXACTLY ${scenesNumber} sequential cinematic scenes from any valid story input.
 
@@ -22,28 +22,30 @@ CRITICAL INSTRUCTIONS:
 MANDATORY SCENE CONTENT:
 - imageDescription: Describe the key elements in the scene, including the location, time, characters, and decor.
 - videoDescription: Describe the movement of the objects in the scene, the camera movement, the speed of events, and the character's interactions.
-- sceneDescription: Narrative context, character motivations, emotional tone, and story significance. Connect clearly to previous and next scenes.
+- sceneDescription: Very concise narrative context that describe the scene in words that fit in 4 seconds of voice narration.
 
 ADDITIONAL CONSTRAINTS:
 ${
-    storyStyle
-      ? `- All scenes must strictly follow "${storyStyle}". Include style-specific visual and cinematographic elements.`
-      : ``
-  }
+  storyStyle
+    ? `- All scenes must strictly follow "${storyStyle}". Include style-specific visual and cinematographic elements.`
+    : ``
+}
 ${
-    storyGenre
-      ? `- All scenes must follow "${storyGenre}" conventions including mood, archetypes, and setting.`
-      : ``
-  }
+  storyGenre
+    ? `- All scenes must follow "${storyGenre}" conventions including mood, archetypes, and setting.`
+    : ``
+}
 ${
-    storyLocation
-      ? `- All scenes must be set in or around "${storyLocation}" with authentic geographic, architectural, and cultural details.`
-      : ``
-  }
+  storyLocation
+    ? `- All scenes must be set in or around "${storyLocation}" with authentic geographic, architectural, and cultural details.`
+    : ``
+}
   
 OUTPUT FORMAT:
 {
-  "title": "${storyTitle ? storyTitle.replace(/"/g, '\\"') : "Generated Story Title"}",
+  "title": "${
+    storyTitle ? storyTitle.replace(/"/g, '\\"') : "Generated Story Title"
+  }",
   "scenes": [
     {
       "sceneNumber": 1,

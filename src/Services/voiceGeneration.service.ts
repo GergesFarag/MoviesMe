@@ -62,9 +62,10 @@ export class VoiceGenerationService {
       const payload = {
         text: data!.voiceOverLyrics,
         voice_id: voiceId || "Friendly_Person",
+        speed: 1.20,
       };
       const audio = await wavespeedBase(url, headers, payload);
-      if(!audio) {
+      if (!audio) {
         throw new AppError(
           "Voice generation failed",
           HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
