@@ -4,8 +4,8 @@ export interface INotification{
     title:string;
     message:string;
     redirectTo:string | null;
-    category:TNotificationCategory;
     data:any;
+    category?:TNotificationCategory;
     createdAt?:Date;
     expiresAt?:Date;
 }
