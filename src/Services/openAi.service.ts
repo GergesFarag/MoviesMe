@@ -13,9 +13,7 @@ export class OpenAIService {
     storyTitle?: string,
     storyStyle?: string,
     storyGenere?: string,
-    storyLocation?: string,
-    language: string = "English",
-    doNarration: boolean = false
+    storyLocation?: string
   ) {
     this.client = new OpenAI({ apiKey: OPENAI_API_KEY });
     this.SYSTEM_PROMPT = generateSysPrompt(
@@ -23,9 +21,7 @@ export class OpenAIService {
       storyTitle,
       storyStyle,
       storyGenere,
-      storyLocation,
-      language,
-      doNarration
+      storyLocation
     );
     this.validator = new Validator();
   }
@@ -201,19 +197,20 @@ export class OpenAIService {
             role: "system",
             content: `You are a cinematic narrator and translator.
                     TASK:
-                    Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language. or leave it in English if the language is not supported.
+                    Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language that fit in ${
+              sceneDescription.length * 5
+            } seconds of narration.
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
           },
           {
             role: "user",
-            content: sceneDescription.join("\n"),
+            content: sceneDescription.join(" "),
           },
         ],
-        max_tokens: 400,
+        max_tokens: 1000,
         temperature: 0.7,
       });
-
       const narrativeText = response.choices[0]?.message?.content;
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);

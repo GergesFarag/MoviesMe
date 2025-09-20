@@ -45,42 +45,51 @@ storyQueue.process(async (job) => {
   let story: IStoryResponse;
   let imageUrls: string[] = [];
 
+  console.log(
+    `🚀 QUEUE ENTRY: Processing job ${job.id} with jobId: ${job.data.jobId}`
+  );
+
   try {
     const jobData: IStoryProcessingDTO & { userId: string; jobId: string } =
       job.data;
 
     // Validate job data
     if (!jobData.userId || !jobData.jobId) {
+      console.log(`❌ VALIDATION FAILED: Missing userId or jobId`);
       throw new AppError("Missing required job data: userId or jobId", 400);
     }
 
     if (!jobData.prompt) {
+      console.log(`❌ VALIDATION FAILED: Missing prompt`);
       throw new AppError("Missing required job data: prompt", 400);
     }
 
-    console.log(`Starting story processing for jobId: ${jobData.jobId}`);
+    console.log(`✅ Starting story processing for jobId: ${jobData.jobId}`);
 
-    // Check if job already exists and is completed or failed
     const existingJob = await Job.findOne({ jobId: jobData.jobId });
     if (existingJob) {
+      console.log(`🔍 EXISTING JOB FOUND: Status = ${existingJob.status}`);
       if (existingJob.status === "completed") {
-        console.log(`Job ${jobData.jobId} already completed, skipping`);
+        console.log(`⏭️ Job ${jobData.jobId} already completed, skipping`);
         return { message: "Job already completed", jobId: jobData.jobId };
       }
       if (existingJob.status === "failed") {
-        console.log(`Job ${jobData.jobId} already failed, not retrying`);
+        console.log(`💥 Job ${jobData.jobId} already failed, not retrying`);
         throw new AppError("Job already failed and retries are disabled", 400);
       }
+    } else {
+      console.log(`🆕 No existing job found, proceeding with new processing`);
     }
 
     const existingStory = await Story.findOne({ jobId: jobData.jobId });
     if (existingStory) {
+      console.log(`🔍 EXISTING STORY FOUND: Status = ${existingStory.status}`);
       if (existingStory.status === "completed") {
-        console.log(`Story ${jobData.jobId} already completed, skipping`);
+        console.log(`⏭️ Story ${jobData.jobId} already completed, skipping`);
         return { message: "Story already completed", jobId: jobData.jobId };
       }
       if (existingStory.status === "failed") {
-        console.log(`Story ${jobData.jobId} already failed, not retrying`);
+        console.log(`💥 Story ${jobData.jobId} already failed, not retrying`);
         throw new AppError(
           "Story already failed and retries are disabled",
           400
@@ -101,9 +110,7 @@ storyQueue.process(async (job) => {
       jobData.title,
       jobData.style,
       jobData.genere,
-      jobData.location,
-      jobData.voiceOver?.voiceLanguage || "English",
-      jobData.voiceOver?.voiceOverLyrics ? false : true
+      jobData.location
     );
 
     console.log("Calling OpenAI service to generate scenes...");
@@ -130,23 +137,23 @@ storyQueue.process(async (job) => {
         500
       );
     }
-    console.log("Story generated successfully:", story);
     let voiceOverUrl = "";
     let voiceOverText = "";
-
     if (jobData.voiceOver) {
       console.log("Processing voice over...");
-      const voiceOverNarration = story.scenes
-        .map((scene) => scene.narration)
-        .join(" ");
-
-      voiceOverText = jobData.voiceOver.voiceOverLyrics || voiceOverNarration;
+      if (jobData.voiceOver.voiceOverLyrics) {
+        voiceOverText = jobData.voiceOver.voiceOverLyrics;
+      } else {
+        voiceOverText = await openAIService.generateNarrativeText(
+          story.scenes.map((s) => s.sceneDescription),
+          jobData.voiceOver.voiceLanguage || "English"
+        );
+      }
       jobData.voiceOver.text = voiceOverText;
-      jobData.voiceOver.sound = voiceOverUrl;
       const voiceOverService = new VoiceGenerationService();
       voiceOverUrl = await voiceOverService.generateVoiceOver(
         jobData.voiceOver,
-        voiceOverNarration
+        voiceOverText
       );
     }
     console.log("Voice over URL:", voiceOverUrl);
@@ -157,7 +164,6 @@ storyQueue.process(async (job) => {
       getIO(),
       "story:progress"
     );
-
     const imageGenerationService = new ImageGenerationService(true);
 
     if (jobData.image) {

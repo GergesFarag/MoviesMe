@@ -228,7 +228,7 @@ export const createInitialStoryAndUpdateUser = async (
 export const updateCompletedStory = async (
   jobId: string,
   updateData: {
-    videoUrl: string;
+    videoUrl: string | null;
     scenes: any[];
     thumbnail?: string | null;
     location?: string | null;
@@ -247,10 +247,7 @@ export const updateCompletedStory = async (
       throw new AppError("Job ID is required for story update", HTTP_STATUS_CODE.BAD_REQUEST);
     }
     
-    if (!updateData.videoUrl) {
-      throw new AppError("Video URL is required for story completion", HTTP_STATUS_CODE.BAD_REQUEST);
-    }
-
+    // Note: videoUrl is now optional (null means video generation was disabled)
     console.log(`Updating story for jobId: ${jobId}`);
     console.log("Update data:", updateData);
 
@@ -290,18 +287,14 @@ export const updateCompletedStory = async (
       updatedAt: new Date(),
     };
 
-    // Only set fields that have actual non-null/non-empty values
-    if (updateData.videoUrl) {
-      updateFields.videoUrl = updateData.videoUrl;
-    }
+    // Set fields even if they are null (to explicitly mark as no video/thumbnail when generation is disabled)
+    updateFields.videoUrl = updateData.videoUrl; // Can be null when video generation is disabled
     
     if (updateData.scenes && updateData.scenes.length > 0) {
       updateFields.scenes = updateData.scenes;
     }
     
-    if (updateData.thumbnail) {
-      updateFields.thumbnail = updateData.thumbnail;
-    }
+    updateFields.thumbnail = updateData.thumbnail; // Can be null when image generation is disabled
     
     if (updateData.location) {
       updateFields.location = updateData.location;

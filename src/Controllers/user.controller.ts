@@ -18,8 +18,6 @@ import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types/custom";
 import { Sorting } from "../Utils/Sorting/sorting";
 import mongoose, { ObjectId } from "mongoose";
 import { IStory } from "../Interfaces/story.interface";
-import { totalmem } from "os";
-import { log } from "console";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -217,7 +215,6 @@ const userController = {
       throw new AppError("Invalid story ID format", 400);
     }
     if (userId) {
-      console.log("USER ID" , userId);
       const user = await User.findById(userId).select("storiesLib").lean();
       if (user?.storiesLib?.find((s: ObjectId) => s.toString() === storyId)) {
         couldBeDeleted = true;

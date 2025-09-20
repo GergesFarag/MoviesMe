@@ -157,11 +157,6 @@ taskQueue.on("completed", async (job, result: any) => {
         item.modelType = modelType;
         item.duration = result.duration || 0;
         item.updatedAt = new Date();
-        console.log(
-          "******************************************\nItem Updated:",
-          item,
-          "\n******************************************"
-        );
       }
       return item;
     });

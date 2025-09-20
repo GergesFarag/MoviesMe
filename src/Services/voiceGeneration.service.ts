@@ -1,9 +1,6 @@
 import { IStoryRequest } from "../Interfaces/storyRequest.interface";
-import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import {getVoiceName } from "../Utils/Database/optimizedOps";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
-import { cloudUploadAudio } from "../Utils/APIs/cloudinary";
-import { streamToBuffer } from "../Utils/Format/streamToBuffer";
 import {
   getCachedVoice,
   setCachedVoice,

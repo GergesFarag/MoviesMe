@@ -33,7 +33,6 @@ export const processStoryJobAsnc = async (
   userId: string,
   jobId?: string
 ) => {
-  // Rate limiting check
   const userKey = `user:${userId}`;
   const now = Date.now();
   
@@ -70,7 +69,6 @@ export const processStoryJobAsnc = async (
   }
 
   if (jobId) {
-    // Check if job already exists and prevent duplicate creation
     const existingJob = await Job.findOne({ jobId });
     if (existingJob) {
       if (existingJob.status === "failed") {

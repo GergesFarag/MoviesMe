@@ -123,8 +123,7 @@ const storyController = {
       });
 
       try {
-        const response = await processStoryJobAsnc(storyData, userId, jobId);
-        console.log("RESPONSE", response);
+        await processStoryJobAsnc(storyData, userId, jobId);
       } catch (error) {
         await Story.findByIdAndUpdate(createdStory._id, { status: "failed" });
         throw new AppError("Failed to process story generation", 500);
