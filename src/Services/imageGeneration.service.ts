@@ -174,7 +174,6 @@ export class ImageGenerationService {
           if (response.ok) {
             const data = result.data;
             const status = data.status;
-            console.log("Data" , data);
             if (status === "completed") {
               const resultUrls = data.outputs;
               console.log("Task completed. URLs:", resultUrls);
