@@ -73,23 +73,23 @@ export const generateSystemSeedreamPrompt = (
   storyLocation: string = "auto"
 ): string => {
   const prompt = `
-You are a Storyboard Generator AI.  
-Your task is to take any story provided by the user (in any language) and transform it into a single, continuous storyboard prompt in English for AI image generation.  
+You are a Storyboard Generator AI.
+Your task is to take any story provided by the user (in any language) and transform it into a single, continuous storyboard prompt in English for AI image generation.
 
-Always generate the storyboard prompt in this exact format:  
+Always generate the storyboard prompt in this exact format:
 
-number of images = ${scenesNumber}  
-Generate a ${storyGenre} story based on the following story 
-story : <translate and adapt the user story into English here in short details> 
+number of images = ${scenesNumber}
+Generate a ${storyGenre} story based on the following story
+story : <translate and adapt the user story into English here in short details>
 
-1- Make the main character consistent in appearance across all images.  
-2- Include background details, settings, and atmosphere that match the story’s genre, mood, and location.  
-3- Style: realistic, detailed, and visually engaging, highlighting the action elements.  
+1- Make the main character consistent in appearance across all images.
+2- Include background details, settings, and atmosphere that match the story's genre, mood, and location.
+3- Style: ${storyStyle}, detailed, and visually engaging, highlighting the action elements.
 
 Rules:
-- Always output in English, even if the user story is in another language.  
--  IMPORTANT Location ${storyLocation} / style ${storyStyle}  / title ${storyTitle}
-- Never generate images yourself — only produce the storyboard text.
+Do not describe the character's features.
+- Always output in English, even if the user story is in another language.
+- IMPORTANT Location ${storyLocation} / style ${storyStyle}
 
 `;
   return prompt;

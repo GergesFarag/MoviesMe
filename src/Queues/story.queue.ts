@@ -9,15 +9,11 @@ import { VideoGenerationService } from "../Services/videoGeneration.service";
 import { updateCompletedStory } from "../Utils/Database/optimizedOps";
 import Job from "../Models/job.model";
 import Story from "../Models/story.model";
-import {
-  cloudUploadVideo,
-  deleteCloudinaryResource,
-} from "../Utils/APIs/cloudinary";
+import { cloudUploadVideo } from "../Utils/APIs/cloudinary";
 import { StoryDTO } from "../DTOs/story.dto";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import User from "../Models/user.model";
 import { ImageGenerationService } from "../Services/imageGeneration.service";
-import { IScene } from "../Interfaces/scene.interface";
 import { VoiceGenerationService } from "../Services/voiceGeneration.service";
 
 const redisPort =
@@ -142,6 +138,48 @@ storyQueue.process(async (job) => {
         jobData.genere,
         jobData.location
       );
+
+
+//       story = {
+//         title: "A Reunion in Cairo",
+//         scenes: [
+//           {
+//             sceneNumber: 1,
+//             imageDescription:
+//               "A bustling street in Cairo during the late afternoon, with the sun casting long shadows. The protagonist, a man in his 30s, drives a vintage car. The architecture features traditional Egyptian buildings and vibrant street vendors.",
+//             videoDescription:
+//               "The camera tracks alongside the car as it moves slowly through the busy street. Suddenly, the protagonist spots his old friend waving from the sidewalk. The camera zooms in on their surprised expressions, capturing the joy of the unexpected reunion.",
+//             sceneDescription:
+//               "Driving through Cairo, he unexpectedly spots an old friend on the street.",
+//             scenePrompt:
+//               "A vintage car driving through a busy Cairo street with a man spotting his friend.",
+//           },
+//           {
+//             sceneNumber: 2,
+//             imageDescription:
+//               "The same street, now with the two friends standing together, laughing and reminiscing. They are surrounded by the vibrant colors of the market stalls and the background features the iconic Cairo skyline.",
+//             videoDescription:
+//               "The camera circles around them, capturing their animated conversation. Their laughter fills the air as they gesture excitedly, the market bustling around them. The scene conveys warmth and nostalgia as they reconnect.",
+//             sceneDescription:
+//               "They meet on the street, sharing laughter and memories of the past.",
+//             scenePrompt:
+//               "Two friends joyfully reconnect on a bustling Cairo street, surrounded by market stalls.",
+//           },
+//         ],
+//       };
+
+//       seedreamPrompt = `number of images = 2
+// Generate a story based on the following story
+// story : A man is walking down a busy street in Cairo, driving his vintage Arabic car. Suddenly, he encounters an old friend he hasn't seen in a long time. The scene captures the surprise and joy of their reunion amidst the vibrant, bustling Cairo street life, with traditional architecture and street vendors in the background.
+
+// 1- The main character is a middle-aged man with a friendly face, wearing casual modern clothes, consistent across both images.
+// 2- The background shows a lively Cairo street with typical Egyptian elements: bustling crowds, street vendors, colorful shops, and historic buildings. The atmosphere is warm and lively, reflecting the energy of Cairo.
+// 3- Style: realistic, detailed, and cinematic, visually engaging with a focus on the emotional reunion and street environment.
+
+// Location: Egypt / style cinematic / title: "A Chance Meeting in Cairo"
+//  CRITICAL CONSTRAINTS: Do Not mix two or more images in one image or generate images two or more in the same one`;
+
+
     } catch (openAIError) {
       console.error("OpenAI service error:", openAIError);
       throw new AppError("Failed to generate story scenes with OpenAI", 500);
@@ -181,6 +219,10 @@ storyQueue.process(async (job) => {
       voiceOverUrl = await voiceOverService.generateVoiceOver(
         jobData.voiceOver
       );
+      // voiceOverText =
+      //   " كنت أسير في شوارع القاهرة بسيارتي، وفجأة لمحت صديقي الذي لم أره منذ زمن بعيد.";
+      // voiceOverUrl =
+      //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/464f29a448964e2cb6cfb3e7947647d1/1.mp3";
     }
     console.log("Voice over URL:", voiceOverUrl);
     updateJobProgress(
@@ -207,6 +249,10 @@ storyQueue.process(async (job) => {
           [jobData.image!]
         );
       }
+      // imageUrls = [
+      //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/91756470b73b440e9066b23cc506de38/1.jpeg",
+      //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/91756470b73b440e9066b23cc506de38/2.jpeg",
+      // ];
     } catch (imageGenError) {
       console.error("Image generation error:", imageGenError);
       throw new AppError("Failed to generate images for the story scenes", 500);
@@ -251,7 +297,10 @@ storyQueue.process(async (job) => {
     const videoGenerationService = new VideoGenerationService();
     const videoUrls = await videoGenerationService.generateVideos(imageUrls);
     console.log("JOB DATA VIDEOs: \n", videoUrls);
-
+    // const videoUrls = [
+    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/a806989e1e1d48f5831a6aef95b2fdfd/1.mp4",
+    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ea290eeac2a54734b78047b9a2a1ad9d/1.mp4",
+    // ];
     updateJobProgress(
       job,
       80,

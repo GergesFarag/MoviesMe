@@ -206,7 +206,7 @@ export class OpenAIService {
                     
                     CRITICAL CONSTRAINTS:
                     - Voice narration time must fit exactly in ${numOfScenes} scenes
-                    (approximately 3 seconds per scene).
+                    (approximately 4 seconds per scene).
 
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
