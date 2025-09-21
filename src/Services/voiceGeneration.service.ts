@@ -21,11 +21,23 @@ export class VoiceGenerationService {
 
   constructor() {
     try {
+      // Validate API key exists
+      if (!ELEVENLABS_API_KEY) {
+        console.error("ELEVENLABS_API_KEY is not set in environment variables");
+        throw new AppError(
+          "ElevenLabs API key is not configured",
+          HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
+        );
+      }
+      
+      // Log API key status (without exposing the key)
+      console.log("ElevenLabs API Key configured:", ELEVENLABS_API_KEY.substring(0, 10) + "...");
+      
       this.client = new ElevenLabsClient({
         apiKey: ELEVENLABS_API_KEY,
       });
     } catch (error) {
-      console.log("err", error);
+      console.error("ElevenLabs Client initialization error:", error);
       throw new AppError(
         "ElevenLabs Client initialization failed",
         HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
@@ -83,6 +95,21 @@ export class VoiceGenerationService {
 
       return audioUrl.secure_url;
     } catch (error: any) {
+      console.error("Voice generation error details:", {
+        message: error.message,
+        status: error.status,
+        statusCode: error.statusCode,
+        response: error.response?.data || error.body,
+      });
+      
+      // Check if it's an API key related error
+      if (error.message?.includes("invalid_api_key") || error.status === "invalid_api_key") {
+        throw new AppError(
+          "Voice generation failed: Invalid API key. Please check your ElevenLabs API key configuration.",
+          HTTP_STATUS_CODE.UNAUTHORIZED
+        );
+      }
+      
       throw new AppError(
         `Voice generation failed: ${error.message || "Unknown error"}`,
         HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
