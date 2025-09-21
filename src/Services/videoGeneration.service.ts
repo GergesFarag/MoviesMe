@@ -13,11 +13,17 @@ const baseURL = "https://api.wavespeed.ai/api/v3";
 
 export class VideoGenerationService {
   constructor() {
-    ffmpeg.setFfmpegPath(ffmpegInstaller.path as string);
+    // Configure FFmpeg path using the installer
+    try {
+      ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+      console.log("✅ FFmpeg configured successfully:", ffmpegInstaller.path);
+    } catch (error) {
+      console.error("❌ Failed to configure FFmpeg:", error);
+      throw new AppError("FFmpeg configuration failed", 500);
+    }
   }
 
-  async generateVideoFromDescription(
-    videoDescription: string,
+  async generateVideoFromImage(
     refImageUrl: string,
     duration: number
   ): Promise<string> {
@@ -29,13 +35,12 @@ export class VideoGenerationService {
     const payload = {
       duration,
       image: refImageUrl,
-      prompt: videoDescription,
       seed: -1,
     };
     const resultUrl = await wavespeedBase(url, headers, payload) as string;
     if (!resultUrl) {
       throw new AppError(
-        `Failed to generate video from description: ${videoDescription}`
+        `Failed to generate video from image`
       );
     }
     return resultUrl;
@@ -43,7 +48,8 @@ export class VideoGenerationService {
 
   async composeSoundWithVideoBuffer(
     videoBuffer: Buffer,
-    audioUrl: string
+    audioUrl: string,
+    numOfScenes: number
   ): Promise<Buffer> {
     if (!videoBuffer || videoBuffer.length === 0) {
       throw new AppError("Valid video buffer is required", 400);
@@ -99,6 +105,11 @@ export class VideoGenerationService {
       if (audioStats.size === 0) {
         throw new Error("Audio file is empty");
       }
+
+      // Use default video duration (no ffprobe)
+      const videoDuration = numOfScenes * 5; // 5 seconds per scene
+      console.log(`📹 Using calculated video duration: ${videoDuration} seconds`);
+
       // Compose video with audio using optimized ffmpeg settings
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()
@@ -113,7 +124,9 @@ export class VideoGenerationService {
             "0:v:0", // Map first video stream
             "-map",
             "1:a:0", // Map first audio stream
-            "-shortest", // Stop when the shortest input ends (cut audio if video ends)
+            "-c:v", "copy", // Copy video without re-encoding
+            "-c:a", "aac", // Encode audio as AAC
+            "-t", videoDuration.toString(), // Cut to video duration (audio will be trimmed if longer)
             "-avoid_negative_ts",
             "make_zero",
             "-fflags",
@@ -123,6 +136,8 @@ export class VideoGenerationService {
             "-y", // Overwrite output file if it exists
           ])
           .output(outputPath);
+
+        console.log(`🎵 Audio will be cut to match video duration: ${videoDuration} seconds`);
 
         command
           .on("start", (commandLine) => {
@@ -312,13 +327,12 @@ export class VideoGenerationService {
     }
   }
 
-  async generateVideos(sceneVideos: IScene[]): Promise<string[]> {
+  async generateVideos(sceneImages: string[]): Promise<string[]> {
     const videoUrls: string[] = [];
-    for (const scene of sceneVideos) {
+    for (const image of sceneImages) {
       try {
-        const videoUrl = await this.generateVideoFromDescription(
-          scene.videoDescription,
-          scene.image!,
+        const videoUrl = await this.generateVideoFromImage(
+          image,
           5
         );
         videoUrls.push(videoUrl);

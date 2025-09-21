@@ -3,6 +3,7 @@ export interface IScene {
   imageDescription: string;
   videoDescription: string;
   sceneDescription: string;
+  scenePrompt?: string;
   image?: string;
   narration?: string;
 }

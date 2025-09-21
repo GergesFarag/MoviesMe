@@ -31,8 +31,7 @@ export class VoiceGenerationService {
   }
 
   async generateVoiceOver(
-    data: IStoryRequest["voiceOver"],
-    narration?: string
+    data: IStoryRequest["voiceOver"]
   ): Promise<string> {
     let voiceId: string | null = null;
     if (data?.voiceGender) {
@@ -40,15 +39,13 @@ export class VoiceGenerationService {
       if (!voiceId)
         throw new AppError("No voiceId found", HTTP_STATUS_CODE.NOT_FOUND);
     }
-    if (!data?.voiceOverLyrics && !narration) {
+    if (!data?.text) {
       throw new AppError(
         "No voiceOverLyrics or narration provided",
         HTTP_STATUS_CODE.BAD_REQUEST
       );
     }
-    if (!data?.voiceOverLyrics) data!.voiceOverLyrics = narration as string;
-
-    const cachedAudio = getCachedVoice(data!.voiceOverLyrics, voiceId as string);
+    const cachedAudio = getCachedVoice(data!.text, voiceId as string);
     if (cachedAudio) {
       console.log("Using cached voice generation");
       return cachedAudio;
@@ -60,7 +57,7 @@ export class VoiceGenerationService {
         Authorization: `Bearer ${WAVESPEED_API_KEY}`,
       };
       const payload = {
-        text: data!.voiceOverLyrics,
+        text: data!.text,
         voice_id: voiceId || "Friendly_Person",
         speed: 1.20,
       };
@@ -72,7 +69,7 @@ export class VoiceGenerationService {
         );
       }
       setCachedVoice(
-        data!.voiceOverLyrics,
+        data!.text,
         voiceId as string,
         audio
       );

@@ -2,7 +2,8 @@ const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
 export const wavespeedBase = async (
   url: string,
   headers: HeadersInit,
-  payload: any
+  payload: any,
+  returnArray: boolean = false
 ): Promise<string | null | string[]> => {
   try {
     const response = await fetch(url, {
@@ -32,6 +33,10 @@ export const wavespeedBase = async (
           const status = data.status;
 
           if (status === "completed") {
+            if (returnArray) {
+              const resultUrls = data.outputs;
+              return resultUrls;
+            }
             const resultUrl = data.outputs[0];
             if (!resultUrl) {
               console.error("No output URL found in completed task");

@@ -20,15 +20,31 @@ import { ImageGenerationService } from "../Services/imageGeneration.service";
 import { IScene } from "../Interfaces/scene.interface";
 import { VoiceGenerationService } from "../Services/voiceGeneration.service";
 
-const redisPort = (process.env.REDIS_PORT as string)
-  ? parseInt(process.env.REDIS_PORT as string, 10)
-  : 6379;
+const redisPort =
+  process.env.NODE_ENV === "production"
+    ? process.env.REDIS_PORT
+      ? parseInt(process.env.REDIS_PORT)
+      : 10711
+    : 6379;
+const redisHost =
+  process.env.NODE_ENV === "production"
+    ? (process.env.REDIS_HOST as string)
+    : "localhost";
+const redisPassword =
+  process.env.NODE_ENV === "production"
+    ? (process.env.REDIS_PASSWORD as string)
+    : undefined;
 
+console.log("Redis Config : ", {
+  host: redisHost,
+  port: redisPort,
+  password: redisPassword ? "******" : undefined,
+});
 export const storyQueue = new Queue("storyProcessing", {
   redis: {
-    host: process.env.REDIS_HOST as string,
+    host: redisHost,
     port: redisPort,
-    password: (process.env.REDIS_PASSWORD as string) || undefined,
+    password: redisPassword,
     maxRetriesPerRequest: 3,
   },
   defaultJobOptions: {
@@ -43,6 +59,7 @@ export const storyQueue = new Queue("storyProcessing", {
 
 storyQueue.process(async (job) => {
   let story: IStoryResponse;
+  let seedreamPrompt = "";
   let imageUrls: string[] = [];
 
   console.log(
@@ -116,11 +133,20 @@ storyQueue.process(async (job) => {
     console.log("Calling OpenAI service to generate scenes...");
     try {
       story = await openAIService.generateScenes(jobData.prompt);
+      console.log("Generating Seedream Prompt...");
+      seedreamPrompt = await openAIService.generateSeedreamPrompt(
+        jobData.prompt,
+        jobData.numOfScenes,
+        jobData.style,
+        jobData.title,
+        jobData.genere,
+        jobData.location
+      );
     } catch (openAIError) {
       console.error("OpenAI service error:", openAIError);
       throw new AppError("Failed to generate story scenes with OpenAI", 500);
     }
-
+    console.log("Seedream Prompt Successfully Generated:", seedreamPrompt);
     if (
       !story ||
       !story.scenes ||
@@ -141,19 +167,19 @@ storyQueue.process(async (job) => {
     let voiceOverText = "";
     if (jobData.voiceOver) {
       console.log("Processing voice over...");
-      if (jobData.voiceOver.voiceOverLyrics) {
-        voiceOverText = jobData.voiceOver.voiceOverLyrics;
+      if (jobData.voiceOver.voiceOverLyrics != "null") {
+        voiceOverText = jobData.voiceOver.voiceOverLyrics!;
       } else {
         voiceOverText = await openAIService.generateNarrativeText(
-          story.scenes.map((s) => s.sceneDescription),
-          jobData.voiceOver.voiceLanguage?.split(" ")[1] || "English"
+          jobData.prompt,
+          jobData.voiceOver.voiceLanguage?.split(" ")[1] || "English",
+          jobData.numOfScenes
         );
       }
       jobData.voiceOver.text = voiceOverText;
       const voiceOverService = new VoiceGenerationService();
       voiceOverUrl = await voiceOverService.generateVoiceOver(
-        jobData.voiceOver,
-        voiceOverText
+        jobData.voiceOver
       );
     }
     console.log("Voice over URL:", voiceOverUrl);
@@ -165,46 +191,36 @@ storyQueue.process(async (job) => {
       "story:progress"
     );
     const imageGenerationService = new ImageGenerationService(true);
-
-    if (jobData.image) {
-      console.log("Using provided reference image for scene generation");
-      imageUrls = await imageGenerationService.generateImagesForScenes(
-        story.scenes as IScene[],
-        jobData.image,
-        false
-      );
-    } else {
-      console.log(
-        "Generating first image from description, then using it as reference"
-      );
-      const firstRefImage =
-        await imageGenerationService.generateImageFromDescription(
-          story.scenes[0].imageDescription
+    try {
+      if (!jobData.image) {
+        console.log(
+          "No reference image provided, generating from first scene prompt"
         );
-
-      if (!firstRefImage) {
-        throw new AppError("Failed to generate first reference image", 500);
+        imageUrls = await imageGenerationService.generateSeedreamImages(
+          seedreamPrompt,
+          jobData.numOfScenes
+        );
+      } else {
+        imageUrls = await imageGenerationService.generateSeedreamImages(
+          seedreamPrompt,
+          jobData.numOfScenes,
+          [jobData.image!]
+        );
       }
-
-      imageUrls = await imageGenerationService.generateImagesForScenes(
-        story.scenes as IScene[],
-        firstRefImage,
-        true
-      );
+    } catch (imageGenError) {
+      console.error("Image generation error:", imageGenError);
+      throw new AppError("Failed to generate images for the story scenes", 500);
     }
-
-    // Validate image generation results
-    if (!imageUrls || imageUrls.length !== story.scenes.length) {
+    console.log("Image URLS", imageUrls);
+    if (!imageUrls) {
       throw new AppError(
-        `Failed to generate images for the story scenes. Expected ${
-          story.scenes.length
-        } images, got ${imageUrls?.length || 0}`,
+        `Failed to generate images for the story scenes.`,
         500
       );
     }
 
     const invalidImages = imageUrls.filter(
-      (url, index) => !url || typeof url !== "string" || !url.startsWith("http")
+      (url, _) => !url || typeof url !== "string" || !url.startsWith("http")
     );
 
     if (invalidImages.length > 0) {
@@ -233,12 +249,7 @@ storyQueue.process(async (job) => {
     });
 
     const videoGenerationService = new VideoGenerationService();
-    const videoUrls = await videoGenerationService.generateVideos(
-      story.scenes as IScene[]
-    );
-    if (!videoUrls || videoUrls.length !== story.scenes.length) {
-      throw new AppError("Failed to generate videos for the story scenes", 500);
-    }
+    const videoUrls = await videoGenerationService.generateVideos(imageUrls);
     console.log("JOB DATA VIDEOs: \n", videoUrls);
 
     updateJobProgress(
@@ -314,18 +325,12 @@ storyQueue.process(async (job) => {
           throw new AppError("Invalid audio URL for composition", 500);
         }
 
-        // Ensure we have text (use fallback if needed)
-        if (!voiceOverText) {
-          voiceOverText = story.scenes
-            .map((scene) => scene.narration)
-            .join(" ");
-        }
-
         console.log("🎬 Calling composeSoundWithVideoBuffer...");
         const composedBuffer =
           await videoGenerationService.composeSoundWithVideoBuffer(
             finalVideoBuffer,
-            voiceOverUrl 
+            voiceOverUrl,
+            jobData.numOfScenes
           );
 
         if (!composedBuffer || composedBuffer.length === 0) {
@@ -518,7 +523,7 @@ storyQueue.on("completed", async (job, result) => {
       {
         ...notificationDTO,
         redirectTo: "/storyDetails",
-        category: 'activities',
+        category: "activities",
       }
     );
     if (res) {
@@ -528,14 +533,13 @@ storyQueue.on("completed", async (job, result) => {
         data: notificationDTO,
         redirectTo: "/storyDetails",
         createdAt: new Date(),
-        category: 'activities',
+        category: "activities",
       });
       await user?.save();
       console.log("Push notification sent and saved to user notifications");
     }
   } catch (notificationError) {
     console.error("Failed to send push notification:", notificationError);
-    // Still save the notification to user's database even if push fails
     if (user) {
       user.notifications?.push({
         title: "Model Processing Completed",
@@ -543,7 +547,7 @@ storyQueue.on("completed", async (job, result) => {
         data: notificationDTO,
         redirectTo: "/storyDetails",
         createdAt: new Date(),
-        category: 'activities',
+        category: "activities",
       });
       await user.save();
       console.log(
@@ -627,7 +631,7 @@ storyQueue.on("failed", async (job, err) => {
           {
             ...notificationDTO,
             redirectTo: "/storyDetails",
-            category: 'activities',
+            category: "activities",
           }
         );
 
@@ -638,7 +642,7 @@ storyQueue.on("failed", async (job, err) => {
             data: notificationDTO,
             redirectTo: "/storyDetails",
             createdAt: new Date(),
-            category: 'activities',
+            category: "activities",
           });
           await user.save();
           console.log("Failed story notification saved to user DB");
@@ -651,7 +655,7 @@ storyQueue.on("failed", async (job, err) => {
           data: notificationDTO,
           redirectTo: "/storyDetails",
           createdAt: new Date(),
-          category: 'activities',
+          category: "activities",
         });
         await user.save();
         console.log(

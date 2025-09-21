@@ -12,15 +12,16 @@ const sceneSchema = new mongoose.Schema<IScene>(
       type: String,
       required: [true, "Video description is required"],
     },
-    narration: {
-      type: String,
-      required: false,
-    },
     sceneDescription: {
       type: String,
       required: [true, "Scene description is required"],
     },
     image: { type: String, required: true },
+    narration: {
+      type: String,
+      required: false,
+    },
+    scenePrompt: { type: String, required: false },
   },
   {
     timestamps: true,

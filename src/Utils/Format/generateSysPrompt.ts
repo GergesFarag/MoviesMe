@@ -52,7 +52,8 @@ OUTPUT FORMAT:
       "sceneNumber": 1,
       "imageDescription": "Image description here",
       "videoDescription": "Video description here",
-      "sceneDescription": "Scene narrative description here"
+      "sceneDescription": "Scene narrative description here",
+      "scenePrompt": "Concise image generation prompt here"
     }
     // Generate EXACTLY ${scenesNumber} scenes with sequential sceneNumber (1, 2, 3, etc.)
     // NO trailing commas after the last scene object
@@ -61,5 +62,35 @@ OUTPUT FORMAT:
 }
 Follow all instructions precisely. Ensure seamless narrative flow and visual continuity between scenes. Your entire output MUST be parsable JSON matching the specified format exactly. No text outside JSON. No partial outputs. Failure to comply means rejecting input with the specified error JSON.`;
 
+  return prompt;
+};
+export const generateSystemSeedreamPrompt = (
+  scenesNumber: number,
+  storyPrompt: string,
+  storyTitle: string = "<Generated Story Title>",
+  storyStyle: string = "realistic",
+  storyGenre: string = "",
+  storyLocation: string = "auto"
+): string => {
+  const prompt = `
+You are a Storyboard Generator AI.  
+Your task is to take any story provided by the user (in any language) and transform it into a single, continuous storyboard prompt in English for AI image generation.  
+
+Always generate the storyboard prompt in this exact format:  
+
+number of images = ${scenesNumber}  
+Generate a ${storyGenre} story based on the following story 
+story : <translate and adapt the user story into English here in short details> 
+
+1- Make the main character consistent in appearance across all images.  
+2- Include background details, settings, and atmosphere that match the story’s genre, mood, and location.  
+3- Style: realistic, detailed, and visually engaging, highlighting the action elements.  
+
+Rules:
+- Always output in English, even if the user story is in another language.  
+-  IMPORTANT Location ${storyLocation} / style ${storyStyle}  / title ${storyTitle}
+- Never generate images yourself — only produce the storyboard text.
+
+`;
   return prompt;
 };

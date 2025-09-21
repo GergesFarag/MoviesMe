@@ -22,7 +22,7 @@ export class ImageGenerationService {
       ? this.validator.TextValidator.sanitizeImageDescription(imageDescription)
       : imageDescription;
 
-    let url = `${baseURL}/google/nano-banana/text-to-image`;
+    let url = `${baseURL}/bytedance/seedream-v4/sequential`;
     const headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
@@ -31,10 +31,12 @@ export class ImageGenerationService {
       enable_base64_output: false,
       enable_sync_mode: false,
       output_format: "jpeg",
+      max_images: 1,
+      size: "2048*2048",
       prompt: finalDescription,
     };
 
-    const resultUrl = await wavespeedBase(url, headers, payload) as string;
+    const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from description: ${finalDescription}`
@@ -64,7 +66,7 @@ export class ImageGenerationService {
       prompt: finalDescription,
     };
 
-    const resultUrl = await wavespeedBase(url, headers, payload) as string;
+    const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from reference image: ${finalDescription}`
@@ -122,10 +124,16 @@ export class ImageGenerationService {
   }
 
   async generateSeedreamImages(
-    scenePrompt: string[],
+    seedreamPrompt: string,
+    numOfScenes: number,
     refImages?: string[]
-  ): Promise<string[]> {
-    const url = `${baseURL}/bytedance/seedream-v4/edit-sequential`;
+  ): Promise<any> {
+    let url = "";
+    if (!refImages) {
+      url = `${baseURL}/bytedance/seedream-v4/sequential`;
+    } else {
+      url = `${baseURL}/bytedance/seedream-v4/edit-sequential`;
+    }
     const headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
@@ -133,15 +141,63 @@ export class ImageGenerationService {
     const payload = {
       enable_base64_output: false,
       enable_sync_mode: false,
-      images: refImages?.length !== 0 ? refImages : [],
-      max_images: scenePrompt.length,
-      prompt: scenePrompt.join(", "),
+      max_images: numOfScenes,
+      prompt: seedreamPrompt,
       size: "2048*2048",
     };
-    const images = await wavespeedBase(url, headers, payload) as string[];
-    if (!images || images.length === 0) {
-      throw new AppError("Failed to generate seedream images");
+    if (refImages) {
+      Object.assign(payload, { images: refImages });
     }
-    return images;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const requestId = result.data.id;
+        console.log(`Task submitted successfully. Request ID: ${requestId}`);
+
+        while (true) {
+          const response = await fetch(
+            `https://api.wavespeed.ai/api/v3/predictions/${requestId}/result`,
+            {
+              headers: {
+                Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+              },
+            }
+          );
+          const result = await response.json();
+
+          if (response.ok) {
+            const data = result.data;
+            const status = data.status;
+            console.log("Data" , data);
+            if (status === "completed") {
+              const resultUrls = data.outputs;
+              console.log("Task completed. URLs:", resultUrls);
+              return resultUrls;
+              break;
+            } else if (status === "failed") {
+              console.error("Task failed:", data.error);
+              break;
+            } else {
+              console.log("Task still processing. Status:", status);
+            }
+          } else {
+            console.error("Error:", response.status, JSON.stringify(result));
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 0.1 * 1000));
+        }
+      } else {
+        console.error(`Error: ${response.status}, ${await response.text()}`);
+      }
+    } catch (error) {
+      console.error(`Request failed: ${error}`);
+    }
   }
 }

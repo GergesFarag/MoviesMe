@@ -40,7 +40,7 @@ const storyController = {
       const { prompt, storyDuration } = req.body;
       const image = req.file;
       const userId = req.user!.id;
-
+      console.log("Request Body: ", req.body , " and image : " , image);
       Object.keys(req.body).forEach((key) => {
         if (!validKeys.includes(key as IStoryRequestKeys)) {
           throw new AppError(
@@ -125,7 +125,7 @@ const storyController = {
       try {
         await processStoryJobAsnc(storyData, userId, jobId);
       } catch (error) {
-        await Story.findByIdAndUpdate(createdStory._id, { status: "failed" });
+        // await Story.findByIdAndUpdate(createdStory._id, { status: "failed" });
         throw new AppError("Failed to process story generation", 500);
       }
     }

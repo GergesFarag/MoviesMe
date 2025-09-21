@@ -1,7 +1,10 @@
 import OpenAI from "openai";
 import AppError from "../Utils/Errors/AppError";
 import { IStoryResponse } from "../Interfaces/storyResponse.interface";
-import { generateSysPrompt } from "../Utils/Format/generateSysPrompt";
+import {
+  generateSysPrompt,
+  generateSystemSeedreamPrompt,
+} from "../Utils/Format/generateSysPrompt";
 import { Validator } from "./validation.service";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 export class OpenAIService {
@@ -24,7 +27,7 @@ export class OpenAIService {
       storyLocation
     );
     this.validator = new Validator();
-  }
+  } 
 
   async generateScenes(prompt: string): Promise<IStoryResponse> {
     try {
@@ -186,8 +189,9 @@ export class OpenAIService {
   }
 
   async generateNarrativeText(
-    sceneDescription: string[],
-    language: string
+    prompt: string,
+    language: string,
+    numOfScenes: number
   ): Promise<string> {
     console.log("language:", language);
     try {
@@ -201,21 +205,65 @@ export class OpenAIService {
                     Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language.
                     
                     CRITICAL CONSTRAINTS:
-                    - Voice narration time must fit exactly in ${sceneDescription.length * 3} seconds (approximately 4 seconds per scene).
-                    
+                    - Voice narration time must fit exactly in ${numOfScenes} scenes
+                    (approximately 3 seconds per scene).
+
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
           },
           {
             role: "user",
-            content: sceneDescription.join(" "),
+            content: prompt,
           },
         ],
         max_tokens: 1000,
         temperature: 0.7,
       });
       const narrativeText = response.choices[0]?.message?.content;
-      console.log("Narrative Text: " , narrativeText);
+      console.log("Narrative Text: ", narrativeText);
+      if (!narrativeText) {
+        throw new AppError("No narrative text generated from OpenAI", 500);
+      }
+
+      return narrativeText;
+    } catch (err: any) {
+      throw new AppError(err.message, err.status || 500);
+    }
+  }
+  async generateSeedreamPrompt(
+    prompt: string,
+    numOfScenes: number,
+    storyStyle: string = "realistic",
+    storyTitle?: string,
+    storyGenre?: string,
+    storyLocation?: string
+  ): Promise<string> {
+    try {
+      const response = await this.client.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [
+          {
+            role: "system",
+            content: generateSystemSeedreamPrompt(
+              numOfScenes,
+              prompt,
+              storyTitle,
+              storyStyle,
+              storyGenre,
+              storyLocation
+            ),
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+      });
+      let narrativeText = `Number of Images will be generated = ${numOfScenes} \n${response.choices[0]?.message?.content}`;
+      narrativeText += " CRITICAL CONSTRAINTS: - Do Not mix two images in one image or generate images two in the same one";
+      console.log("Narrative Text: ", narrativeText);
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);
       }
