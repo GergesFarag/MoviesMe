@@ -41,7 +41,6 @@ export const storyQueue = new Queue("storyProcessing", {
     host: redisHost,
     port: redisPort,
     password: redisPassword,
-    maxRetriesPerRequest: 3,
   },
   defaultJobOptions: {
     timeout: 300000,
@@ -86,10 +85,6 @@ storyQueue.process(async (job) => {
         console.log(`⏭️ Job ${jobData.jobId} already completed, skipping`);
         return { message: "Job already completed", jobId: jobData.jobId };
       }
-      if (existingJob.status === "failed") {
-        console.log(`💥 Job ${jobData.jobId} already failed, not retrying`);
-        throw new AppError("Job already failed and retries are disabled", 400);
-      }
     } else {
       console.log(`🆕 No existing job found, proceeding with new processing`);
     }
@@ -100,13 +95,6 @@ storyQueue.process(async (job) => {
       if (existingStory.status === "completed") {
         console.log(`⏭️ Story ${jobData.jobId} already completed, skipping`);
         return { message: "Story already completed", jobId: jobData.jobId };
-      }
-      if (existingStory.status === "failed") {
-        console.log(`💥 Story ${jobData.jobId} already failed, not retrying`);
-        throw new AppError(
-          "Story already failed and retries are disabled",
-          400
-        );
       }
     }
 
@@ -608,12 +596,12 @@ storyQueue.on("completed", async (job, result) => {
 });
 
 storyQueue.on("failed", async (job, err) => {
-  console.log(`Story job with ID ${job?.id} has failed - NO RETRIES.`);
+  console.log(`Story job with ID ${job?.id} has failed.`);
   console.log("Error:", err);
 
-  // Since retries are disabled, immediately handle the failure
+  // Handle the failure
   console.log(
-    "Processing final failure - sending notifications and updating database"
+    "Processing failure - sending notifications and updating database"
   );
 
   // Update job status to failed in database
@@ -719,7 +707,7 @@ storyQueue.on("failed", async (job, err) => {
 });
 
 storyQueue.on("stalled", (job) => {
-  console.warn(`⚠️ Job ${job.id} stalled - retries disabled`);
+  console.warn(`⚠️ Job ${job.id} stalled`);
 });
 
 storyQueue.on("error", (error) => {
