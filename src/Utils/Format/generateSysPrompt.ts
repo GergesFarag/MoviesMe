@@ -66,8 +66,6 @@ Follow all instructions precisely. Ensure seamless narrative flow and visual con
 };
 export const generateSystemSeedreamPrompt = (
   scenesNumber: number,
-  storyPrompt: string,
-  storyTitle: string = "<Generated Story Title>",
   storyStyle: string = "realistic",
   storyGenre: string = "",
   storyLocation: string = "auto"
