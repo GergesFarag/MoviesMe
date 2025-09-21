@@ -262,7 +262,7 @@ export class OpenAIService {
         temperature: 0.7,
       });
       let narrativeText = `Number of Images will be generated = ${numOfScenes} \n${response.choices[0]?.message?.content}`;
-      narrativeText += "\n CRITICAL CONSTRAINTS: Do Not mix two or more images in one image or generate images two or more in the same one";
+      narrativeText = narrativeText.concat("\n CRITICAL CONSTRAINTS: Do Not mix two or more images in one image or generate images two or more in the same one");
       console.log("Narrative Text: ", narrativeText);
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);
