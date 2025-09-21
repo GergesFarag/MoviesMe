@@ -1,5 +1,5 @@
 import { IStoryRequest } from "../Interfaces/storyRequest.interface";
-import {getVoiceName } from "../Utils/Database/optimizedOps";
+import { getVoiceName } from "../Utils/Database/optimizedOps";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import {
   getCachedVoice,
@@ -10,29 +10,30 @@ import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
 import { Readable } from "stream";
 import { downloadFile } from "../Utils/Format/downloadFile";
 import { language } from "@elevenlabs/elevenlabs-js/api/resources/dubbing/resources/resource";
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+import { cloudUploadAudio } from "../Utils/APIs/cloudinary";
+import { streamToBuffer } from "../Utils/Format/streamToBuffer";
 
-// const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY as string) || "";
+const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY as string) || "";
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 export class VoiceGenerationService {
-  // private client: ElevenLabsClient;
+  private client: ElevenLabsClient;
 
   constructor() {
-    // try {
-    //   this.client = new ElevenLabsClient({
-    //     apiKey: ELEVENLABS_API_KEY,
-    //   });
-    // } catch (error) {
-    //   console.log("err", error);
-    //   throw new AppError(
-    //     "ElevenLabs Client initialization failed",
-    //     HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
-    //   );
-    // }
+    try {
+      this.client = new ElevenLabsClient({
+        apiKey: ELEVENLABS_API_KEY,
+      });
+    } catch (error) {
+      console.log("err", error);
+      throw new AppError(
+        "ElevenLabs Client initialization failed",
+        HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
-  async generateVoiceOver(
-    data: IStoryRequest["voiceOver"]
-  ): Promise<string> {
+  async generateVoiceOver(data: IStoryRequest["voiceOver"]): Promise<string> {
     let voiceId: string | null = null;
     if (data?.voiceGender) {
       voiceId = await getVoiceName(data!.voiceGender);
@@ -51,30 +52,36 @@ export class VoiceGenerationService {
       return cachedAudio;
     }
     try {
-      const url = "https://api.wavespeed.ai/api/v3/minimax/speech-02-hd";
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-      };
-      const payload = {
-        text: data!.text,
-        voice_id: voiceId || "Friendly_Person",
-        speed: 1.20,
-      };
-      const audio = await wavespeedBase(url, headers, payload) as string;
+      // const url = "https://api.wavespeed.ai/api/v3/minimax/speech-02-hd";
+      // const headers = {
+      //   "Content-Type": "application/json",
+      //   Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+      // };
+      // const payload = {
+      //   text: data!.text,
+      //   voice_id: voiceId || "Friendly_Person",
+      //   speed: 1.20,
+      // };
+      // const audio = await wavespeedBase(url, headers, payload) as string;
+      const audio = await this.client.textToSpeech.convert(
+        "JBFqnCBsd6RMkjVDRZzb",
+        {
+          text: data!.text,
+          modelId: "eleven_multilingual_v2",
+          outputFormat: "mp3_44100_128",
+        }
+      );
       if (!audio) {
         throw new AppError(
           "Voice generation failed",
           HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
         );
       }
-      setCachedVoice(
-        data!.text,
-        voiceId as string,
-        audio
-      );
+      const audioBuffer = await streamToBuffer(audio);
+      const audioUrl = await cloudUploadAudio(audioBuffer, "mp3");
+      setCachedVoice(data!.text, voiceId as string, audioUrl.secure_url);
 
-      return audio;
+      return audioUrl.secure_url;
     } catch (error: any) {
       throw new AppError(
         `Voice generation failed: ${error.message || "Unknown error"}`,

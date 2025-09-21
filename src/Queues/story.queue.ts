@@ -207,274 +207,277 @@ storyQueue.process(async (job) => {
       voiceOverUrl = await voiceOverService.generateVoiceOver(
         jobData.voiceOver
       );
+      console.log("Voice over generated:", voiceOverText);
+      console.log("Voice over URL generated:", voiceOverUrl);
+      throw new AppError("Voice over generation Stopped", 500);
       // voiceOverText =
       //   " كنت أسير في شوارع القاهرة بسيارتي، وفجأة لمحت صديقي الذي لم أره منذ زمن بعيد.";
       // voiceOverUrl =
       //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/464f29a448964e2cb6cfb3e7947647d1/1.mp3";
     }
-    console.log("Voice over URL:", voiceOverUrl);
-    updateJobProgress(
-      job,
-      30,
-      `Generating images for the story`,
-      getIO(),
-      "story:progress"
-    );
-    const imageGenerationService = new ImageGenerationService(true);
-    try {
-      if (!jobData.image) {
-        console.log(
-          "No reference image provided, generating from first scene prompt"
-        );
-        imageUrls = await imageGenerationService.generateSeedreamImages(
-          seedreamPrompt,
-          jobData.numOfScenes
-        );
-      } else {
-        imageUrls = await imageGenerationService.generateSeedreamImages(
-          seedreamPrompt,
-          jobData.numOfScenes,
-          [jobData.image!]
-        );
-      }
-      // imageUrls = [
-      //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/91756470b73b440e9066b23cc506de38/1.jpeg",
-      //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/91756470b73b440e9066b23cc506de38/2.jpeg",
-      // ];
-    } catch (imageGenError) {
-      console.error("Image generation error:", imageGenError);
-      throw new AppError("Failed to generate images for the story scenes", 500);
-    }
-    console.log("Image URLS", imageUrls);
-    if (!imageUrls) {
-      throw new AppError(
-        `Failed to generate images for the story scenes.`,
-        500
-      );
-    }
+    // console.log("Voice over URL:", voiceOverUrl);
+    // updateJobProgress(
+    //   job,
+    //   30,
+    //   `Generating images for the story`,
+    //   getIO(),
+    //   "story:progress"
+    // );
+    // const imageGenerationService = new ImageGenerationService(true);
+    // try {
+    //   if (!jobData.image) {
+    //     console.log(
+    //       "No reference image provided, generating from first scene prompt"
+    //     );
+    //     imageUrls = await imageGenerationService.generateSeedreamImages(
+    //       seedreamPrompt,
+    //       jobData.numOfScenes
+    //     );
+    //   } else {
+    //     imageUrls = await imageGenerationService.generateSeedreamImages(
+    //       seedreamPrompt,
+    //       jobData.numOfScenes,
+    //       [jobData.image!]
+    //     );
+    //   }
+    //   // imageUrls = [
+    //   //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/91756470b73b440e9066b23cc506de38/1.jpeg",
+    //   //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/91756470b73b440e9066b23cc506de38/2.jpeg",
+    //   // ];
+    // } catch (imageGenError) {
+    //   console.error("Image generation error:", imageGenError);
+    //   throw new AppError("Failed to generate images for the story scenes", 500);
+    // }
+    // console.log("Image URLS", imageUrls);
+    // if (!imageUrls) {
+    //   throw new AppError(
+    //     `Failed to generate images for the story scenes.`,
+    //     500
+    //   );
+    // }
 
-    const invalidImages = imageUrls.filter(
-      (url, _) => !url || typeof url !== "string" || !url.startsWith("http")
-    );
+    // const invalidImages = imageUrls.filter(
+    //   (url, _) => !url || typeof url !== "string" || !url.startsWith("http")
+    // );
 
-    if (invalidImages.length > 0) {
-      throw new AppError(
-        `Invalid image URLs generated: ${invalidImages.length} out of ${imageUrls.length} images are invalid`,
-        500
-      );
-    }
+    // if (invalidImages.length > 0) {
+    //   throw new AppError(
+    //     `Invalid image URLs generated: ${invalidImages.length} out of ${imageUrls.length} images are invalid`,
+    //     500
+    //   );
+    // }
 
-    story.scenes = story.scenes.map((scene, index) => ({
-      ...scene,
-      image: imageUrls[index],
-    }));
+    // story.scenes = story.scenes.map((scene, index) => ({
+    //   ...scene,
+    //   image: imageUrls[index],
+    // }));
 
-    console.log("Successfully generated images for all scenes:", imageUrls);
-    updateJobProgress(
-      job,
-      50,
-      `Generating video for the story`,
-      getIO(),
-      "story:progress"
-    );
+    // console.log("Successfully generated images for all scenes:", imageUrls);
+    // updateJobProgress(
+    //   job,
+    //   50,
+    //   `Generating video for the story`,
+    //   getIO(),
+    //   "story:progress"
+    // );
 
-    story.scenes.forEach((scene, index) => {
-      scene.image = imageUrls[index];
-    });
+    // story.scenes.forEach((scene, index) => {
+    //   scene.image = imageUrls[index];
+    // });
 
-    const videoGenerationService = new VideoGenerationService();
-    const videoUrls = await videoGenerationService.generateVideos(imageUrls);
-    console.log("JOB DATA VIDEOs: \n", videoUrls);
-    // const videoUrls = [
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/a806989e1e1d48f5831a6aef95b2fdfd/1.mp4",
-    //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ea290eeac2a54734b78047b9a2a1ad9d/1.mp4",
-    // ];
-    updateJobProgress(
-      job,
-      80,
-      `Merging video scenes`,
-      getIO(),
-      "story:progress"
-    );
+    // const videoGenerationService = new VideoGenerationService();
+    // const videoUrls = await videoGenerationService.generateVideos(imageUrls);
+    // console.log("JOB DATA VIDEOs: \n", videoUrls);
+    // // const videoUrls = [
+    // //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/a806989e1e1d48f5831a6aef95b2fdfd/1.mp4",
+    // //   "https://d1q70pf5vjeyhc.cloudfront.net/predictions/ea290eeac2a54734b78047b9a2a1ad9d/1.mp4",
+    // // ];
+    // updateJobProgress(
+    //   job,
+    //   80,
+    //   `Merging video scenes`,
+    //   getIO(),
+    //   "story:progress"
+    // );
 
-    console.log("Merging video scenes...");
-    let mergedVideoBuffer;
-    try {
-      // Validate video URLs before merging
-      if (!videoUrls || videoUrls.length === 0) {
-        throw new AppError("No video URLs available for merging", 500);
-      }
+    // console.log("Merging video scenes...");
+    // let mergedVideoBuffer;
+    // try {
+    //   // Validate video URLs before merging
+    //   if (!videoUrls || videoUrls.length === 0) {
+    //     throw new AppError("No video URLs available for merging", 500);
+    //   }
 
-      // Check if all URLs are valid
-      const invalidUrls = videoUrls.filter(
-        (url) => !url || typeof url !== "string" || !url.startsWith("http")
-      );
-      if (invalidUrls.length > 0) {
-        throw new AppError(
-          `Invalid video URLs found: ${invalidUrls.length} invalid URLs`,
-          500
-        );
-      }
+    //   // Check if all URLs are valid
+    //   const invalidUrls = videoUrls.filter(
+    //     (url) => !url || typeof url !== "string" || !url.startsWith("http")
+    //   );
+    //   if (invalidUrls.length > 0) {
+    //     throw new AppError(
+    //       `Invalid video URLs found: ${invalidUrls.length} invalid URLs`,
+    //       500
+    //     );
+    //   }
 
-      console.log(`Merging ${videoUrls.length} video scenes:`, videoUrls);
-      mergedVideoBuffer = await videoGenerationService.mergeScenes(
-        videoUrls as string[]
-      );
-    } catch (mergeError) {
-      console.error("Video merge error:", mergeError);
-      throw new AppError(
-        `Failed to merge video scenes: ${
-          mergeError instanceof Error ? mergeError.message : "Unknown error"
-        }`,
-        500
-      );
-    }
+    //   console.log(`Merging ${videoUrls.length} video scenes:`, videoUrls);
+    //   mergedVideoBuffer = await videoGenerationService.mergeScenes(
+    //     videoUrls as string[]
+    //   );
+    // } catch (mergeError) {
+    //   console.error("Video merge error:", mergeError);
+    //   throw new AppError(
+    //     `Failed to merge video scenes: ${
+    //       mergeError instanceof Error ? mergeError.message : "Unknown error"
+    //     }`,
+    //     500
+    //   );
+    // }
 
-    if (!mergedVideoBuffer) {
-      throw new AppError(
-        "Failed to merge video scenes - no buffer returned",
-        500
-      );
-    }
+    // if (!mergedVideoBuffer) {
+    //   throw new AppError(
+    //     "Failed to merge video scenes - no buffer returned",
+    //     500
+    //   );
+    // }
 
-    let finalVideoBuffer = mergedVideoBuffer;
+    // let finalVideoBuffer = mergedVideoBuffer;
 
-    // Compose video with sound directly using buffer
-    if (jobData.voiceOver && voiceOverUrl) {
-      updateJobProgress(
-        job,
-        95,
-        `Composing video with sound`,
-        getIO(),
-        "story:progress"
-      );
+    // // Compose video with sound directly using buffer
+    // if (jobData.voiceOver && voiceOverUrl) {
+    //   updateJobProgress(
+    //     job,
+    //     95,
+    //     `Composing video with sound`,
+    //     getIO(),
+    //     "story:progress"
+    //   );
 
-      console.log("🎵 Starting audio composition...");
-      console.log("Audio URL:", voiceOverUrl);
-      console.log(
-        "Voice over text preview:",
-        voiceOverText?.substring(0, 200) + "..."
-      );
+    //   console.log("🎵 Starting audio composition...");
+    //   console.log("Audio URL:", voiceOverUrl);
+    //   console.log(
+    //     "Voice over text preview:",
+    //     voiceOverText?.substring(0, 200) + "..."
+    //   );
 
-      try {
-        // Validate audio URL
-        if (!voiceOverUrl || !voiceOverUrl.startsWith("http")) {
-          throw new AppError("Invalid audio URL for composition", 500);
-        }
+    //   try {
+    //     // Validate audio URL
+    //     if (!voiceOverUrl || !voiceOverUrl.startsWith("http")) {
+    //       throw new AppError("Invalid audio URL for composition", 500);
+    //     }
 
-        console.log("🎬 Calling composeSoundWithVideoBuffer...");
-        const composedBuffer =
-          await videoGenerationService.composeSoundWithVideoBuffer(
-            finalVideoBuffer,
-            voiceOverUrl,
-            jobData.numOfScenes
-          );
+    //     console.log("🎬 Calling composeSoundWithVideoBuffer...");
+    //     const composedBuffer =
+    //       await videoGenerationService.composeSoundWithVideoBuffer(
+    //         finalVideoBuffer,
+    //         voiceOverUrl,
+    //         jobData.numOfScenes
+    //       );
 
-        if (!composedBuffer || composedBuffer.length === 0) {
-          throw new AppError("Audio composition returned empty buffer", 500);
-        }
+    //     if (!composedBuffer || composedBuffer.length === 0) {
+    //       throw new AppError("Audio composition returned empty buffer", 500);
+    //     }
 
-        finalVideoBuffer = composedBuffer;
-        console.log(
-          "✅ Audio composition successful! New buffer size:",
-          finalVideoBuffer.length
-        );
-      } catch (composeError) {
-        console.error("❌ Video composition error:", composeError);
-        throw new AppError(
-          `Failed to compose video with voice over: ${
-            composeError instanceof Error
-              ? composeError.message
-              : "Unknown error"
-          }`,
-          500
-        );
-      }
+    //     finalVideoBuffer = composedBuffer;
+    //     console.log(
+    //       "✅ Audio composition successful! New buffer size:",
+    //       finalVideoBuffer.length
+    //     );
+    //   } catch (composeError) {
+    //     console.error("❌ Video composition error:", composeError);
+    //     throw new AppError(
+    //       `Failed to compose video with voice over: ${
+    //         composeError instanceof Error
+    //           ? composeError.message
+    //           : "Unknown error"
+    //       }`,
+    //       500
+    //     );
+    //   }
 
-      console.log(
-        "🎉 Video composed with sound successfully, final buffer size:",
-        finalVideoBuffer.length
-      );
-    } else {
-      console.log("⚠️ Skipping audio composition - missing requirements:", {
-        hasVoiceOver: !!jobData.voiceOver,
-        hasVoiceOverUrl: !!voiceOverUrl,
-        hasVoiceOverText: !!voiceOverText,
-      });
-    }
+    //   console.log(
+    //     "🎉 Video composed with sound successfully, final buffer size:",
+    //     finalVideoBuffer.length
+    //   );
+    // } else {
+    //   console.log("⚠️ Skipping audio composition - missing requirements:", {
+    //     hasVoiceOver: !!jobData.voiceOver,
+    //     hasVoiceOverUrl: !!voiceOverUrl,
+    //     hasVoiceOverText: !!voiceOverText,
+    //   });
+    // }
 
-    // Upload final video to Cloudinary
-    updateJobProgress(
-      job,
-      98,
-      `Uploading final video`,
-      getIO(),
-      "story:progress"
-    );
+    // // Upload final video to Cloudinary
+    // updateJobProgress(
+    //   job,
+    //   98,
+    //   `Uploading final video`,
+    //   getIO(),
+    //   "story:progress"
+    // );
 
-    const finalVideoUrl = (
-      await cloudUploadVideo(finalVideoBuffer, `story_videos/${jobData.jobId}`)
-    ).secure_url;
+    // const finalVideoUrl = (
+    //   await cloudUploadVideo(finalVideoBuffer, `story_videos/${jobData.jobId}`)
+    // ).secure_url;
 
-    console.log("Final video URL: ", finalVideoUrl);
-    updateJobProgress(
-      job,
-      100,
-      `Story processing completed`,
-      getIO(),
-      "story:completed"
-    );
+    // console.log("Final video URL: ", finalVideoUrl);
+    // updateJobProgress(
+    //   job,
+    //   100,
+    //   `Story processing completed`,
+    //   getIO(),
+    //   "story:completed"
+    // );
 
-    const updatedStory = await updateCompletedStory(job.opts.jobId as string, {
-      videoUrl: finalVideoUrl,
-      scenes: story.scenes,
-      thumbnail: story.scenes[0]?.image || null,
-      location: jobData.location || null,
-      style: jobData.style || null,
-      title: story.title || null,
-      genre: jobData.genere || null,
-      voiceOver:
-        voiceOverUrl && voiceOverText
-          ? {
-              sound: voiceOverUrl,
-              text: voiceOverText,
-            }
-          : null,
-    });
+    // const updatedStory = await updateCompletedStory(job.opts.jobId as string, {
+    //   videoUrl: finalVideoUrl,
+    //   scenes: story.scenes,
+    //   thumbnail: story.scenes[0]?.image || null,
+    //   location: jobData.location || null,
+    //   style: jobData.style || null,
+    //   title: story.title || null,
+    //   genre: jobData.genere || null,
+    //   voiceOver:
+    //     voiceOverUrl && voiceOverText
+    //       ? {
+    //           sound: voiceOverUrl,
+    //           text: voiceOverText,
+    //         }
+    //       : null,
+    // });
 
-    if (updatedStory && jobData.voiceOver && voiceOverUrl && voiceOverText) {
-      console.log("Updating complete voice over object in story...");
-      await Story.findByIdAndUpdate(updatedStory._id, {
-        voiceOver: {
-          voiceOverLyrics: jobData.voiceOver["voiceOverLyrics"] || null,
-          voiceLanguage: jobData.voiceOver["voiceLanguage"] || null,
-          voiceGender: jobData.voiceOver["voiceGender"] || null,
-          sound: voiceOverUrl,
-          text: voiceOverText,
-        },
-      });
-      console.log("Complete voice over object updated in database");
-    } else if (updatedStory && !jobData.voiceOver) {
-      // Explicitly set voiceOver to null if no voice over was requested
-      console.log(
-        "No voice over requested, ensuring voiceOver field is null..."
-      );
-      await Story.findByIdAndUpdate(updatedStory._id, {
-        voiceOver: null,
-      });
-    }
+    // if (updatedStory && jobData.voiceOver && voiceOverUrl && voiceOverText) {
+    //   console.log("Updating complete voice over object in story...");
+    //   await Story.findByIdAndUpdate(updatedStory._id, {
+    //     voiceOver: {
+    //       voiceOverLyrics: jobData.voiceOver["voiceOverLyrics"] || null,
+    //       voiceLanguage: jobData.voiceOver["voiceLanguage"] || null,
+    //       voiceGender: jobData.voiceOver["voiceGender"] || null,
+    //       sound: voiceOverUrl,
+    //       text: voiceOverText,
+    //     },
+    //   });
+    //   console.log("Complete voice over object updated in database");
+    // } else if (updatedStory && !jobData.voiceOver) {
+    //   // Explicitly set voiceOver to null if no voice over was requested
+    //   console.log(
+    //     "No voice over requested, ensuring voiceOver field is null..."
+    //   );
+    //   await Story.findByIdAndUpdate(updatedStory._id, {
+    //     voiceOver: null,
+    //   });
+    // }
 
-    console.log("Story updated in database:", updatedStory?._id);
-    console.log("Voice over data saved:", {
-      hasVoiceOver: !!jobData.voiceOver,
-      sound: voiceOverUrl,
-      text: voiceOverText ? voiceOverText.substring(0, 100) + "..." : "No text",
-    });
+    // console.log("Story updated in database:", updatedStory?._id);
+    // console.log("Voice over data saved:", {
+    //   hasVoiceOver: !!jobData.voiceOver,
+    //   sound: voiceOverUrl,
+    //   text: voiceOverText ? voiceOverText.substring(0, 100) + "..." : "No text",
+    // });
 
-    return {
-      finalVideoUrl,
-      story: updatedStory,
-    };
+    // return {
+    //   finalVideoUrl,
+    //   story: updatedStory,
+    // };
   } catch (err: any) {
     console.error("Error in story processing:", err);
 
