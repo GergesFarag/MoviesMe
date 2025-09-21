@@ -88,7 +88,7 @@ Rules:
 Do not describe the character's features.
 - Always output in English, even if the user story is in another language.
 - IMPORTANT Location ${storyLocation} / style ${storyStyle}
-
+- Respect the character's age, gender, and personality.
 `;
   return prompt;
 };

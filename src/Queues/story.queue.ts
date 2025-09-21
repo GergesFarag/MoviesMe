@@ -541,7 +541,7 @@ storyQueue.on("completed", async (job, result) => {
         story: storyDTO,
         jobId: job.opts.jobId,
         finalVideoUrl: result.finalVideoUrl,
-        storyId: result.storyId,
+        storyId: result.story?._id,
       });
     } catch (dtoError) {
       console.error("❌ Error converting story to DTO:", dtoError);
@@ -556,9 +556,9 @@ storyQueue.on("completed", async (job, result) => {
     }
   }
   const notificationDTO = {
-    storyId: String(result.storyId || null),
+    storyId: String(result.story?._id || null),
     jobId: String(job.opts.jobId || null),
-    status: String(result.story.status || null),
+    status: String(result.story?.status || null),
     userId: String(job.data.userId || null),
   };
   const user = await User.findById(job.data.userId);
@@ -679,7 +679,7 @@ storyQueue.on("failed", async (job, err) => {
           `Your video failed to generate`,
           {
             ...notificationDTO,
-            redirectTo: "/storyDetails",
+            redirectTo: null,
             category: "activities",
           }
         );
@@ -689,7 +689,7 @@ storyQueue.on("failed", async (job, err) => {
             title: "Story Processing Failed",
             message: `Your video failed to generate.`,
             data: notificationDTO,
-            redirectTo: "/storyDetails",
+            redirectTo: null,
             createdAt: new Date(),
             category: "activities",
           });
@@ -702,7 +702,7 @@ storyQueue.on("failed", async (job, err) => {
           title: "Story Processing Failed",
           message: `Your video failed to generate.`,
           data: notificationDTO,
-          redirectTo: "/storyDetails",
+          redirectTo: null,
           createdAt: new Date(),
           category: "activities",
         });
