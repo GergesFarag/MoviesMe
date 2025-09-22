@@ -37,7 +37,11 @@ const authController = {
     const refreshToken = createRefreshToken(responseUser);
     res.status(200).json({
       message: "User Logged in successfully",
-      greeting: translationService.translateText("user" , "greeting", req.headers["accept-language"] || "en"),
+      greeting: translationService.translateText(
+        "user",
+        "greeting",
+        req.headers["accept-language"] || "en"
+      ),
       data: {
         user: responseUser,
         accessToken,
@@ -141,7 +145,10 @@ const authController = {
     const { FCMToken } = req.body;
 
     if (!FCMToken) {
-      throw new AppError("FCM token is required", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "FCM token is required",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
     const user = await User.findById(req.user!.id).select("+FCMToken");
     if (!user) {
@@ -159,7 +166,6 @@ const authController = {
       data: { fcmToken: user.FCMToken },
     });
   }),
-
 };
 
 export default authController;

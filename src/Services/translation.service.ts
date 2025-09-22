@@ -13,8 +13,16 @@ class TranslationService implements ITranslationService {
     return TranslationService.instance;
   }
 
-  private translateItem(prefix: string, key: string, locale: string): string {
-    return I18nService.t(`${prefix}.${key}`, { lng: locale }) as string;
+  private translateItem(
+    prefix: string,
+    key: string,
+    locale: string,
+    opts?: any
+  ): string {
+    return I18nService.t(`${prefix}.${key}`, {
+      lng: locale,
+      ...opts,
+    }) as string;
   }
 
   public translateModels(items: any[], locale: string): any[] {
@@ -45,13 +53,20 @@ class TranslationService implements ITranslationService {
       genres: data.genres.map((genre: any) => {
         return this.translateItem("genres", genre, locale);
       }),
-      languages: data.languages.map((lang: any) => this.translateItem("languages", lang, locale)),
+      languages: data.languages.map((lang: any) =>
+        this.translateItem("languages", lang, locale)
+      ),
     };
     return translatedData;
   }
 
-  public translateText(prefix: string, key: string, locale: string): string {
-    return this.translateItem(prefix, key, locale);
+  public translateText(
+    prefix: string,
+    key: string,
+    locale: string,
+    opts?: any
+  ): string {
+    return this.translateItem(prefix, key, locale, opts);
   }
 }
 export const translationService = TranslationService.getInstance();

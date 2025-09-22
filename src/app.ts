@@ -32,7 +32,8 @@ app.get(`/`, (req, res) => {
     translationService.translateText(
       "admin",
       "greeting",
-      req.headers["accept-language"] || "en"
+      req.headers["accept-language"] || "en",
+      { name: "Gerges" }
     )
   );
 });
