@@ -89,6 +89,11 @@ const authController = {
 
     res.status(201).json({
       message: "User registered successfully",
+       greeting: translationService.translateText(
+        "user",
+        "greeting",
+        req.headers["accept-language"] || "en"
+      ),
       data: {
         user: responseUser,
         accessToken,
