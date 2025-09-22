@@ -44,8 +44,8 @@ export const taskQueue = new Queue("modelProcessing", {
 taskQueue.process(async (job) => {
   try {
     const { modelData, userId, data, FCM } = job.data;
-    updateJobProgress(job, 10, "Start Processing...", getIO(), "job:progress");
-    await new Promise((res) => setTimeout(res, 2000));
+    // updateJobProgress(job, 10, "Start Processing...", getIO(), "job:progress");
+    // await new Promise((res) => setTimeout(res, 2000));
     if (!modelData) {
       throw new AppError("Model Data not found", 404);
     }
