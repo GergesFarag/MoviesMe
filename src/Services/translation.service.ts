@@ -52,10 +52,7 @@ class TranslationService implements ITranslationService {
       }),
       genres: data.genres.map((genre: any) => {
         return this.translateItem("genres", genre, locale);
-      }),
-      languages: data.languages.map((lang: any) =>
-        this.translateItem("languages", lang, locale)
-      ),
+      })
     };
     return translatedData;
   }

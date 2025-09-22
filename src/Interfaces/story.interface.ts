@@ -25,3 +25,7 @@ export interface IStory extends Document {
   createdAt?: Date;
   updatedAt?: Date;
 }
+export interface StoryProcessingResult {
+  finalVideoUrl: string;
+  story: IStory;
+}

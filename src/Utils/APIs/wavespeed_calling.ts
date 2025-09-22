@@ -71,7 +71,9 @@ export const runModel = async (
     if (data.seed !== undefined) {
       payload.seed = data.seed;
     }
-
+    if(modelType === "bytedance") {
+      payload.prompt = "A Person is looking the Lens.";
+    }
     // Add BGM parameter for video models that require it
     // Some video generation models require background music
     if (modelType.includes("video") || modelType.includes("bytedance")) {

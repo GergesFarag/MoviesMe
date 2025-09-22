@@ -4,3 +4,9 @@ export interface IAudioModel {
   gender: "male" | "female";
   thumbnail?: string;
 }
+
+export interface IProcessedVoiceOver {
+  url: string;
+  text: string;
+  data: any;
+}

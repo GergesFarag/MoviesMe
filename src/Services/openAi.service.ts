@@ -205,7 +205,7 @@ export class OpenAIService {
                     Convert the given story prompt into narrative text in the ${language} language.
                     
                     CRITICAL CONSTRAINTS:
-                    - Voice narration time must fit exactly in ${numOfScenes * 3} seconds.
+                    - Voice narration time must fit exactly in ${numOfScenes * 2.3} seconds.
 
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,
@@ -229,11 +229,11 @@ export class OpenAIService {
       throw new AppError(err.message, err.status || 500);
     }
   }
+
   async generateSeedreamPrompt(
     prompt: string,
     numOfScenes: number,
     storyStyle: string = "realistic",
-    storyTitle?: string,
     storyGenre?: string,
     storyLocation?: string
   ): Promise<string> {
@@ -259,7 +259,6 @@ export class OpenAIService {
         temperature: 0.7,
       });
       let narrativeText = `Number of Images will be generated = ${numOfScenes} \n${response.choices[0]?.message?.content}`;
-      narrativeText = narrativeText.concat("\nCONSTRAINTS: Do Not mix two or more images in one image or generate images two or more in the same one");
       console.log("Narrative Text: ", narrativeText);
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);

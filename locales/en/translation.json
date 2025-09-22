@@ -76,16 +76,6 @@
     "family": "family",
     "sports": "sports"
   },
-  "languages": {
-    "🇬🇧 English": "🇬🇧 English",
-    "🇫🇷 Français": "🇫🇷 Français",
-    "🇩🇪 Deutsch": "🇩🇪 Deutsch",
-    "🇸🇦 العربية": "🇸🇦 Arabic",
-    "🇨🇳 中文": "🇨🇳 Chinese",
-    "🇪🇸 Español": "🇪🇸 Español",
-    "🇷🇺 Русский": "🇷🇺 Russian",
-    "🇯🇵 日本語": "🇯🇵 Japanese"
-  },
   "messages": {
     "welcome": "Welcome to Movies Me!",
     "error": "An error has occurred. Please try again."

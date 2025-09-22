@@ -14,38 +14,19 @@ import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import { NotificationItemDTO } from "../DTOs/item.dto";
 import { getItemFromUser } from "../Utils/Database/optimizedOps";
 import Queue from "bull";
-const redisPort = (process.env.REDIS_PORT as string)
-  ? parseInt(process.env.REDIS_PORT as string, 10)
-  : 6379;
+import { getRedisConfig } from "../Config/redis";
+import { JOB_OPTIONS, QUEUE_NAMES, QUEUE_SETTINGS } from "./Constants/queueConstants";
 
-export const taskQueue = new Queue("modelProcessing", {
-  redis: {
-    host: process.env.REDIS_HOST as string,
-    port: redisPort,
-    password: (process.env.REDIS_PASSWORD as string) || undefined,
-    connectTimeout: 10000,
-  },
-  defaultJobOptions: {
-    attempts: 1,
-    timeout: 300000,
-    removeOnComplete: 10, // Keep only 10 completed jobs
-    removeOnFail: 5, // Keep only 5 failed jobs
-    backoff: {
-      type: "exponential",
-      delay: 2000,
-    },
-  },
-  settings: {
-    stalledInterval: 30000,
-    retryProcessDelay: 5000,
-  },
+const redisConfig = getRedisConfig();
+export const taskQueue = new Queue(QUEUE_NAMES.MODEL_PROCESSING, {
+  redis: redisConfig,
+  defaultJobOptions: JOB_OPTIONS,
+  settings: QUEUE_SETTINGS,
 });
 
 taskQueue.process(async (job) => {
   try {
     const { modelData, userId, data, FCM } = job.data;
-    // updateJobProgress(job, 10, "Start Processing...", getIO(), "job:progress");
-    // await new Promise((res) => setTimeout(res, 2000));
     if (!modelData) {
       throw new AppError("Model Data not found", 404);
     }
@@ -61,16 +42,13 @@ taskQueue.process(async (job) => {
       job,
       getIO()
     );
-  if(!result){
+    if (!result) {
       throw new AppError("Model processing Result Failed", 500);
-  }
+    }
     modelType = modelType === "bytedance" ? "image-effects" : modelType;
-    
-    // Generate thumbnail for video results
-    const effectThumbnail = modelData.isVideo 
-      ? modelData.thumbnail
-      : result;
-    
+
+    const effectThumbnail = modelData.isVideo ? modelData.thumbnail : result;
+
     const dataToBeSent = {
       userId,
       modelType:
@@ -85,7 +63,13 @@ taskQueue.process(async (job) => {
       jobId: job.id,
       duration: modelData.isVideo ? 0 : 0,
     };
-    updateJobProgress(job, 100, "Processing completed", getIO(), "job:progress");
+    updateJobProgress(
+      job,
+      100,
+      "Processing completed",
+      getIO(),
+      "job:progress"
+    );
 
     // let notificationData = {
     //   URL: data.image,
@@ -115,11 +99,17 @@ taskQueue.on("completed", async (job, result: any) => {
 
     // Safe job removal with error handling
     try {
-      const jobExists = await job.isActive() || await job.isWaiting() || await job.isDelayed() || await job.isCompleted();
+      const jobExists =
+        (await job.isActive()) ||
+        (await job.isWaiting()) ||
+        (await job.isDelayed()) ||
+        (await job.isCompleted());
       if (jobExists) {
         await job.remove();
       } else {
-        console.warn(`⚠️ Job ${job.id} no longer exists in queue, skipping removal`);
+        console.warn(
+          `⚠️ Job ${job.id} no longer exists in queue, skipping removal`
+        );
       }
     } catch (removeError) {
       console.warn(`⚠️ Failed to remove job ${job.id}:`, removeError);
@@ -162,21 +152,28 @@ taskQueue.on("completed", async (job, result: any) => {
     });
 
     // Check if any item was actually updated
-    const updatedItem = updatedItems?.find(item => item.jobId === result.jobId);
+    const updatedItem = updatedItems?.find(
+      (item) => item.jobId === result.jobId
+    );
     if (!updatedItem) {
       console.error("No item found with jobId:", result.jobId);
       return;
     }
 
     user.effectsLib = updatedItems;
-    
+
     // Validate the user before saving
     try {
       await user.validate();
       await user.save();
-      console.log(`✅ Successfully saved user ${user.id} with updated effectsLib`);
+      console.log(
+        `✅ Successfully saved user ${user.id} with updated effectsLib`
+      );
     } catch (validationError) {
-      console.error(`❌ Validation error when saving user ${user.id}:`, validationError);
+      console.error(
+        `❌ Validation error when saving user ${user.id}:`,
+        validationError
+      );
       throw validationError;
     }
     const item = await getItemFromUser(user.id, result.jobId);
@@ -189,7 +186,7 @@ taskQueue.on("completed", async (job, result: any) => {
         {
           ...notificationDTO,
           redirectTo: "/effectDetails",
-          category: 'activities',
+          category: "activities",
         }
       );
       if (res) {
@@ -199,7 +196,7 @@ taskQueue.on("completed", async (job, result: any) => {
           data: notificationDTO,
           redirectTo: "/effectDetails",
           createdAt: new Date(),
-          category: 'activities',
+          category: "activities",
         });
         await user.save();
       }
@@ -222,11 +219,17 @@ taskQueue.on("failed", async (job, err) => {
 
     // Safe job removal with error handling
     try {
-      const jobExists = await job.isActive() || await job.isWaiting() || await job.isDelayed() || await job.isFailed();
+      const jobExists =
+        (await job.isActive()) ||
+        (await job.isWaiting()) ||
+        (await job.isDelayed()) ||
+        (await job.isFailed());
       if (jobExists) {
         await job.remove();
       } else {
-        console.warn(`⚠️ Job ${job.id} no longer exists in queue, skipping removal`);
+        console.warn(
+          `⚠️ Job ${job.id} no longer exists in queue, skipping removal`
+        );
       }
     } catch (removeError) {
       console.warn(`⚠️ Failed to remove failed job ${job.id}:`, removeError);
@@ -265,7 +268,7 @@ taskQueue.on("failed", async (job, err) => {
         data: notificationDTO,
         redirectTo: null,
         createdAt: new Date(),
-        category: 'activities',
+        category: "activities",
       });
       await user?.save();
       if (user?.FCMToken) {
@@ -276,7 +279,7 @@ taskQueue.on("failed", async (job, err) => {
           {
             ...notificationDTO,
             redirectTo: null,
-            category: 'activities',
+            category: "activities",
           }
         );
       }
