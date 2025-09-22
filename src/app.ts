@@ -26,11 +26,12 @@ const API_VERSION = process.env.API_VERSION || "/v1";
 const prefix = process.env.API_PREFIX || "/api";
 const basePath = `${prefix}${API_VERSION}`;
 
-app.get(`${basePath}/`, (req, res) => {
+app.get(`/`, (req, res) => {
   console.log("Request Headers:", req.headers["accept-language"]);
   res.send(
     translationService.translateText(
-      "admin.greeting",
+      "admin",
+      "greeting",
       req.headers["accept-language"] || "en"
     )
   );

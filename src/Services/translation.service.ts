@@ -50,8 +50,8 @@ class TranslationService implements ITranslationService {
     return translatedData;
   }
 
-  public translateText(key: string, locale: string): string {
-    return I18nService.t(key, { lng: locale }) as string;
+  public translateText(prefix: string, key: string, locale: string): string {
+    return this.translateItem(prefix, key, locale);
   }
 }
 export const translationService = TranslationService.getInstance();

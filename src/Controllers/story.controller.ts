@@ -168,7 +168,7 @@ const storyController = {
 
   getGenerationData: catchError(async (req: Request, res: Response) => {
     const generationData = await GenerationInfo.findOne().lean();
-    if(!generationData){
+    if (!generationData) {
       throw new AppError("Generation data not found", 404);
     }
     const translatedGenerationData = translationService.translateGenerationData(
