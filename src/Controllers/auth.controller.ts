@@ -37,7 +37,7 @@ const authController = {
     const refreshToken = createRefreshToken(responseUser);
     res.status(200).json({
       message: "User Logged in successfully",
-      greeting: translationService.translateText("user.greeting", req.headers["accept-language"] || "en"),
+      greeting: translationService.translateText("user" , "greeting", req.headers["accept-language"] || "en"),
       data: {
         user: responseUser,
         accessToken,
