@@ -29,10 +29,13 @@ export class VoiceGenerationService {
           HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
         );
       }
-      
+
       // Log API key status (without exposing the key)
-      console.log("ElevenLabs API Key configured:", ELEVENLABS_API_KEY.substring(0, 10) + "...");
-      
+      console.log(
+        "ElevenLabs API Key configured:",
+        ELEVENLABS_API_KEY.substring(0, 10) + "..."
+      );
+
       this.client = new ElevenLabsClient({
         apiKey: ELEVENLABS_API_KEY,
       });
@@ -58,11 +61,6 @@ export class VoiceGenerationService {
         HTTP_STATUS_CODE.BAD_REQUEST
       );
     }
-    const cachedAudio = getCachedVoice(data!.text, voiceId as string);
-    if (cachedAudio) {
-      console.log("Using cached voice generation");
-      return cachedAudio;
-    }
     try {
       // const url = "https://api.wavespeed.ai/api/v3/minimax/speech-02-hd";
       // const headers = {
@@ -76,11 +74,14 @@ export class VoiceGenerationService {
       // };
       // const audio = await wavespeedBase(url, headers, payload) as string;
       const audio = await this.client.textToSpeech.convert(
-        "JBFqnCBsd6RMkjVDRZzb",
+        "UR972wNGq3zluze0LoIp",
         {
           text: data!.text,
           modelId: "eleven_multilingual_v2",
           outputFormat: "mp3_44100_128",
+          voiceSettings: {
+            speed: 1.2,
+          },
         }
       );
       if (!audio) {
@@ -90,9 +91,7 @@ export class VoiceGenerationService {
         );
       }
       const audioBuffer = await streamToBuffer(audio);
-      const audioUrl = await cloudUploadAudio(audioBuffer, "mp3");
-      setCachedVoice(data!.text, voiceId as string, audioUrl.secure_url);
-
+      const audioUrl = await cloudUploadAudio(audioBuffer);
       return audioUrl.secure_url;
     } catch (error: any) {
       console.error("Voice generation error details:", {
@@ -101,24 +100,21 @@ export class VoiceGenerationService {
         statusCode: error.statusCode,
         response: error.response?.data || error.body,
       });
-      
+
       // Check if it's an API key related error
-      if (error.message?.includes("invalid_api_key") || error.status === "invalid_api_key") {
+      if (
+        error.message?.includes("invalid_api_key") ||
+        error.status === "invalid_api_key"
+      ) {
         throw new AppError(
           "Voice generation failed: Invalid API key. Please check your ElevenLabs API key configuration.",
           HTTP_STATUS_CODE.UNAUTHORIZED
         );
       }
-      
       throw new AppError(
         `Voice generation failed: ${error.message || "Unknown error"}`,
         HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
       );
     }
-  }
-
-  clearCache(): void {
-    clearVoiceCache();
-    console.log("Voice generation cache cleared");
   }
 }

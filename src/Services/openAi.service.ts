@@ -202,11 +202,10 @@ export class OpenAIService {
             role: "system",
             content: `You are a cinematic narrator and translator.
                     TASK:
-                    Convert the given scene descriptions into a cohesive, engaging narrative text in the ${language} language.
+                    Convert the given story prompt into narrative text in the ${language} language.
                     
                     CRITICAL CONSTRAINTS:
-                    - Voice narration time must fit exactly in ${numOfScenes} scenes
-                    (approximately 3 seconds per scene).
+                    - Voice narration time must fit exactly in ${numOfScenes * 3} seconds.
 
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,

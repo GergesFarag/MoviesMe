@@ -207,9 +207,6 @@ storyQueue.process(async (job) => {
       voiceOverUrl = await voiceOverService.generateVoiceOver(
         jobData.voiceOver
       );
-      console.log("Voice over generated:", voiceOverText);
-      console.log("Voice over URL generated:", voiceOverUrl);
-      throw new AppError("Voice over generation Stopped", 500);
       // voiceOverText =
       //   " كنت أسير في شوارع القاهرة بسيارتي، وفجأة لمحت صديقي الذي لم أره منذ زمن بعيد.";
       // voiceOverUrl =
