@@ -36,6 +36,7 @@ const userSchema = new Schema<IUser>({
     type: [notificationSchema],
     default: [],
   },
+  preferredLanguage: { type: String, default: "en" },
 });
 userSchema.on("delete", (doc) => {
   console.log("User deleted:", doc);

@@ -76,6 +76,28 @@
     "family": "family",
     "sports": "sports"
   },
+  "notifications": {
+    "story": {
+      "completion": {
+        "title": "🎉 Your Story is Ready to Shine! 🌟",
+        "message": "Hooray! Your story has been crafted with care and is now ready for you to watch and download. Let the magic unfold!"
+      },
+      "failure": {
+        "title": "❌ Oops! Story Creation Failed",
+        "message": "Something went wrong while bringing your story to life. Don't worry, just give it another try and the adventure will continue!"
+      }
+    },
+    "effect": {
+      "completion": {
+        "title": "✨ Your Effect is All Set! 💥",
+        "message": "Your effect has been successfully created and is now ready for you to explore and download. Enjoy the visual masterpiece!"
+      },
+      "failure": {
+        "title": "❌ Oops! Effect Creation Failed",
+        "message": "An error popped up while creating your effect. Please try again, and your awesome effect will be back on track!"
+      }
+    }
+  },
   "messages": {
     "welcome": "Welcome to Movies Me!",
     "error": "An error has occurred. Please try again."

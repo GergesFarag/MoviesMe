@@ -22,4 +22,5 @@ export interface IUser {
   profilePicture?: string | null;
   credits?: number | null;
   FCMToken?: string | null;
+  preferredLanguage?: string;
 }

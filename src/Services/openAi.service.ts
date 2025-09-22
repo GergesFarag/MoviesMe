@@ -205,7 +205,7 @@ export class OpenAIService {
                     Convert the given story prompt into narrative text in the ${language} language.
                     
                     CRITICAL CONSTRAINTS:
-                    - Voice narration time must fit exactly in ${numOfScenes * 2.3} seconds.
+                    - Voice narration time must fit exactly in ${numOfScenes * 2.8} seconds.
 
                     OUTPUT RULES:
                     - Narrative text only, no scene descriptions.`,

@@ -23,6 +23,7 @@ import { processStoryJobAsnc } from "../Services/generateStory.service";
 import { generateRandomNumber } from "../Utils/Format/generateRandom";
 import storyQueue from "../Queues/story.queue";
 import { translationService } from "../Services/translation.service";
+import { extractLanguageFromRequest } from "../Utils/Format/languageUtils";
 
 const validKeys: IStoryRequestKeys[] = [
   "prompt",

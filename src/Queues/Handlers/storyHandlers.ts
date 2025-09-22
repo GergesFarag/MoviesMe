@@ -63,45 +63,7 @@ export class StoryQueueHandlers {
       console.error("❌ Error in failure handler:", error);
     }
   }
-
-  /**
-   * Handle job stalling
-   */
-  async onStalled(job: Job) {
-    console.warn(`⚠️ Job ${job.id} stalled - may be stuck or taking too long`);
-
-    try {
-      if (job.data.userId) {
-        await this.notificationService.sendStoryStalledNotification(
-          job.data.userId,
-          String(job.opts.jobId || "")
-        );
-      } else {
-        console.warn("⚠️ Missing userId, skipping stalled notification");
-      }
-    } catch (error) {
-      console.error("❌ Failed to send stalled notification:", error);
-    }
-  }
-
-  /**
-   * Handle queue errors
-   */
-  onError(error: Error) {
-    console.error("❌ Queue error occurred:", error);
-
-    try {
-      // Log additional context if available
-      console.error("Queue error details:", {
-        message: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (logError) {
-      console.error("❌ Failed to log queue error details:", logError);
-    }
-  }
-
+  
   /**
    * Update job and story status to failed in database
    */

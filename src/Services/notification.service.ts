@@ -3,6 +3,7 @@ import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import { getIO } from "../Sockets/socket";
 import { StoryDTO } from "../DTOs/story.dto";
 import { TNotificationCategory } from "../types/custom";
+import { translationService } from "./translation.service";
 
 interface NotificationData {
   title: string;
@@ -27,6 +28,20 @@ interface SocketNotificationPayload {
 }
 
 export class NotificationService {
+    
+  /**
+   * Get user's preferred language
+   */
+  private async getUserLanguage(userId: string): Promise<string> {
+    try {
+      const user = await User.findById(userId).select("preferredLanguage");
+      return user?.preferredLanguage || "en";
+    } catch (error) {
+      console.error(`❌ Failed to get user language for ${userId}:`, error);
+      return "en"; // Default fallback
+    }
+  }
+
   /**
    * Send story completion notification (both push and socket)
    */
@@ -61,9 +76,12 @@ export class NotificationService {
     }
 
     try {
+      // Get user's preferred language
+      const locale = await this.getUserLanguage(userId);
+
       // Convert story to DTO format
       const storyDTO = StoryDTO.toDTO(storyData);
-      
+
       const notificationDTO = {
         storyId: String(storyData._id || null),
         jobId: String(jobId),
@@ -72,8 +90,16 @@ export class NotificationService {
       };
 
       const notificationData: NotificationData = {
-        title: "Story Processing Completed",
-        message: "Your video has been generated successfully!",
+        title: translationService.translateText(
+          "notifications.story.completion",
+          "title",
+          locale
+        ),
+        message: translationService.translateText(
+          "notifications.story.completion",
+          "message",
+          locale
+        ),
         data: notificationDTO,
         redirectTo: "/storyDetails",
         category: "activities",
@@ -94,9 +120,16 @@ export class NotificationService {
     } catch (dtoError) {
       console.error("❌ Error converting story to DTO:", dtoError);
       await this.sendSocketNotification(userId, "story:failed", {
-        message: "Story generation completed but failed to format response",
+        message: translationService.translateText(
+          "notifications.story.failure",
+          "message",
+          await this.getUserLanguage(userId)
+        ),
         jobId,
-        error: dtoError instanceof Error ? dtoError.message : "DTO conversion failed",
+        error:
+          dtoError instanceof Error
+            ? dtoError.message
+            : "DTO conversion failed",
         timestamp: new Date().toISOString(),
       });
     }
@@ -111,6 +144,9 @@ export class NotificationService {
     error: Error,
     storyId?: string
   ): Promise<void> {
+    // Get user's preferred language
+    const locale = await this.getUserLanguage(userId);
+
     const notificationDTO = {
       storyId: String(storyId || null),
       jobId: String(jobId),
@@ -120,8 +156,16 @@ export class NotificationService {
     };
 
     const notificationData: NotificationData = {
-      title: "Story Processing Failed",
-      message: "Your video failed to generate. Please try again.",
+      title: translationService.translateText(
+        "notifications.story.failure",
+        "title",
+        locale
+      ),
+      message: translationService.translateText(
+        "notifications.story.failure",
+        "message",
+        locale
+      ),
       data: notificationDTO,
       redirectTo: null,
       category: "activities",
@@ -152,17 +196,6 @@ export class NotificationService {
       jobId,
       progress,
       message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  /**
-   * Send story stalled notification (socket only)
-   */
-  async sendStoryStalledNotification(userId: string, jobId: string): Promise<void> {
-    await this.sendSocketNotification(userId, "story:stalled", {
-      message: "Your story processing is taking longer than expected. Please wait...",
-      jobId,
       timestamp: new Date().toISOString(),
     });
   }
@@ -202,10 +235,15 @@ export class NotificationService {
             pushNotificationSent = true;
           }
         } catch (pushError) {
-          console.error(`❌ Failed to send push notification to user ${userId}:`, pushError);
+          console.error(
+            `❌ Failed to send push notification to user ${userId}:`,
+            pushError
+          );
         }
       } else {
-        console.log(`⚠️ No FCM token found for user ${userId}, skipping push notification`);
+        console.log(
+          `⚠️ No FCM token found for user ${userId}, skipping push notification`
+        );
       }
 
       // Save notification to user's database regardless of push notification success
@@ -213,7 +251,10 @@ export class NotificationService {
 
       return pushNotificationSent;
     } catch (error) {
-      console.error(`❌ Failed to send push notification to user ${userId}:`, error);
+      console.error(
+        `❌ Failed to send push notification to user ${userId}:`,
+        error
+      );
       return false;
     }
   }
@@ -229,11 +270,16 @@ export class NotificationService {
     try {
       const io = getIO();
       const roomName = `user:${userId}`;
-      
+
       io.to(roomName).emit(event, payload);
-      console.log(`✅ Socket notification '${event}' sent to room: ${roomName}`);
+      console.log(
+        `✅ Socket notification '${event}' sent to room: ${roomName}`
+      );
     } catch (error) {
-      console.error(`❌ Failed to send socket notification to user ${userId}:`, error);
+      console.error(
+        `❌ Failed to send socket notification to user ${userId}:`,
+        error
+      );
     }
   }
 
