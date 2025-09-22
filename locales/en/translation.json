@@ -1,0 +1,93 @@
+{
+  "user": {
+    "greeting": "Hello, {{name}}!",
+    "farewell": "Goodbye, {{name}}!"
+  },
+  "admin": {
+    "greeting": "Welcome back, Admin {{name}}!",
+    "farewell": "See you later, Admin {{name}}!"
+  },
+  "models": {
+    "689cfc241271e0f25f28d0d9": "sexy me",
+    "689cfc511271e0f25f28d0db": "portrait",
+    "689cfd5c95a1a587e7c8d93c": "advanced photography",
+    "689cfdaf95a1a587e7c8d93e": "zoom out",
+    "689dcdad7baa10ffd03c7df5": "dust me away",
+    "689dce1d7baa10ffd03c7df7": "past life job",
+    "689dcf057baa10ffd03c7dfb": "body shake",
+    "689dcf527baa10ffd03c7dfd": "french kiss",
+    "689dcfd57baa10ffd03c7e01": "shake dance",
+    "689dd0067baa10ffd03c7e03": "jiggle up",
+    "689dd0347baa10ffd03c7e05": "split stance human",
+    "689dd0627baa10ffd03c7e07": "pubg winner hit",
+    "689dd0e77baa10ffd03c7e09": "rain kiss",
+    "689dd11c7baa10ffd03c7e0b": "love story",
+    "689dd14f7baa10ffd03c7e0d": "flower recieve",
+    "689dd1807baa10ffd03c7e0f": "muscling",
+    "689dd8ded118f41a7e98278b": "plastic bubble figure",
+    "689dd916d118f41a7e98278d": "my world",
+    "689dd938d118f41a7e98278f": "american comic style",
+    "689dd96bd118f41a7e982791": "cyberpunk",
+    "689dd9a7d118f41a7e982793": "futuristic american comics",
+    "689dd9ced118f41a7e982795": "in the stadium",
+    "689ddab7d118f41a7e982799": "image upscalar",
+    "689ddb3dd118f41a7e98279b": "image background remover",
+    "689ddb83d118f41a7e98279d": "image zoom out",
+    "689ddbb5d118f41a7e98279f": "image watermark remover",
+    "689ddc06d118f41a7e9827a1": "video upscalar",
+    "689ddc51d118f41a7e9827a3": "video upscalar pro",
+    "689ddce9d118f41a7e9827a5": "flux dev lora trainer",
+    "689ddd6bd118f41a7e9827a7": "flux dev lora trainer",
+    "689fbeca039df9773925296b": "spin180",
+    "689fbf1e039df9773925296d": "orbit",
+    "68ab6a30f892d918ccac88c2": "glass ball",
+    "68bf1f42cf728f18f96e79a8": "romantic lift"
+  },
+  "locations": {
+    "68a76df00a42aba59b1ef83c": "Egypt",
+    "68a76df00a42aba59b1ef83d": "Saudi Arabia",
+    "68a76df00a42aba59b1ef83e": "Kuwait",
+    "68a76df00a42aba59b1ef83f": "Qatar",
+    "68a76df00a42aba59b1ef840": "Dubai",
+    "68a76df00a42aba59b1ef841": "Turkey",
+    "68a76df00a42aba59b1ef842": "USA",
+    "68a76df00a42aba59b1ef843": "Germany",
+    "68a76df00a42aba59b1ef844": "France",
+    "68a76df00a42aba59b1ef845": "England"
+  },
+  "styles": {
+    "68cd7253cea48e7f00ebcb87": "cinematic",
+    "68cdb30f192a1c90de420242": "realistic",
+    "68cd7253cea48e7f00ebcb88": "cartoon",
+    "68cdb30f192a1c90de420244": "cyberpunk",
+    "68cd7253cea48e7f00ebcb89": "anime"
+  },
+  "generes": {
+    "drama": "drama",
+    "action": "action",
+    "comedy": "comedy",
+    "horror": "horror",
+    "fantasy": "fantasy",
+    "romance": "romance",
+    "crime": "crime",
+    "adventure": "adventure",
+    "historical": "historical",
+    "animation": "animation",
+    "family": "family",
+    "sports": "sports"
+  },
+  "languages": {
+    "🇬🇧 English": "🇬🇧 English",
+    "🇫🇷 Français": "🇫🇷 Français",
+    "🇩🇪 Deutsch": "🇩🇪 Deutsch",
+    "🇸🇦 العربية": "🇸🇦 Arabic",
+    "🇨🇳 中文": "🇨🇳 Chinese",
+    "🇪🇸 Español": "🇪🇸 Español",
+    "🇷🇺 Русский": "🇷🇺 Russian",
+    "🇯🇵 日本語": "🇯🇵 Japanese"
+  },
+  "messages": {
+    "welcome": "Welcome to Movies Me!",
+    "error": "An error has occurred. Please try again."
+  }
+}

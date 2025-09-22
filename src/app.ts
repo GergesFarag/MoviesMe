@@ -7,40 +7,45 @@ import morgan from "morgan";
 import cors from "cors";
 import adminRouter from "./Routes/admin.routes";
 import ErrorHandler from "./Middlewares/error.middleware";
-import AppError from "./Utils/Errors/AppError";
 import userRouter from "./Routes/user.routes";
 import swaggerUi from "swagger-ui-express";
 import swaggerDoc from "./swagger";
 import storyRouter from "./Routes/story.routes";
 import modelsRouter from "./Routes/models.routes";
 import { cleanupRedisJobs } from "./Utils/Cache/redisCleanup";
-
+import { translationService } from "./Services/translation.service";
 const app = express();
 app.use(express.json());
 dotenv.config({ quiet: true });
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cookieParser());
-app.use(cors({origin : "*", credentials: true}));
+app.use(cors({ origin: "*", credentials: true }));
 app.use(morgan(process.env.NODE_ENV === "development" ? "dev" : "combined"));
-
-app.get("/" , (req, res) => {
-  res.send("Welcome to the API");
-});
-
 const API_VERSION = process.env.API_VERSION || "/v1";
 const prefix = process.env.API_PREFIX || "/api";
 const basePath = `${prefix}${API_VERSION}`;
+
+app.get(`${basePath}/`, (req, res) => {
+  console.log("Request Headers:", req.headers["accept-language"]);
+  res.send(
+    translationService.translateText(
+      "admin.greeting",
+      req.headers["accept-language"] || "en"
+    )
+  );
+});
+
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
-app.use(`${basePath}/user`, userRouter); 
+app.use(`${basePath}/user`, userRouter);
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use(ErrorHandler);
 app.use(/\/(.*)/, (req, res, next) => {
-  console.log('404 middleware triggered for:', req.originalUrl);
+  console.log("404 middleware triggered for:", req.originalUrl);
   res.status(404).json({ message: "Route not found" });
 });
 

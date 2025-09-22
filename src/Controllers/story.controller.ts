@@ -22,6 +22,7 @@ import {
 import { processStoryJobAsnc } from "../Services/generateStory.service";
 import { generateRandomNumber } from "../Utils/Format/generateRandom";
 import storyQueue from "../Queues/story.queue";
+import { translationService } from "../Services/translation.service";
 
 const validKeys: IStoryRequestKeys[] = [
   "prompt",
@@ -40,7 +41,7 @@ const storyController = {
       const { prompt, storyDuration } = req.body;
       const image = req.file;
       const userId = req.user!.id;
-      console.log("Request Body: ", req.body , " and image : " , image);
+      console.log("Request Body: ", req.body, " and image : ", image);
       Object.keys(req.body).forEach((key) => {
         if (!validKeys.includes(key as IStoryRequestKeys)) {
           throw new AppError(
@@ -55,14 +56,14 @@ const storyController = {
         throw new AppError("Prompt and story duration are required", 400);
       }
       let storyData: IStoryRequest = { ...req.body } as IStoryRequest;
-      console.log("Story Data: " , storyData);
+      console.log("Story Data: ", storyData);
       if (storyData.genere && !checkGenereExists(storyData.genere)) {
         throw new AppError("Invalid genere provided", 400);
       }
       const jobId = `${generateRandomNumber()}_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 9)}`;
-      
+
       // Upload image first if provided
       if (image) {
         const imageRes = (await cloudUpload(
@@ -131,45 +132,6 @@ const storyController = {
     }
   ),
 
-  getStoryStatus: catchError(
-    async (req: Request, res: Response, next: NextFunction) => {
-      const { jobId } = req.params;
-      const userId = req.user!.id;
-
-      if (!jobId) {
-        throw new AppError("Job ID is required", 400);
-      }
-
-      // Find the story by jobId and userId
-      const story = await Story.findOne({ jobId, userId }).lean();
-      const job = await Job.findOne({ jobId, userId }).lean();
-
-      if (!story) {
-        throw new AppError("Story not found", 404);
-      }
-
-      res.status(200).json({
-        message: "Story status retrieved successfully",
-        data: {
-          story: {
-            _id: story._id,
-            title: story.title,
-            status: story.status,
-            progress: story.status === "completed" ? 100 : story.status === "failed" ? 0 : 50,
-            createdAt: story.createdAt,
-            updatedAt: story.updatedAt,
-          },
-          job: job ? {
-            _id: job._id,
-            status: job.status,
-            createdAt: job.createdAt,
-            updatedAt: job.updatedAt,
-          } : null
-        }
-      });
-    }
-  ),
-
   deleteStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { id } = req.user!;
@@ -206,9 +168,16 @@ const storyController = {
 
   getGenerationData: catchError(async (req: Request, res: Response) => {
     const generationData = await GenerationInfo.findOne().lean();
+    if(!generationData){
+      throw new AppError("Generation data not found", 404);
+    }
+    const translatedGenerationData = translationService.translateGenerationData(
+      generationData,
+      req.headers["accept-language"] || "en"
+    );
     res.status(200).json({
       message: "Generation data fetched successfully",
-      data: { ...generationData },
+      data: { ...translatedGenerationData },
     });
   }),
 

@@ -7,6 +7,8 @@ import { processModelJobAsync } from "../Services/applyModel.service";
 import { Sorting } from "../Utils/Sorting/sorting";
 import paginator from "../Utils/Pagination/paginator";
 import { TModelFetchQuery } from "../types/custom";
+import IAiModel from "../Interfaces/aiModel.interface";
+import { translationService } from "../Services/translation.service";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -25,14 +27,17 @@ const modelsController = {
       Number(page),
       Number(limit)
     );
-
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
     if (!models) {
       throw new AppError("No models found", 404);
     }
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models: paginatedModels,
+        models: translatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -64,11 +69,14 @@ const modelsController = {
       Number(page),
       Number(limit)
     );
-
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models: paginatedModels,
+        models: translatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -96,10 +104,14 @@ const modelsController = {
       Number(page),
       Number(limit)
     );
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models: paginatedModels,
+        models: translatedModels,
         paginationData: {
           page,
           limit,
@@ -127,10 +139,14 @@ const modelsController = {
     if (!models) {
       throw new AppError("No models found", 404);
     }
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models: paginatedModels,
+        models: translatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -157,11 +173,14 @@ const modelsController = {
       Number(page),
       Number(limit)
     );
-
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
     res.status(200).json({
       message: "Models retrieved successfully",
       data: {
-        models: paginatedModels,
+        models: translatedModels,
         paginationData: {
           page: Number(page),
           limit: Number(limit),
@@ -185,7 +204,10 @@ const modelsController = {
       Number(page),
       Number(limit)
     );
-
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
     if (!models) {
       throw new AppError("No models found", 404);
     }
@@ -216,7 +238,10 @@ const modelsController = {
       Number(page),
       Number(limit)
     );
-
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
     if (!models) {
       throw new AppError("No models found", 404);
     }

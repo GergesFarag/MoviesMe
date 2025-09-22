@@ -9,6 +9,7 @@ import {
   verifyRefreshToken,
 } from "../Utils/Auth/tokenHelpers";
 import { loginResponse } from "../Interfaces/response.interface";
+import { translationService } from "../Services/translation.service";
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
     const { uid, email, phone_number } = req.user!;
@@ -36,6 +37,7 @@ const authController = {
     const refreshToken = createRefreshToken(responseUser);
     res.status(200).json({
       message: "User Logged in successfully",
+      greeting: translationService.translateText("user.greeting", req.headers["accept-language"] || "en"),
       data: {
         user: responseUser,
         accessToken,

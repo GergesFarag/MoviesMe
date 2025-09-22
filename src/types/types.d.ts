@@ -7,5 +7,6 @@ declare namespace Express {
       uid?: string | Types.ObjectId;
       phone_number?: string;
     };
+    t: (key: string, options?: any) => string;
   }
 }
