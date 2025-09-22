@@ -4,6 +4,7 @@ import { IStoryResponse } from "../Interfaces/storyResponse.interface";
 import {
   generateSysPrompt,
   generateSystemSeedreamPrompt,
+  generateVoiceSysPrompt,
 } from "../Utils/Format/generateSysPrompt";
 import { Validator } from "./validation.service";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
@@ -200,15 +201,7 @@ export class OpenAIService {
         messages: [
           {
             role: "system",
-            content: `You are a cinematic narrator and translator.
-                    TASK:
-                    Convert the given story prompt into narrative text in the ${language} language.
-                    
-                    CRITICAL CONSTRAINTS:
-                    - Voice narration time must fit exactly in ${numOfScenes * 2.8} seconds.
-
-                    OUTPUT RULES:
-                    - Narrative text only, no scene descriptions.`,
+            content:generateVoiceSysPrompt(language,numOfScenes),
           },
           {
             role: "user",

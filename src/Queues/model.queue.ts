@@ -15,7 +15,17 @@ import { NotificationItemDTO } from "../DTOs/item.dto";
 import { getItemFromUser } from "../Utils/Database/optimizedOps";
 import Queue from "bull";
 import { getRedisConfig } from "../Config/redis";
-import { JOB_OPTIONS, QUEUE_NAMES, QUEUE_SETTINGS } from "./Constants/queueConstants";
+import {
+  JOB_OPTIONS,
+  QUEUE_NAMES,
+  QUEUE_SETTINGS,
+} from "./Constants/queueConstants";
+import {
+  NotificationData,
+  NotificationService,
+} from "../Services/notification.service";
+import { translationService } from "../Services/translation.service";
+import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 
 const redisConfig = getRedisConfig();
 export const taskQueue = new Queue(QUEUE_NAMES.MODEL_PROCESSING, {
@@ -91,6 +101,8 @@ taskQueue.process(async (job) => {
 
 taskQueue.on("completed", async (job, result: any) => {
   try {
+    const notificationService = new NotificationService();
+    const locale = await getUserLangFromDB(result.userId);
     // Update job status in database
     await Job.findOneAndUpdate(
       { jobId: result.jobId },
@@ -179,24 +191,34 @@ taskQueue.on("completed", async (job, result: any) => {
     const item = await getItemFromUser(user.id, result.jobId);
     if (item) {
       const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
-      const res = await sendNotificationToClient(
-        user?.FCMToken!,
-        "Model Processing Completed",
-        `Your effect generated successfully`,
-        {
-          ...notificationDTO,
-          redirectTo: "/effectDetails",
-          category: "activities",
-        }
+      const notificationData: NotificationData = {
+        title: translationService.translateText(
+          "notifications.effect.completion",
+          "title",
+          locale
+        ),
+        message: translationService.translateText(
+          "notifications.effect.completion",
+          "message",
+          locale
+        ),
+        data: notificationDTO,
+        redirectTo: "/effectDetails",
+        category: "activities",
+      };
+      const res = await notificationService.sendPushNotificationToUser(
+        user._id as unknown as string,
+        notificationData
       );
+
       if (res) {
         user.notifications?.push({
-          title: "Model Processing Completed",
-          message: `Your effect generated successfully`,
+          title: notificationData.title,
+          message: notificationData.message,
           data: notificationDTO,
           redirectTo: "/effectDetails",
-          createdAt: new Date(),
           category: "activities",
+          createdAt: new Date(),
         });
         await user.save();
       }
@@ -263,8 +285,16 @@ taskQueue.on("failed", async (job, err) => {
         status: "failed",
       };
       user.notifications?.push({
-        title: "Effect Processing Failed",
-        message: `Your effect failed to apply.`,
+        title: translationService.translateText(
+          "notifications.effect.failure",
+          "title",
+          user.preferredLanguage || "en"
+        ),
+        message: translationService.translateText(
+          "notifications.effect.failure",
+          "message",
+          user.preferredLanguage || "en"
+        ),
         data: notificationDTO,
         redirectTo: null,
         createdAt: new Date(),
@@ -274,8 +304,16 @@ taskQueue.on("failed", async (job, err) => {
       if (user?.FCMToken) {
         await sendNotificationToClient(
           user.FCMToken,
-          "Effect Processing Failed",
-          `Your effect failed to apply.`,
+          translationService.translateText(
+            "notifications.effect.failure",
+            "title",
+            user.preferredLanguage || "en"
+          ),
+          translationService.translateText(
+            "notifications.effect.failure",
+            "message",
+            user.preferredLanguage || "en"
+          ),
           {
             ...notificationDTO,
             redirectTo: null,

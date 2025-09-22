@@ -4,8 +4,9 @@ import { getIO } from "../Sockets/socket";
 import { StoryDTO } from "../DTOs/story.dto";
 import { TNotificationCategory } from "../types/custom";
 import { translationService } from "./translation.service";
+import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 
-interface NotificationData {
+export interface NotificationData {
   title: string;
   message: string;
   data?: Record<string, any>;
@@ -29,21 +30,9 @@ interface SocketNotificationPayload {
 
 export class NotificationService {
     
-  /**
-   * Get user's preferred language
-   */
-  private async getUserLanguage(userId: string): Promise<string> {
-    try {
-      const user = await User.findById(userId).select("preferredLanguage");
-      return user?.preferredLanguage || "en";
-    } catch (error) {
-      console.error(`❌ Failed to get user language for ${userId}:`, error);
-      return "en"; // Default fallback
-    }
-  }
-
-  /**
-   * Send story completion notification (both push and socket)
+    
+    /**
+     * Send story completion notification (both push and socket)
    */
   async sendStoryCompletionNotification(
     userId: string,
@@ -51,7 +40,9 @@ export class NotificationService {
     finalVideoUrl: string,
     jobId: string
   ): Promise<void> {
-    // Validate story data
+
+      const locale = await getUserLangFromDB(userId);
+      // Validate story data
     if (!storyData) {
       console.error("❌ No story found in result object");
       await this.sendSocketNotification(userId, "story:failed", {
@@ -77,7 +68,6 @@ export class NotificationService {
 
     try {
       // Get user's preferred language
-      const locale = await this.getUserLanguage(userId);
 
       // Convert story to DTO format
       const storyDTO = StoryDTO.toDTO(storyData);
@@ -123,7 +113,7 @@ export class NotificationService {
         message: translationService.translateText(
           "notifications.story.failure",
           "message",
-          await this.getUserLanguage(userId)
+          locale
         ),
         jobId,
         error:
@@ -134,6 +124,9 @@ export class NotificationService {
       });
     }
   }
+    getUserLangFromDB(userId: string) {
+        throw new Error("Method not implemented.");
+    }
 
   /**
    * Send story failure notification (both push and socket)
@@ -145,7 +138,7 @@ export class NotificationService {
     storyId?: string
   ): Promise<void> {
     // Get user's preferred language
-    const locale = await this.getUserLanguage(userId);
+    const locale = await getUserLangFromDB(userId);
 
     const notificationDTO = {
       storyId: String(storyId || null),

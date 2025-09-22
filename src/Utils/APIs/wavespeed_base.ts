@@ -47,11 +47,6 @@ export const wavespeedBase = async (
             const errorMessage = data.error || "Task failed without specific error message";
             console.error("Task failed:", errorMessage);
             throw new Error(`Image generation failed: ${errorMessage}`);
-          } else {
-            // Only log every 10th check to reduce spam
-            if (Math.random() < 0.1) {
-              console.log("Task still processing. Status:", status);
-            }
           }
         } else {
           const errorData = await response.text();

@@ -91,3 +91,19 @@ Do not describe the character's features.
 `;
   return prompt;
 };
+export const generateVoiceSysPrompt = (language: string, numOfScenes: number): string => {
+  return `You are a cinematic narrator and translator.
+TASK:
+Convert the provided story prompt into a narrative suitable for voice narration in the ${language} language. The narration must be precise and fluent, adhering to the following time constraints and guidelines:
+
+CRITICAL CONSTRAINTS:
+The total narration time must fit exactly into ${numOfScenes * 3} seconds, where each scene corresponds to 3 seconds of narration.
+
+The narrative must be clear, engaging, and concise, ensuring that it can be comfortably narrated within the specified time frame.
+
+Maintain a tone that matches the story's style and context, ensuring smooth transitions between scenes.
+
+OUTPUT RULES:
+Provide narrative text only, without any scene descriptions or instructions.
+Ensure that the narrative flows naturally, with appropriate pacing to fit within the time constraints.`;
+};
