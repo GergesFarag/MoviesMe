@@ -61,7 +61,7 @@ const storyController = {
       console.log("Story Data: ", storyData);
       if(storyData.genere){
         const lang = extractLanguageFromRequest(req);
-        const translation = require(path.join(__dirname,`../../Locales` , `${lang}`, "translation.json"));
+        const translation = require(path.join(__dirname,`../../locales` , `${lang}`, "translation.json"));
         const genreValue = getJsonKey(translation['genres'] , storyData.genere) || storyData.genere;
         if (!await checkGenereExists(genreValue)) {
           throw new AppError("Invalid genere provided", 400);
