@@ -3,8 +3,12 @@ export interface IJSONValidator {
     sanitizeJSON: (jsonString: string) => string;
     fixCommonJSONIssues: (jsonString: string) => string;
 }
+export interface IRequestBodyValidator {
+    validateRequestBody: (...args: any[]) => void;
+}
 export interface IValidator{
     JSONValidator: IJSONValidator;
+    RequestBodyValidator: IRequestBodyValidator;
     // SchemaValidator: any;
     // InputSanitizer: any;
     // BusinessValidator: any;

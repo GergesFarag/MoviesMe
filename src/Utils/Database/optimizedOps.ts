@@ -79,6 +79,14 @@ export const getVoiceName = async (
   return item.name || null;
 };
 
+export const getVoiceELIds = async (voiceGender:string , voiceLanguage:string): Promise<string> => {
+  const item = await AudioModel.findOne({ gender: voiceGender, language: voiceLanguage }).lean();
+  if (!item) {
+    return 'UR972wNGq3zluze0LoIp'
+  }
+  return item.elevenLabsId.toString();
+}
+
 export const getModelCallApi = async (modelId: string): Promise<string|null> => {
   const model = await Model.findById(modelId).lean();
   if (!model) {

@@ -65,7 +65,6 @@ export class StoryProcessorService {
 
       const voiceOver = await this.processVoiceOver(job, jobData, story);
 
-
       const imageUrls = await this.generateImages(job, jobData, seedreamPrompt);
 
 

@@ -1,7 +1,9 @@
 export interface IAudioModel {
+  _id: string;
   elevenLabsId: string;
   name: string;
-  gender: "male" | "female";
+  gender: "male" | "female" | "kid";
+  language: string;
   thumbnail?: string;
 }
 

@@ -7,6 +7,7 @@ import { FirebaseAppError } from "firebase-admin/app";
 import AudioModel from "../Models/audioModel.model";
 import { TPaginationQuery } from "../types/custom";
 import paginator from "../Utils/Pagination/paginator";
+import { Validator } from "../Services/validation.service";
 
 const adminController = {
   getAllUsers: catchError(async (req: Request, res: Response) => {
@@ -80,6 +81,11 @@ const adminController = {
   }),
 
   addModels: catchError(async (req: Request, res: Response) => {
+    const {name , gender , language , elevenLabsId , thumbnail}  = req.body;
+    const validator = new Validator();
+    if(!name || !gender || !language || !elevenLabsId){
+      validator.RequestBodyValidator.validateRequestBody(...Object.keys(req.body));
+    }
     const audioModel = await AudioModel.create(req.body);
     res
       .status(201)

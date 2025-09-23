@@ -2,6 +2,7 @@ import { Router } from "express";
 import modelsController from "../Controllers/models.controller";
 import { authMiddle } from "../Middlewares/auth.middleware";
 import { upload } from "../Config/multer";
+import { updateUserLanguagePreference } from "../Middlewares/language.middleware";
 const modelsRouter = Router();
 modelsRouter.get("/videoEffects", modelsController.getVideoModels);
 modelsRouter.get("/imageEffects", modelsController.getImageModels);
@@ -15,6 +16,7 @@ modelsRouter.post(
   "/applyModel",
   authMiddle,
   upload.single("payload[image]"),
+  updateUserLanguagePreference,
   modelsController.applyModel
 );
 modelsRouter

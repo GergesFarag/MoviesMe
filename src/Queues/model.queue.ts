@@ -180,7 +180,7 @@ taskQueue.on("completed", async (job, result: any) => {
       await user.save();
       console.log(
         `✅ Successfully saved user ${user.id} with updated effectsLib`
-      );
+      ); 
     } catch (validationError) {
       console.error(
         `❌ Validation error when saving user ${user.id}:`,
@@ -191,6 +191,7 @@ taskQueue.on("completed", async (job, result: any) => {
     const item = await getItemFromUser(user.id, result.jobId);
     if (item) {
       const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
+      console.log("Locale" , locale);
       const notificationData: NotificationData = {
         title: translationService.translateText(
           "notifications.effect.completion",

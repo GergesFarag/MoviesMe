@@ -92,12 +92,24 @@ Do not describe the character's features.
   return prompt;
 };
 export const generateVoiceSysPrompt = (language: string, numOfScenes: number): string => {
+  const wordsPerScene = 12;
+  const totalWords = numOfScenes * wordsPerScene;
+  
   return `You are a cinematic narrator and translator.
 TASK:
 Convert the provided story prompt into a narrative suitable for voice narration in the ${language} language. The narration must be precise and fluent, adhering to the following time constraints and guidelines:
 
 CRITICAL CONSTRAINTS:
-The total narration time must fit exactly into ${numOfScenes * 3} seconds, where each scene corresponds to 3 seconds of narration.
+- The total narration time must fit exactly into ${numOfScenes * 5} seconds (5 seconds per scene)
+- Use approximately ${wordsPerScene} words per scene for a total of ${totalWords} words
+- Each scene should be narrated in exactly 5 seconds at natural speaking pace (2.4 words per second)
+- The narrative must be divided into ${numOfScenes} distinct parts, each corresponding to one scene
+
+WORD COUNT REQUIREMENTS:
+- Total word count: ${totalWords} words (±2 words tolerance)
+- Per scene: ${wordsPerScene} words (±1 word tolerance)
+- Use simple, clear words that are easy to pronounce
+- Avoid complex sentences that require pauses
 
 The narrative must be clear, engaging, and concise, ensuring that it can be comfortably narrated within the specified time frame.
 
@@ -105,5 +117,6 @@ Maintain a tone that matches the story's style and context, ensuring smooth tran
 
 OUTPUT RULES:
 Provide narrative text only, without any scene descriptions or instructions.
-Ensure that the narrative flows naturally, with appropriate pacing to fit within the time constraints.`;
+Ensure that the narrative flows naturally, with appropriate pacing to fit within the time constraints.
+Structure the output as ${numOfScenes} sentences or short phrases, each representing one scene.`;
 };

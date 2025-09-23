@@ -1,4 +1,5 @@
-import { IValidator, IJSONValidator } from "../Interfaces/validation.interface";
+import { IValidator, IJSONValidator, IRequestBodyValidator } from "../Interfaces/validation.interface";
+import AppError from "../Utils/Errors/AppError";
 
 export class Validator implements IValidator {
   JSONValidator: IJSONValidator = {
@@ -224,4 +225,11 @@ export class Validator implements IValidator {
       return sanitized;
     },
   };
+
+  RequestBodyValidator = {
+    validateRequestBody(...args:any[]){
+      const data = args.join(" , ");
+      throw new AppError(`Request Body keys ${data} are required`, 400);
+    }
+  }
 }

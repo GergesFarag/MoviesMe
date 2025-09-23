@@ -182,9 +182,7 @@ export class ImageGenerationService {
             } else if (status === "failed") {
               console.error("Task failed:", data.error);
               break;
-            } else {
-              console.log("Task still processing. Status:", status);
-            }
+            } 
           } else {
             console.error("Error:", response.status, JSON.stringify(result));
             break;
