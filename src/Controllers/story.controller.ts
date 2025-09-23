@@ -24,7 +24,8 @@ import { generateRandomNumber } from "../Utils/Format/generateRandom";
 import storyQueue from "../Queues/story.queue";
 import { translationService } from "../Services/translation.service";
 import { extractLanguageFromRequest } from "../Utils/Format/languageUtils";
-
+import path from "path";
+import { getJsonKey } from "../Utils/Format/json";
 const validKeys: IStoryRequestKeys[] = [
   "prompt",
   "storyDuration",
@@ -58,9 +59,16 @@ const storyController = {
       }
       let storyData: IStoryRequest = { ...req.body } as IStoryRequest;
       console.log("Story Data: ", storyData);
-      if (storyData.genere && !checkGenereExists(storyData.genere)) {
-        throw new AppError("Invalid genere provided", 400);
+      if(storyData.genere){
+        const lang = extractLanguageFromRequest(req);
+        const translation = require(path.join(__dirname,`../../Locales` , `${lang}`, "translation.json"));
+        const genreValue = getJsonKey(translation['genres'] , storyData.genere) || storyData.genere;
+        if (!await checkGenereExists(genreValue)) {
+          throw new AppError("Invalid genere provided", 400);
+        }
+        storyData.genere = genreValue;
       }
+      console.log("Gnere Value" , storyData.genere)
       const jobId = `${generateRandomNumber()}_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 9)}`;
@@ -93,7 +101,13 @@ const storyController = {
         userId,
         jobId,
         {
-          title: storyData.storyTitle || "Generating Story...",
+          title:
+            storyData.storyTitle ||
+            translationService.translateText(
+              "notifications.story.pending",
+              "title",
+              req.headers["accept-language"] || "en"
+            ),
           prompt: storyData.prompt,
           genre: storyData.genere || null,
           location: locationName || null,

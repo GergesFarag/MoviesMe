@@ -209,7 +209,7 @@ export const createInitialStoryAndUpdateUser = async (
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-
+  console.log("USER ID" , userId);
   // Update user's storiesLib immediately
   const user = await User.findByIdAndUpdate(
     userId,

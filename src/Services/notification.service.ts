@@ -124,9 +124,6 @@ export class NotificationService {
       });
     }
   }
-    getUserLangFromDB(userId: string) {
-        throw new Error("Method not implemented.");
-    }
 
   /**
    * Send story failure notification (both push and socket)

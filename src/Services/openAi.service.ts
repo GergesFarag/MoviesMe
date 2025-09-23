@@ -28,12 +28,12 @@ export class OpenAIService {
       storyLocation
     );
     this.validator = new Validator();
-  } 
+  }
 
   async generateScenes(prompt: string): Promise<IStoryResponse> {
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -44,8 +44,6 @@ export class OpenAIService {
             content: prompt,
           },
         ],
-        max_tokens: 4000,
-        temperature: 0.7,
       });
 
       const rawResponse = response.choices[0]?.message?.content;
@@ -195,72 +193,35 @@ export class OpenAIService {
     numOfScenes: number
   ): Promise<string> {
     console.log("language:", language);
-    
+
     const targetWordsPerScene = 12;
-    const totalTargetWords = numOfScenes * targetWordsPerScene;
-    const tolerance = 2; // Allow ±2 words tolerance
-    const maxRetries = 3;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Attempt ${attempt} to generate narrative text`);
-        
-        const response = await this.client.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: generateVoiceSysPrompt(language, numOfScenes),
-            },
-            {
-              role: "user",
-              content: `${prompt}\n\nIMPORTANT: Generate exactly ${totalTargetWords} words (±${tolerance} words tolerance) for ${numOfScenes} scenes. Each scene should be approximately ${targetWordsPerScene} words.`,
-            },
-          ],
-          max_tokens: 1000,
-          temperature: 0.7,
-        });
-        
-        const narrativeText = response.choices[0]?.message?.content;
-        console.log("Narrative Text: ", narrativeText);
-        
-        if (!narrativeText) {
-          throw new AppError("No narrative text generated from OpenAI", 500);
-        }
+    const totalTargetWords = (numOfScenes - 1) * targetWordsPerScene;
+    const tolerance = 2;
+    try {
+      const response = await this.client.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [
+          {
+            role: "system",
+            content: generateVoiceSysPrompt(language, numOfScenes),
+          },
+          {
+            role: "user",
+            content: `${prompt}\n\nIMPORTANT: Generate exactly ${totalTargetWords} words (±${tolerance} words tolerance) for ${numOfScenes} scenes. Each scene should be approximately ${targetWordsPerScene} words.`,
+          },
+        ],
+      });
 
-        // Validate word count
-        const wordCount = this.countWords(narrativeText);
-        const minWords = totalTargetWords - tolerance;
-        const maxWords = totalTargetWords + tolerance;
-        
-        console.log(`Generated ${wordCount} words (target: ${totalTargetWords}, range: ${minWords}-${maxWords})`);
-        
-        if (wordCount >= minWords && wordCount <= maxWords) {
-          console.log(`✅ Word count validation passed on attempt ${attempt}`);
-          return narrativeText;
-        }
-        
-        if (attempt < maxRetries) {
-          console.log(`❌ Word count validation failed on attempt ${attempt}. Retrying...`);
-          continue;
-        } else {
-          console.log(`⚠️ Word count validation failed after ${maxRetries} attempts. Using best result.`);
-          return narrativeText;
-        }
-        
-      } catch (err: any) {
-        if (attempt === maxRetries) {
-          throw new AppError(err.message, err.status || 500);
-        }
-        console.log(`Error on attempt ${attempt}, retrying:`, err.message);
+      const narrativeText = response.choices[0]?.message?.content;
+      console.log("Narrative Text: ", narrativeText);
+
+      if (!narrativeText) {
+        throw new AppError("No narrative text generated from OpenAI", 500);
       }
+      return narrativeText;
+    } catch (err: any) {
+      throw new AppError(err.message, err.status || 500);
     }
-    
-    throw new AppError("Failed to generate narrative text after all attempts", 500);
-  }
-
-  private countWords(text: string): number {
-    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
   }
 
   async generateSeedreamPrompt(
@@ -288,7 +249,7 @@ export class OpenAIService {
             content: prompt,
           },
         ],
-        max_tokens: 1000,
+        max_completion_tokens: 1000,
         temperature: 0.7,
       });
       let narrativeText = `Number of Images will be generated = ${numOfScenes} \n${response.choices[0]?.message?.content}`;
