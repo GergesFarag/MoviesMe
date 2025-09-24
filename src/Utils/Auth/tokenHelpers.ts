@@ -5,9 +5,12 @@ import AppError, { HTTP_STATUS_CODE } from "../Errors/AppError";
 const createAccessToken = (userData: loginResponse["data"]["user"]): string => {
   const expiry = process.env.ACCESS_TOKEN_EXPIRY || "5h";
   const secret = process.env.ACCESS_TOKEN_SECRET;
-  
+
   if (!secret) {
-    throw new AppError("ACCESS_TOKEN_SECRET is not defined" ,  HTTP_STATUS_CODE.UNAUTHORIZED);
+    throw new AppError(
+      "ACCESS_TOKEN_SECRET is not defined",
+      HTTP_STATUS_CODE.UNAUTHORIZED
+    );
   }
 
   const token = jwt.sign(
@@ -18,17 +21,23 @@ const createAccessToken = (userData: loginResponse["data"]["user"]): string => {
   return token;
 };
 
-const createRefreshToken = (userData: loginResponse["data"]["user"]): string => {
+const createRefreshToken = (
+  userData: loginResponse["data"]["user"]
+): string => {
   const secret = process.env.REFRESH_TOKEN_SECRET;
-  
+  const expiry = process.env.REFRESH_TOKEN_EXPIRY || "7d";
+
   if (!secret) {
-    throw new AppError("REFRESH_TOKEN_SECRET is not defined"  ,  HTTP_STATUS_CODE.UNAUTHORIZED);
+    throw new AppError(
+      "REFRESH_TOKEN_SECRET is not defined",
+      HTTP_STATUS_CODE.UNAUTHORIZED
+    );
   }
 
   const token = jwt.sign(
     { id: userData.id, isAdmin: userData.isAdmin },
     secret,
-    { expiresIn: "12h" }
+    { expiresIn: expiry }
   );
   return token;
 };
@@ -36,7 +45,10 @@ const verifyRefreshToken = (token: string) => {
   try {
     const secret = process.env.REFRESH_TOKEN_SECRET;
     if (!secret) {
-      throw new AppError("REFRESH_TOKEN_SECRET is not defined", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "REFRESH_TOKEN_SECRET is not defined",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
     const decoded = jwt.verify(token, secret);
     return decoded as loginResponse["data"]["user"];
@@ -49,7 +61,10 @@ const verifyAccessToken = (token: string) => {
   try {
     const secret = process.env.ACCESS_TOKEN_SECRET;
     if (!secret) {
-      throw new AppError("ACCESS_TOKEN_SECRET is not defined", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "ACCESS_TOKEN_SECRET is not defined",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
     const decoded = jwt.verify(token, secret);
     return decoded;
