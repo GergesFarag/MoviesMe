@@ -1,4 +1,4 @@
-import { TNotificationCategory } from "../types/custom";
+import { TNotificationCategory } from "../Types/custom";
 
 export interface INotification{
     title:string;

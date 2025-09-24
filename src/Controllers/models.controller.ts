@@ -6,7 +6,7 @@ import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
 import { processModelJobAsync } from "../Services/applyModel.service";
 import { Sorting } from "../Utils/Sorting/sorting";
 import paginator from "../Utils/Pagination/paginator";
-import { TModelFetchQuery } from "../types/custom";
+import { TModelFetchQuery } from "../Types/custom";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { translationService } from "../Services/translation.service";
 

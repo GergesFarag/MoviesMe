@@ -252,7 +252,8 @@ export class OpenAIService {
         max_completion_tokens: 1000,
         temperature: 0.7,
       });
-      let narrativeText = `Number of Images will be generated = ${numOfScenes} \n${response.choices[0]?.message?.content}`;
+      const responseContent = response.choices[0]?.message?.content;
+      let narrativeText = `GENERATE ${numOfScenes} SEPARATE IMAGES \n${responseContent}`;
       console.log("Narrative Text: ", narrativeText);
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);
