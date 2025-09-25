@@ -14,7 +14,7 @@ import { UploadApiResponse } from "cloudinary";
 import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
 import { ItemDTO } from "../DTOs/item.dto";
 import { IStoryDTO, StoryDTO } from "../DTOs/story.dto";
-import { TPaginationQuery, TSort, TUserLibraryQuery } from "../Types/custom";
+import { TPaginationQuery, TSort, TUserLibraryQuery } from "../Types";
 import { Sorting } from "../Utils/Sorting/sorting";
 import mongoose, { ObjectId } from "mongoose";
 import { IStory } from "../Interfaces/story.interface";
@@ -104,8 +104,8 @@ const userController = {
       throw new AppError("Model type is required", 400);
     }
 
-    let filteringArr = modelType.split(",").map((item) => item.trim());
-    filteringArr = filteringArr.map((type) => {
+    let filteringArr = modelType.split(",").map((item: string) => item.trim());
+    filteringArr = filteringArr.map((type: string) => {
       return modelTypeMapper[type as ModelType];
     });
     const user = await User.findById(userId).lean();
@@ -130,10 +130,10 @@ const userController = {
     let userLib: IEffectItem[] = userItems;
     let paginatedItems: IEffectItem[] = [];
     if (userItems) {
-      userLib = userItems.filter((item: any) => {
+      userLib = userItems.filter((item: IEffectItem) => {
         return (
           ((status as string) === "all" ? true : item.status === status) &&
-          filteringArr.find((type) => type === item.modelType)
+          filteringArr.find((type: string) => type === item.modelType)
         );
       });
       if (isFav !== undefined) {

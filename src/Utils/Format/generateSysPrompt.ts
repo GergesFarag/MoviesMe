@@ -94,7 +94,7 @@ Do not describe the character's features.
 };
 
 export const generateVoiceSysPrompt = (language: string, numOfScenes: number): string => {
-  const wordsPerScene = 10;
+  const wordsPerScene = 9;
   const totalWords = numOfScenes * wordsPerScene;
   
   return `You are a cinematic narrator and translator.

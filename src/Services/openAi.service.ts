@@ -194,7 +194,7 @@ export class OpenAIService {
   ): Promise<string> {
     console.log("language:", language);
 
-    const targetWordsPerScene = 10;
+    const targetWordsPerScene = 9;
     const totalTargetWords = (numOfScenes - 1) * targetWordsPerScene;
     const tolerance = 2;
     try {

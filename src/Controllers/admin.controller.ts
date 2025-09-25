@@ -5,7 +5,7 @@ import AppError from "../Utils/Errors/AppError";
 import { firebaseAdmin } from "../Config/firebase";
 import { FirebaseAppError } from "firebase-admin/app";
 import AudioModel from "../Models/audioModel.model";
-import { TPaginationQuery } from "../Types/custom";
+import { TPaginationQuery } from "../Types";
 import paginator from "../Utils/Pagination/paginator";
 import { Validator } from "../Services/validation.service";
 
