@@ -14,7 +14,7 @@ import { UploadApiResponse } from "cloudinary";
 import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
 import { ItemDTO } from "../DTOs/item.dto";
 import { IStoryDTO, StoryDTO } from "../DTOs/story.dto";
-import { TPaginationQuery, TSort, TUserLibraryQuery } from "../Types";
+import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types";
 import { Sorting } from "../Utils/Sorting/sorting";
 import mongoose, { ObjectId } from "mongoose";
 import { IStory } from "../Interfaces/story.interface";

@@ -1,4 +1,4 @@
-import { TSort } from "../../Types";
+import { TSort } from "../../types";
 
 export class Sorting{
     

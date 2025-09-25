@@ -2,7 +2,7 @@ import User from "../Models/user.model";
 import { sendNotificationToClient } from "../Utils/Notifications/notifications";
 import { getIO } from "../Sockets/socket";
 import { StoryDTO } from "../DTOs/story.dto";
-import { TNotificationCategory } from "../Types";
+import { TNotificationCategory } from "../types";
 import { translationService } from "./translation.service";
 import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 
