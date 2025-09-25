@@ -59,8 +59,6 @@ export class StoryProcessorService {
 
       const { story, seedreamPrompt } = await this.generateStory(job, jobData);
 
-      // OPTIMIZED: Service-Level Parallelization
-      // Voice over and image generation can run simultaneously since they don't depend on each other
       console.log(
         "🚀 Starting parallel processing: Voice Over + Image Generation"
       );
@@ -374,7 +372,6 @@ export class StoryProcessorService {
       );
     }
   }
-
   private async uploadVideo(
     job: Job,
     videoBuffer: Buffer,
@@ -497,19 +494,12 @@ export class StoryProcessorService {
   ): Promise<IProcessedVoiceOver | null> {
     if (!jobData.voiceOver) {
       console.log("⏭️ No voice over requested, skipping...");
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.VOICE_OVER,
-        "Voice over not requested - skipping",
-        getIO(),
-        QUEUE_EVENTS.STORY_PROGRESS
-      );
       return null;
     }
 
     updateJobProgress(
       job,
-      PROGRESS_STEPS.VOICE_OVER - 5,
+      PROGRESS_STEPS.VOICE_OVER,
       "Starting voice over processing",
       getIO(),
       QUEUE_EVENTS.STORY_PROGRESS
@@ -545,15 +535,6 @@ export class StoryProcessorService {
           jobData.numOfScenes
         );
       }
-
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.VOICE_OVER,
-        "Generating voice over audio",
-        getIO(),
-        QUEUE_EVENTS.STORY_PROGRESS
-      );
-
       // Generate voice over audio
       const voiceOverData = { ...jobData.voiceOver, text: voiceOverText };
       const voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
@@ -592,7 +573,7 @@ export class StoryProcessorService {
   ): Promise<string[]> {
     updateJobProgress(
       job,
-      PROGRESS_STEPS.STORY_GENERATION + 5,
+      PROGRESS_STEPS.IMAGE_GENERATION - 5,
       "Starting image generation",
       getIO(),
       QUEUE_EVENTS.STORY_PROGRESS
