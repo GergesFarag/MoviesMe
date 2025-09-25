@@ -33,7 +33,7 @@ export class OpenAIService {
   async generateScenes(prompt: string): Promise<IStoryResponse> {
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -194,12 +194,12 @@ export class OpenAIService {
   ): Promise<string> {
     console.log("language:", language);
 
-    const targetWordsPerScene = 12;
+    const targetWordsPerScene = 10;
     const totalTargetWords = (numOfScenes - 1) * targetWordsPerScene;
     const tolerance = 2;
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4.1-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",

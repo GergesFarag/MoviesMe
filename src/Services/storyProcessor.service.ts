@@ -22,7 +22,7 @@ export const PROGRESS_STEPS = {
   IMAGE_GENERATION: 60,
   VIDEO_GENERATION: 80,
   VIDEO_MERGE: 85,
-  VIDEO_UPLOAD: 75,
+  VIDEO_UPLOAD: 95,
   COMPLETION: 100,
 } as const;
 
@@ -50,29 +50,45 @@ export class StoryProcessorService {
         `🚀 Starting story processing for job ${job.id} with jobId: ${jobData.jobId}`
       );
 
-
       await this.validateJobData(jobData);
-
 
       const existingResult = await this.checkExistingJob(jobData.jobId);
       if (existingResult) {
         return existingResult;
       }
 
-
       const { story, seedreamPrompt } = await this.generateStory(job, jobData);
 
+      // OPTIMIZED: Service-Level Parallelization
+      // Voice over and image generation can run simultaneously since they don't depend on each other
+      console.log(
+        "🚀 Starting parallel processing: Voice Over + Image Generation"
+      );
+      let [voiceOver, imageUrls]: [
+        IProcessedVoiceOver | null,
+        string[] | null
+      ] = [null, null];
+      
+      if (jobData.voiceOver) {
+        [voiceOver, imageUrls] = await Promise.all([
+          this.processVoiceOverWithProgress(job, jobData, story),
+          this.generateImagesWithProgress(job, jobData, seedreamPrompt),
+        ]);
+      } else {
+        imageUrls = await this.generateImagesWithProgress(
+          job,
+          jobData,
+          seedreamPrompt
+        );
+      }
 
-      const voiceOver = await this.processVoiceOver(job, jobData, story);
-
-      const imageUrls = await this.generateImages(job, jobData, seedreamPrompt);
-
+      console.log(
+        "✅ Parallel processing completed: Voice Over + Image Generation"
+      );
 
       const updatedStory = this.updateStoryWithImages(story, imageUrls);
 
-
       const videoUrls = await this.generateVideos(job, imageUrls);
-
 
       const finalVideoBuffer = await this.mergeAndComposeVideo(
         job,
@@ -210,138 +226,6 @@ export class StoryProcessorService {
       throw new AppError("Failed to generate story scenes with OpenAI", 500);
     }
   }
-
-  private async processVoiceOver(
-    job: Job,
-    jobData: IStoryProcessingDTO & { userId: string; jobId: string },
-    story: IStoryResponse
-  ): Promise<IProcessedVoiceOver | null> {
-    if (!jobData.voiceOver) {
-      console.log("⏭️ No voice over requested, skipping...");
-      return null;
-    }
-
-    console.log("🎙️ Processing voice over...");
-
-    try {
-      let voiceOverText: string;
-
-      // Use provided lyrics or generate narrative text
-      if (
-        jobData.voiceOver.voiceOverLyrics &&
-        jobData.voiceOver.voiceOverLyrics !== "null"
-      ) {
-        voiceOverText = jobData.voiceOver.voiceOverLyrics;
-        console.log("📝 Using provided voice over lyrics");
-      } else {
-        console.log("🤖 Generating narrative text with OpenAI...");
-        const openAIService = new OpenAIService(
-          jobData.numOfScenes,
-          jobData.title,
-          jobData.style,
-          jobData.genere,
-          jobData.location
-        );
-
-        const language =
-          jobData.voiceOver.voiceLanguage?.split(" ")[1] || "English";
-        voiceOverText = await openAIService.generateNarrativeText(
-          jobData.prompt,
-          language,
-          jobData.numOfScenes
-        );
-      }
-
-      // Generate voice over audio
-      const voiceOverData = { ...jobData.voiceOver, text: voiceOverText };
-      const voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
-        voiceOverData
-      );
-
-      if (!voiceOverUrl) {
-        throw new AppError("Failed to generate voice over audio", 500);
-      }
-
-      console.log(
-        `✅ Voice over generated successfully: ${voiceOverUrl.substring(
-          0,
-          50
-        )}...`
-      );
-
-      return {
-        url: voiceOverUrl,
-        text: voiceOverText,
-        data: voiceOverData,
-      };
-    } catch (voiceError) {
-      console.error("❌ Voice over generation error:", voiceError);
-      throw new AppError("Failed to generate voice over", 500);
-    }
-  }
-
-  private async generateImages(
-    job: Job,
-    jobData: IStoryProcessingDTO & { userId: string; jobId: string },
-    seedreamPrompt: string
-  ): Promise<string[]> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.STORY_GENERATION,
-      "Generating images for the story",
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
-
-    console.log("🎨 Generating images for story scenes...");
-
-    try {
-      let imageUrls: string[];
-
-      if (!jobData.image) {
-        console.log("🖼️ No reference image provided, generating from prompt");
-        imageUrls = await this.imageGenerationService.generateSeedreamImages(
-          seedreamPrompt,
-          jobData.numOfScenes
-        );
-      } else {
-        console.log("🖼️ Using reference image for generation");
-        imageUrls = await this.imageGenerationService.generateSeedreamImages(
-          seedreamPrompt,
-          jobData.numOfScenes,
-          [jobData.image]
-        );
-      }
-
-      // Validate generated images
-      if (!imageUrls || imageUrls.length !== jobData.numOfScenes) {
-        throw new AppError(
-          `Failed to generate required number of images. Expected: ${
-            jobData.numOfScenes
-          }, Got: ${imageUrls?.length || 0}`,
-          500
-        );
-      }
-
-      const invalidImages = imageUrls.filter(
-        (url) => !url || typeof url !== "string" || !url.startsWith("http")
-      );
-
-      if (invalidImages.length > 0) {
-        throw new AppError(
-          `Invalid image URLs generated: ${invalidImages.length} out of ${imageUrls.length} images are invalid`,
-          500
-        );
-      }
-
-      console.log(`✅ Successfully generated ${imageUrls.length} images`);
-      return imageUrls;
-    } catch (imageGenError) {
-      console.error("❌ Image generation error:", imageGenError);
-      throw new AppError("Failed to generate images for the story scenes", 500);
-    }
-  }
-
   private async generateVideos(
     job: Job,
     imageUrls: string[]
@@ -354,12 +238,14 @@ export class StoryProcessorService {
       QUEUE_EVENTS.STORY_PROGRESS
     );
 
-    console.log("🎬 Generating videos from images...");
+    console.log(
+      "🎬 Generating videos from images using parallel processing..."
+    );
 
     try {
-      const videoUrls = await this.videoGenerationService.generateVideos(
-        imageUrls
-      );
+      // Use the new optimized parallel video generation
+      const videoUrls =
+        await this.videoGenerationService.generateVideosParallel(imageUrls);
 
       if (!videoUrls || videoUrls.length !== imageUrls.length) {
         throw new AppError(
@@ -381,14 +267,40 @@ export class StoryProcessorService {
         );
       }
 
-      console.log(`✅ Successfully generated ${videoUrls.length} videos`);
+      console.log(
+        `✅ Successfully generated ${videoUrls.length} videos in parallel`
+      );
       return videoUrls;
     } catch (videoGenError) {
-      console.error("❌ Video generation error:", videoGenError);
-      throw new AppError("Failed to generate videos from images", 500);
+      console.error("❌ Parallel video generation error:", videoGenError);
+
+      // Fallback to sequential processing if parallel fails
+      console.log("🔄 Falling back to sequential video generation...");
+      try {
+        updateJobProgress(
+          job,
+          PROGRESS_STEPS.IMAGE_GENERATION,
+          "Retrying with sequential video generation",
+          getIO(),
+          QUEUE_EVENTS.STORY_PROGRESS
+        );
+
+        const fallbackVideoUrls =
+          await this.videoGenerationService.generateVideos(imageUrls);
+
+        console.log(
+          `✅ Sequential fallback completed: ${fallbackVideoUrls.length} videos`
+        );
+        return fallbackVideoUrls;
+      } catch (fallbackError) {
+        console.error("❌ Sequential fallback also failed:", fallbackError);
+        throw new AppError(
+          "Failed to generate videos (both parallel and sequential methods failed)",
+          500
+        );
+      }
     }
   }
-
   private async mergeAndComposeVideo(
     job: Job,
     videoUrls: string[],
@@ -495,7 +407,6 @@ export class StoryProcessorService {
       throw new AppError("Failed to upload final video to cloud storage", 500);
     }
   }
-
   private async saveCompletedStory(
     job: Job,
     story: IStoryResponse,
@@ -565,7 +476,6 @@ export class StoryProcessorService {
       throw new AppError("Failed to save completed story to database", 500);
     }
   }
-
   private updateStoryWithImages(
     story: IStoryResponse,
     imageUrls: string[]
@@ -579,5 +489,171 @@ export class StoryProcessorService {
         image: imageUrls[index],
       })),
     };
+  }
+  private async processVoiceOverWithProgress(
+    job: Job,
+    jobData: IStoryProcessingDTO & { userId: string; jobId: string },
+    story: IStoryResponse
+  ): Promise<IProcessedVoiceOver | null> {
+    if (!jobData.voiceOver) {
+      console.log("⏭️ No voice over requested, skipping...");
+      updateJobProgress(
+        job,
+        PROGRESS_STEPS.VOICE_OVER,
+        "Voice over not requested - skipping",
+        getIO(),
+        QUEUE_EVENTS.STORY_PROGRESS
+      );
+      return null;
+    }
+
+    updateJobProgress(
+      job,
+      PROGRESS_STEPS.VOICE_OVER - 5,
+      "Starting voice over processing",
+      getIO(),
+      QUEUE_EVENTS.STORY_PROGRESS
+    );
+
+    console.log("🎙️ Processing voice over in parallel...");
+
+    try {
+      let voiceOverText: string;
+
+      // Use provided lyrics or generate narrative text
+      if (
+        jobData.voiceOver.voiceOverLyrics &&
+        jobData.voiceOver.voiceOverLyrics !== "null"
+      ) {
+        voiceOverText = jobData.voiceOver.voiceOverLyrics;
+        console.log("📝 Using provided voice over lyrics");
+      } else {
+        console.log("🤖 Generating narrative text with OpenAI...");
+        const openAIService = new OpenAIService(
+          jobData.numOfScenes,
+          jobData.title,
+          jobData.style,
+          jobData.genere,
+          jobData.location
+        );
+
+        const language =
+          jobData.voiceOver.voiceLanguage?.split(" ")[1] || "English";
+        voiceOverText = await openAIService.generateNarrativeText(
+          jobData.prompt,
+          language,
+          jobData.numOfScenes
+        );
+      }
+
+      updateJobProgress(
+        job,
+        PROGRESS_STEPS.VOICE_OVER,
+        "Generating voice over audio",
+        getIO(),
+        QUEUE_EVENTS.STORY_PROGRESS
+      );
+
+      // Generate voice over audio
+      const voiceOverData = { ...jobData.voiceOver, text: voiceOverText };
+      const voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
+        voiceOverData
+      );
+
+      if (!voiceOverUrl) {
+        throw new AppError("Failed to generate voice over audio", 500);
+      }
+
+      console.log(
+        `✅ Voice over generated successfully: ${voiceOverUrl.substring(
+          0,
+          50
+        )}...`
+      );
+
+      return {
+        url: voiceOverUrl,
+        text: voiceOverText,
+        data: voiceOverData,
+      };
+    } catch (voiceError) {
+      console.error("❌ Voice over generation error:", voiceError);
+      throw new AppError("Failed to generate voice over", 500);
+    }
+  }
+
+  /**
+   * OPTIMIZED: Image generation with dedicated progress tracking for parallel execution
+   */
+  private async generateImagesWithProgress(
+    job: Job,
+    jobData: IStoryProcessingDTO & { userId: string; jobId: string },
+    seedreamPrompt: string
+  ): Promise<string[]> {
+    updateJobProgress(
+      job,
+      PROGRESS_STEPS.STORY_GENERATION + 5,
+      "Starting image generation",
+      getIO(),
+      QUEUE_EVENTS.STORY_PROGRESS
+    );
+
+    console.log("🎨 Generating images for story scenes in parallel...");
+
+    try {
+      let imageUrls: string[];
+
+      if (!jobData.image) {
+        console.log("🖼️ No reference image provided, generating from prompt");
+        imageUrls = await this.imageGenerationService.generateSeedreamImages(
+          seedreamPrompt,
+          jobData.numOfScenes
+        );
+      } else {
+        console.log("🖼️ Using reference image for generation");
+        imageUrls = await this.imageGenerationService.generateSeedreamImages(
+          seedreamPrompt,
+          jobData.numOfScenes,
+          [jobData.image]
+        );
+      }
+
+      updateJobProgress(
+        job,
+        PROGRESS_STEPS.IMAGE_GENERATION,
+        "Image generation completed",
+        getIO(),
+        QUEUE_EVENTS.STORY_PROGRESS
+      );
+
+      // Validate generated images
+      if (!imageUrls || imageUrls.length !== jobData.numOfScenes) {
+        throw new AppError(
+          `Failed to generate required number of images. Expected: ${
+            jobData.numOfScenes
+          }, Got: ${imageUrls?.length || 0}`,
+          500
+        );
+      }
+
+      const invalidImages = imageUrls.filter(
+        (url) => !url || typeof url !== "string" || !url.startsWith("http")
+      );
+
+      if (invalidImages.length > 0) {
+        throw new AppError(
+          `Invalid image URLs generated: ${invalidImages.length} out of ${imageUrls.length} images are invalid`,
+          500
+        );
+      }
+
+      console.log(
+        `✅ Successfully generated ${imageUrls.length} images in parallel`
+      );
+      return imageUrls;
+    } catch (imageGenError) {
+      console.error("❌ Image generation error:", imageGenError);
+      throw new AppError("Failed to generate images for the story scenes", 500);
+    }
   }
 }

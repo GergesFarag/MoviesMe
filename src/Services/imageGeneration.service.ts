@@ -1,6 +1,6 @@
 import { Images } from "openai/resources/images";
 import { IScene } from "../Interfaces/scene.interface";
-import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
+import { wavespeedBase, wavespeedBaseOptimized } from "../Utils/APIs/wavespeed_base";
 import { Validator } from "./validation.service";
 import AppError from "../Utils/Errors/AppError";
 
@@ -36,7 +36,8 @@ export class ImageGenerationService {
       prompt: finalDescription,
     };
 
-    const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
+    // Use optimized polling for better performance
+    const resultUrl = (await wavespeedBaseOptimized(url, headers, payload)) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from description: ${finalDescription}`
@@ -66,7 +67,8 @@ export class ImageGenerationService {
       prompt: finalDescription,
     };
 
-    const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
+    // Use optimized polling for better performance
+    const resultUrl = (await wavespeedBaseOptimized(url, headers, payload)) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from reference image: ${finalDescription}`
@@ -148,7 +150,68 @@ export class ImageGenerationService {
     if (refImages) {
       Object.assign(payload, { images: refImages });
     }
+    
     try {
+      console.log(`🎨 Starting optimized image generation for ${numOfScenes} scenes...`);
+      
+      // Use the optimized polling mechanism instead of custom implementation
+      const resultUrls = await wavespeedBaseOptimized(url, headers, payload, true) as string[];
+      
+      if (!resultUrls || !Array.isArray(resultUrls)) {
+        console.error("❌ Invalid response from image generation API");
+        throw new AppError("Invalid response from image generation API", 500);
+      }
+      
+      if (resultUrls.length !== numOfScenes) {
+        console.error(`❌ Expected ${numOfScenes} images, received ${resultUrls.length}`);
+        throw new AppError(`Image generation returned wrong number of images. Expected: ${numOfScenes}, Got: ${resultUrls.length}`, 500);
+      }
+      
+      console.log(`✅ Successfully generated ${resultUrls.length} images with optimized polling`);
+      return resultUrls;
+      
+    } catch (error) {
+      console.error(`❌ Optimized image generation failed:`, error);
+      
+      // Fallback to original implementation if optimized version fails
+      console.log("🔄 Falling back to original polling implementation...");
+      return await this.generateSeedreamImagesLegacy(seedreamPrompt, numOfScenes, refImages);
+    }
+  }
+
+  /**
+   * LEGACY: Original implementation kept as fallback
+   * This method uses the old fixed-interval polling and should only be used as fallback
+   */
+  private async generateSeedreamImagesLegacy(
+    seedreamPrompt: string,
+    numOfScenes: number,
+    refImages?: string[]
+  ): Promise<any> {
+    let url = "";
+    if (!refImages) {
+      url = `${baseURL}/bytedance/seedream-v4/sequential`;
+    } else {
+      url = `${baseURL}/bytedance/seedream-v4/edit-sequential`;
+    }
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+    };
+    const payload = {
+      enable_base64_output: false,
+      enable_sync_mode: false,
+      max_images: numOfScenes,
+      prompt: seedreamPrompt,
+      size: "2048*2048",
+    };
+    if (refImages) {
+      Object.assign(payload, { images: refImages });
+    }
+    
+    try {
+      console.log("🔄 Using legacy polling implementation...");
+      
       const response = await fetch(url, {
         method: "POST",
         headers: headers,
@@ -176,25 +239,27 @@ export class ImageGenerationService {
             const status = data.status;
             if (status === "completed") {
               const resultUrls = data.outputs;
-              console.log("Task completed. URLs:", resultUrls);
+              console.log("✅ Legacy polling completed. URLs:", resultUrls);
               return resultUrls;
-              break;
             } else if (status === "failed") {
-              console.error("Task failed:", data.error);
-              break;
+              console.error("❌ Legacy polling - Task failed:", data.error);
+              throw new AppError("Legacy image generation failed", 500);
             } 
           } else {
-            console.error("Error:", response.status, JSON.stringify(result));
-            break;
+            console.error("❌ Legacy polling error:", response.status, JSON.stringify(result));
+            throw new AppError(`Legacy polling status check failed: ${response.status}`, 500);
           }
 
-          await new Promise((resolve) => setTimeout(resolve, 0.1 * 1000));
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Original 2-second interval
         }
       } else {
-        console.error(`Error: ${response.status}, ${await response.text()}`);
+        const errorText = await response.text();
+        console.error(`❌ Legacy polling - Initial request failed: ${response.status}, ${errorText}`);
+        throw new AppError(`Legacy image generation request failed: ${response.status}`, 500);
       }
     } catch (error) {
-      console.error(`Request failed: ${error}`);
+      console.error(`❌ Legacy image generation failed:`, error);
+      throw error;
     }
   }
 }

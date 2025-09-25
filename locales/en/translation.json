@@ -78,6 +78,10 @@
   },
   "notifications": {
     "story": {
+      "pending": {
+        "title": "⏳ Your Story is in the Making! 🎬",
+        "message": "We're working our magic to create your story. Sit tight, and we'll notify you as soon as it's ready to watch and download!"
+      },
       "completion": {
         "title": "🎉 Your Story is Ready to Shine! 🌟",
         "message": "Hooray! Your story has been crafted with care and is now ready for you to watch and download. Let the magic unfold!"
@@ -88,6 +92,10 @@
       }
     },
     "effect": {
+      "pending": {
+        "title": "⏳ Your Effect is in the Making! 🎬",
+        "message": "We're working our magic to create your effect. Sit tight, and we'll notify you as soon as it's ready to watch and download!"
+      },
       "completion": {
         "title": "✨ Your Effect is All Set! 💥",
         "message": "Your effect has been successfully created and is now ready for you to explore and download. Enjoy the visual masterpiece!"

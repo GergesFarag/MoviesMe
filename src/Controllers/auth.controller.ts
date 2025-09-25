@@ -40,7 +40,8 @@ const authController = {
       greeting: translationService.translateText(
         "user",
         "greeting",
-        req.headers["accept-language"] || "en"
+        req.headers["accept-language"] || "en",
+        { name: responseUser.username }
       ),
       data: {
         user: responseUser,
@@ -92,7 +93,8 @@ const authController = {
        greeting: translationService.translateText(
         "user",
         "greeting",
-        req.headers["accept-language"] || "en"
+        req.headers["accept-language"] || "en",
+        { name: responseUser.username }
       ),
       data: {
         user: responseUser,

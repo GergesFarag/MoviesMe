@@ -64,6 +64,7 @@ Follow all instructions precisely. Ensure seamless narrative flow and visual con
 
   return prompt;
 };
+
 export const generateSystemSeedreamPrompt = (
   scenesNumber: number,
   storyStyle: string = "realistic",
@@ -91,8 +92,9 @@ Do not describe the character's features.
 `;
   return prompt;
 };
+
 export const generateVoiceSysPrompt = (language: string, numOfScenes: number): string => {
-  const wordsPerScene = 12;
+  const wordsPerScene = 10;
   const totalWords = numOfScenes * wordsPerScene;
   
   return `You are a cinematic narrator and translator.

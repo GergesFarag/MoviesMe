@@ -1,5 +1,5 @@
 import path from "path";
-import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
+import { wavespeedBase, wavespeedBaseOptimized } from "../Utils/APIs/wavespeed_base";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import { IScene } from "../Interfaces/scene.interface";
@@ -37,13 +37,37 @@ export class VideoGenerationService {
       image: refImageUrl,
       seed: -1,
     };
-    const resultUrl = await wavespeedBase(url, headers, payload) as string;
-    if (!resultUrl) {
-      throw new AppError(
-        `Failed to generate video from image`
-      );
+    
+    try {
+      console.log(`🎥 Starting optimized video generation from image...`);
+      
+      // Use optimized polling for better performance
+      const resultUrl = await wavespeedBaseOptimized(url, headers, payload) as string;
+      
+      if (!resultUrl) {
+        throw new AppError("No video URL returned from optimized generation", 500);
+      }
+      
+      console.log(`✅ Video generated successfully with optimized polling: ${resultUrl.substring(0, 50)}...`);
+      return resultUrl;
+      
+    } catch (error) {
+      console.error("❌ Optimized video generation failed:", error);
+      
+      // Fallback to original implementation
+      console.log("🔄 Falling back to legacy video generation...");
+      try {
+        const resultUrl = await wavespeedBase(url, headers, payload) as string;
+        if (!resultUrl) {
+          throw new AppError("Failed to generate video from image using fallback", 500);
+        }
+        console.log(`✅ Video generated with legacy polling: ${resultUrl.substring(0, 50)}...`);
+        return resultUrl;
+      } catch (fallbackError) {
+        console.error("❌ Legacy video generation also failed:", fallbackError);
+        throw new AppError("Video generation failed (both optimized and legacy methods)", 500);
+      }
     }
-    return resultUrl;
   }
 
   async composeSoundWithVideoBuffer(
@@ -341,5 +365,90 @@ export class VideoGenerationService {
       }
     }
     return videoUrls;
+  }
+
+  async generateVideosParallel(sceneImages: string[]): Promise<string[]> {
+    if (!sceneImages || sceneImages.length === 0) {
+      throw new AppError("No scene images provided for video generation", 400);
+    }
+
+    console.log(`🎬 Generating ${sceneImages.length} videos in parallel...`);
+    
+    // Create promises for parallel video generation
+    const videoGenerationPromises = sceneImages.map(async (imageUrl, index) => {
+      const sceneNumber = index + 1;
+      
+      try {
+        console.log(`🎥 Starting video generation for scene ${sceneNumber}/${sceneImages.length}`);
+        
+        const videoUrl = await this.generateVideoFromImage(imageUrl, 5);
+        
+        if (!videoUrl || typeof videoUrl !== 'string' || !videoUrl.startsWith('http')) {
+          throw new AppError(`Invalid video URL generated for scene ${sceneNumber}`, 500);
+        }
+        
+        console.log(`✅ Scene ${sceneNumber} video generated successfully: ${videoUrl.substring(0, 50)}...`);
+        return { index, videoUrl, success: true };
+        
+      } catch (error) {
+        console.error(`❌ Failed to generate video for scene ${sceneNumber}:`, error);
+        return { 
+          index, 
+          error: error instanceof Error ? error.message : 'Unknown error',
+          success: false 
+        };
+      }
+    });
+
+    try {
+      // Wait for all video generation promises to settle
+      const results = await Promise.allSettled(videoGenerationPromises);
+      
+      // Process results and handle errors
+      const videoUrls: string[] = new Array(sceneImages.length);
+      const failedScenes: number[] = [];
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          const { index: sceneIndex, videoUrl, success, error } = result.value;
+          
+          if (success && videoUrl) {
+            videoUrls[sceneIndex] = videoUrl;
+          } else {
+            failedScenes.push(sceneIndex + 1);
+            console.error(`Scene ${sceneIndex + 1} failed:`, error);
+          }
+        } else {
+          failedScenes.push(index + 1);
+          console.error(`Scene ${index + 1} promise rejected:`, result.reason);
+        }
+      });
+
+      // Check for failures
+      if (failedScenes.length > 0) {
+        const errorMessage = `Failed to generate videos for ${failedScenes.length} scene(s): ${failedScenes.join(', ')}`;
+        console.error(`❌ ${errorMessage}`);
+        throw new AppError(errorMessage, 500);
+      }
+
+      // Validate all URLs are present
+      const missingUrls = videoUrls.map((url, index) => url ? null : index + 1).filter(Boolean);
+      if (missingUrls.length > 0) {
+        throw new AppError(`Missing video URLs for scenes: ${missingUrls.join(', ')}`, 500);
+      }
+
+      console.log(`🎉 Successfully generated ${videoUrls.length} videos in parallel`);
+      return videoUrls;
+
+    } catch (error) {
+      console.error("❌ Parallel video generation failed:", error);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(
+        `Parallel video generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        500
+      );
+    }
   }
 }
