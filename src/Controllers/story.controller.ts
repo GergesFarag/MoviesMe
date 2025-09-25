@@ -7,6 +7,7 @@ import AppError from "../Utils/Errors/AppError";
 import mongoose, { Types } from "mongoose";
 import GenerationInfo from "../Models/generationInfo.model";
 import {
+  genderType,
   IStoryRequest,
   IStoryRequestKeys,
 } from "../Interfaces/storyRequest.interface";
@@ -59,16 +60,32 @@ const storyController = {
       }
       let storyData: IStoryRequest = { ...req.body } as IStoryRequest;
       console.log("Story Data: ", storyData);
-      if(storyData.genere){
-        const lang = extractLanguageFromRequest(req);
-        const translation = require(path.join(__dirname,`../../locales` , `${lang}`, "translation.json"));
-        const genreValue = getJsonKey(translation['genres'] , storyData.genere) || storyData.genere;
-        if (!await checkGenereExists(genreValue)) {
+      const lang = extractLanguageFromRequest(req);
+      const translation = require(path.join(
+        __dirname,
+        `../../locales`,
+        `${lang}`,
+        "translation.json"
+      ));
+      if (storyData.genere) {
+        const genreValue =
+          getJsonKey(translation["genres"], storyData.genere) ||
+          storyData.genere;
+        if (!(await checkGenereExists(genreValue))) {
           throw new AppError("Invalid genere provided", 400);
         }
         storyData.genere = genreValue;
       }
-      console.log("Gnere Value" , storyData.genere)
+      console.log("Genre Value", storyData.genere);
+
+      if (storyData.voiceOver && storyData.voiceOver.voiceGender) {
+        const genderValue = getJsonKey(
+          translation["voiceOver"]["voiceGender"],
+          storyData.voiceOver.voiceGender
+        );
+        storyData.voiceOver.voiceGender = genderValue as genderType;
+      }
+
       const jobId = `${generateRandomNumber()}_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 9)}`;

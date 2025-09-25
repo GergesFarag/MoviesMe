@@ -76,6 +76,13 @@
     "family": "family",
     "sports": "sports"
   },
+  "voiceOver": {
+    "voiceGender": {
+      "male": "male",
+      "female": "female",
+      "kid": "kid"
+    }
+  },
   "notifications": {
     "story": {
       "pending": {

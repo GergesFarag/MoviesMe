@@ -62,6 +62,13 @@
     "68cdb30f192a1c90de420244": "سايبربنك",
     "68cd7253cea48e7f00ebcb89": "أنمي"
   },
+  "voiceOver": {
+    "voiceGender": {
+      "male": "ذكر",
+      "female": "أنثى",
+      "kid": "أطفال"
+    }
+  },
   "genres": {
     "drama": "دراما",
     "action": "أكشن",
