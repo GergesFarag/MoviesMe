@@ -134,14 +134,13 @@ export class VideoGenerationService {
       const videoDuration = numOfScenes * 5; // 5 seconds per scene
       console.log(`📹 Using calculated video duration: ${videoDuration} seconds`);
 
-      // Compose video with audio using optimized ffmpeg settings
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()
           .input(tempVideoPath)
           .input(tempAudioPath)
-          .videoCodec("copy") // Copy video stream without re-encoding (much faster)
+          .videoCodec("copy") 
           .audioCodec("aac")
-          .audioChannels(2) // Ensure stereo audio
+          .audioChannels(2)
           .audioFrequency(44100) // Standard audio frequency
           .outputOptions([
             "-map",
