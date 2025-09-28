@@ -7,6 +7,7 @@ const audioModelSchema = new Schema<IAudioModel>(
     language: { type: String, required: true },
     elevenLabsId: { type: String, required: true, unique: true },
     thumbnail: { type: String, required: false },
+    accent: { type: String, required: false },
     gender: { type: String, enum: ["male", "female", "kid"], required: true },
   },
   { timestamps: true, _id: true }

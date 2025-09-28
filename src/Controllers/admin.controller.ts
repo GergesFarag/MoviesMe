@@ -81,7 +81,7 @@ const adminController = {
   }),
 
   addModels: catchError(async (req: Request, res: Response) => {
-    const {name , gender , language , elevenLabsId , thumbnail}  = req.body;
+    const {name , gender , language , elevenLabsId ,accent , thumbnail}  = req.body;
     const validator = new Validator();
     if(!name || !gender || !language || !elevenLabsId){
       validator.RequestBodyValidator.validateRequestBody(...Object.keys(req.body));
