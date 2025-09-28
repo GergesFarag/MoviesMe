@@ -3,7 +3,7 @@ import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import User from "../Models/user.model";
 import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
-import { processModelJobAsync } from "../Services/applyModel.service";
+import { processModelJobAsync, processMultiImageJobAsync } from "../Services/applyModel.service";
 import { Sorting } from "../Utils/Sorting/sorting";
 import paginator from "../Utils/Pagination/paginator";
 import { TModelFetchQuery } from "../types";
@@ -295,17 +295,21 @@ const modelsController = {
 
   applyModel: catchError(async (req, res) => {
     const { modelId, payload } = req.body;
-    const image = req.file;
-
-    if (!modelId || !image) {
-      throw new AppError("Model ID and image are required", 400);
+    const files = req.files as Express.Multer.File[];
+    let images: Express.Multer.File[] = [];
+    let image: Express.Multer.File = {} as Express.Multer.File;
+    if (files && files.length > 1) {
+      images = files;
+    } else {
+      image = files[0];
     }
-
+    if (!modelId || (!image && images.length === 0)) {
+      throw new AppError("Model ID and images are required", 400);
+    }
     const [user, model] = await Promise.all([
       getCachedUser(req.user!.id, User),
       getCachedModel(modelId),
     ]);
-    console.log("Model Name : " , model?.name);
     if (!user || !user.FCMToken) {
       throw new AppError("FCM Token not found", 404);
     }
@@ -324,21 +328,40 @@ const modelsController = {
     });
 
     try {
-      const result = await processModelJobAsync({
-        user,
-        model,
-        modelId,
-        image,
-        payload,
-        jobId,
-      });
+      if (image && !images.length) {
+        const result = await processModelJobAsync({
+          user,
+          model,
+          modelId,
+          image,
+          payload,
+          jobId,
+        });
 
-      if (result.success) {
-        console.log(
-          `Model processing started successfully with job ID: ${result.jobId}`
-        );
-      } else {
-        console.error(`Failed to start model processing: ${result.error}`);
+        if (result.success) {
+          console.log(
+            `Model processing started successfully with job ID: ${result.jobId}`
+          );
+        } else {
+          console.error(`Failed to start model processing: ${result.error}`);
+        }
+      } else if (images && images.length > 0) {
+        const result = await processMultiImageJobAsync({
+          user,
+          model,
+          modelId,
+          images,
+          payload,
+          jobId,
+        });
+
+        if (result.success) {
+          console.log(
+            `Model processing started successfully with job ID: ${result.jobId}`
+          );
+        } else {
+          console.error(`Failed to start model processing: ${result.error}`);
+        }
       }
     } catch (error) {
       console.error(`Unexpected error in model processing:`, error);

@@ -13,4 +13,5 @@ export default interface IAiModel {
   isAI3DTool?: boolean;
   isMarketingTool?: boolean;
   wavespeedCall?: string;
+  prompt?:string;
 }

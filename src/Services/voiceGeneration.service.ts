@@ -57,6 +57,7 @@ export class VoiceGenerationService {
       if (!voiceId)
         throw new AppError("No voiceId found", HTTP_STATUS_CODE.NOT_FOUND);
     }
+    console.log("voiceId: ",voiceId);
     if (!data?.text) {
       throw new AppError(
         "No voiceOverLyrics or narration provided",

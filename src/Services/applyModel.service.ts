@@ -10,15 +10,19 @@ import AppError from "../Utils/Errors/AppError";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { IUser } from "../Interfaces/user.interface";
 
-interface ProcessModelJobData {
+interface commonProcessingData {
   user: IUser;
   model: IAiModel;
   modelId: string;
-  image: Express.Multer.File;
   payload: any;
   jobId: string;
 }
-
+interface ProcessModelJobData extends commonProcessingData {
+  image: Express.Multer.File;
+}
+interface ProcessMultiImageModelData extends commonProcessingData {
+  images: Express.Multer.File[];
+}
 interface JobResult {
   success: boolean;
   jobId?: string;
@@ -34,13 +38,17 @@ export const processModelJobAsync = async (
 
   try {
     const imageHash = image ? generateHashFromBuffer(image.buffer) : undefined;
-    const imageUrl = (await cloudUpload(image.buffer , `user_${userId}/images/uploaded`, imageHash)) as UploadApiResponse;
+    const imageUrl = (await cloudUpload(
+      image.buffer,
+      `user_${userId}/images/uploaded`,
+      imageHash
+    )) as UploadApiResponse;
     const job = await taskQueue.add(
       {
         modelData: model,
         userId: (user as any)._id,
         data: { image: imageUrl.secure_url, ...rest },
-        FCM: user.FCMToken
+        FCM: user.FCMToken,
       },
       {
         jobId: jobId,
@@ -57,7 +65,7 @@ export const processModelJobAsync = async (
     }
 
     const modelType = filterModelType(model);
-  
+
     const itemData = {
       URL: imageUrl.url,
       modelType: modelType === "bytedance" ? "image-effects" : modelType,
@@ -87,6 +95,52 @@ export const processModelJobAsync = async (
     };
   } catch (error) {
     console.error("Error in processModelJobAsync:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+};
+
+export const processMultiImageJobAsync = async (
+  data: ProcessMultiImageModelData
+): Promise<JobResult> => {
+  const { user, model, modelId, images, payload, jobId } = data;
+  const { ...rest } = payload;
+  const userId = (user as any)._id.toString();
+  try {
+    const imageUrls: string[] = [];
+    for (const image of images) {
+      const imageHash = image
+        ? generateHashFromBuffer(image.buffer)
+        : undefined;
+      const imageUrl = (await cloudUpload(
+        image.buffer,
+        `user_${userId}/images/uploaded`,
+        imageHash
+      )) as UploadApiResponse;
+      if (!imageUrl || !imageUrl.url) {
+        throw new AppError("One of the image uploads failed", 500);
+      }
+      imageUrls.push(imageUrl.secure_url);
+    }
+    const job = await taskQueue.add(
+      {
+        modelData: model,
+        userId: (user as any)._id,
+        data: { images: imageUrls, ...rest },
+        FCM: user.FCMToken,
+        prompt: model.prompt,
+        skipModelTypeFilteration: true,
+      },
+      { jobId: jobId, removeOnComplete: true, removeOnFail: true }
+    );
+    return {
+      success: true,
+      jobId: job.id.toString(),
+    };
+  } catch (error) {
+    console.error("Error in applyMultiImageModel:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",

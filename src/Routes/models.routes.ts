@@ -15,7 +15,7 @@ modelsRouter.post("/", modelsController.addModel);
 modelsRouter.post(
   "/applyModel",
   authMiddle,
-  upload.single("payload[image]"),
+  upload.array("payload[image]"),
   updateUserLanguagePreference,
   modelsController.applyModel
 );

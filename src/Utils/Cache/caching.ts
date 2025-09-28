@@ -12,7 +12,7 @@ export const getCachedModel = async (modelId: string): Promise<IAiModel | null> 
   
   if (!model) {
     model = await Model.findById(modelId)
-      .select("name isVideo thumbnail isVideoEffect isImageEffect isCharacterEffect isAITool isAI3DTool isMarketingTool")
+      .select("name isVideo thumbnail isVideoEffect isImageEffect isCharacterEffect isAITool isAI3DTool isMarketingTool wavespeedCall prompt")
       .lean() as IAiModel;
     
     if (model) {

@@ -7,6 +7,7 @@ const modelSchema = new mongoose.Schema<IAiModel>({
     previewUrl: { type: String, required: true },
     isVideo: { type: Boolean, required: true },
     credits: { type: Number, required: true },
+    prompt: { type: String, required: false , default: "" },
     isNewModel: { type: Boolean, required: true , default: true },
     isVideoEffect: { type: Boolean, default: false , select: false },
     isImageEffect: { type: Boolean, default: false , select: false },

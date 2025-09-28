@@ -66,13 +66,14 @@ export class StoryProcessorService {
       console.log(
         "🚀 Starting parallel processing: Voice Over + Image Generation"
       );
-      let [voiceOver, imageUrls]: [
+
+      let [voiceOver , imageUrls]: [
         IProcessedVoiceOver | null,
         string[] | null
       ] = [null, null];
 
       if (jobData.voiceOver) {
-        [voiceOver, imageUrls] = await Promise.all([
+        [voiceOver , imageUrls] = await Promise.all([
           this.processVoiceOverWithProgress(job, jobData, story),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
@@ -83,10 +84,10 @@ export class StoryProcessorService {
           seedreamPrompt
         );
       }
+
       console.log(
         "✅ Parallel processing completed: Voice Over + Image Generation"
       );
-
       const updatedStory = this.updateStoryWithImages(story, imageUrls);
 
       const videoUrls = await this.generateVideos(job, imageUrls);
@@ -583,9 +584,6 @@ export class StoryProcessorService {
     }
   }
 
-  /**
-   * OPTIMIZED: Image generation with dedicated progress tracking for parallel execution
-   */
   private async generateImagesWithProgress(
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string },
