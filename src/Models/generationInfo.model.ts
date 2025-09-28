@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
-import { generatinInfo } from "../Interfaces/generationInfo.interface";
-
-const generationInfoSchema = new mongoose.Schema<generatinInfo>({
+import { generationInfo } from "../Interfaces/generationInfo.interface";
+const generationInfoSchema = new mongoose.Schema<generationInfo>({
   location: [
     {
       name: { type: String, required: true },
@@ -24,10 +23,16 @@ const generationInfoSchema = new mongoose.Schema<generatinInfo>({
     min: 15,
     max: 3600,
   },
-  languages: {
-    type: [String],
-    required: true,
-  },
+  languages: [
+    {
+      name: { type: String, required: true },
+      accents: [
+        {
+          name: { type: String, required: true },
+        },
+      ],
+    },
+  ],
   voiceOverCredits: {
     type: Number,
     required: true,
@@ -40,7 +45,7 @@ const generationInfoSchema = new mongoose.Schema<generatinInfo>({
   },
 });
 
-const GenerationInfo = mongoose.model<generatinInfo>(
+const GenerationInfo = mongoose.model<generationInfo>(
   "GenerationInfo",
   generationInfoSchema
 );

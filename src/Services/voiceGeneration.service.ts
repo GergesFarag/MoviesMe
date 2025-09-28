@@ -46,10 +46,12 @@ export class VoiceGenerationService {
     userId: string
   ): Promise<string> {
     let voiceId: string | null = null;
-    if (data?.voiceGender) {
+    console.log("voiceOverData: ",data);
+    if (data?.voiceGender && data.voiceLanguage) {
+      console.log("Gone Here");
       voiceId = await getVoiceELIds(
         data!.voiceGender,
-        data!.voiceLanguage ?? "🇬🇧 English",
+        data!.voiceLanguage,
         data!.voiceAccent
       );
       if (!voiceId)

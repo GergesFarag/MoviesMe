@@ -1,4 +1,11 @@
-export interface generatinInfo {
+import { Types } from "mongoose";
+
+export interface ILanguage {
+  _id:Types.ObjectId;
+  name:string;
+  accents:{_id: Types.ObjectId , name:string}[];
+}
+export interface generationInfo {
   location: {
     name: string;
     image: string;
@@ -9,7 +16,7 @@ export interface generatinInfo {
   }[];
   genres: string[];
   estimatedTimePerSecond: number;
-  languages: string[];
+  languages: ILanguage[];
   voiceOverCredits: number;
   generationCredits: number;
   createdAt: Date;

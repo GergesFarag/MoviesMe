@@ -18,6 +18,7 @@ import {
 } from "../Utils/APIs/cloudinary";
 import { StoryProcessingResult } from "../Interfaces/story.interface";
 import { title } from "process";
+import GenerationInfo from "../Models/generationInfo.model";
 
 export const PROGRESS_STEPS = {
   VALIDATION: 10,
@@ -65,13 +66,13 @@ export class StoryProcessorService {
       console.log(
         "🚀 Starting parallel processing: Voice Over + Image Generation"
       );
-      let [voiceOver, imageUrls]: [
+      let [voiceOver , imageUrls]: [
         IProcessedVoiceOver | null,
         string[] | null
       ] = [null, null];
 
       if (jobData.voiceOver) {
-        [voiceOver, imageUrls] = await Promise.all([
+        [voiceOver , imageUrls] = await Promise.all([
           this.processVoiceOverWithProgress(job, jobData, story),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
@@ -82,7 +83,6 @@ export class StoryProcessorService {
           seedreamPrompt
         );
       }
-
       console.log(
         "✅ Parallel processing completed: Voice Over + Image Generation"
       );
@@ -534,13 +534,19 @@ export class StoryProcessorService {
           jobData.genere,
           jobData.location
         );
+        const generationInfo = await GenerationInfo.findOne().lean();
 
-        const language =
-          jobData.voiceOver.voiceLanguage?.split(" ")[1] || "English";
+        const language = generationInfo?.languages.find(
+          (lang) => lang._id.toString() === jobData.voiceOver!.voiceLanguage
+        );
+        const accent = language?.accents.find(
+          (acc) => acc._id.toString() === jobData.voiceOver!.voiceAccent
+        );
+        console.log("Lang with Accent" , language!.name.split(" ")[1], accent!.name);
         voiceOverText = await openAIService.generateNarrativeText(
           jobData.prompt,
-          language,
-          jobData.voiceOver.voiceAccent || null,
+          language?.name[1] || "English",
+          accent?.name || null,
           jobData.numOfScenes
         );
       }

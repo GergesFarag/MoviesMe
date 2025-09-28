@@ -1,4 +1,4 @@
-import { runModel } from "../Utils/APIs/wavespeed_calling";
+import { runModel } from "../Utils/APIs/runModel";
 import User from "../Models/user.model";
 import AppError from "../Utils/Errors/AppError";
 import {

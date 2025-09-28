@@ -1,4 +1,4 @@
-import mongoose, { mongo, Schema } from "mongoose";
+import mongoose, { mongo, Schema, Types } from "mongoose";
 import { IAudioModel } from "../Interfaces/audioModel.interface";
 
 const audioModelSchema = new Schema<IAudioModel>(
