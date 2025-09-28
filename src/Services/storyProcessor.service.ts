@@ -66,13 +66,13 @@ export class StoryProcessorService {
       console.log(
         "🚀 Starting parallel processing: Voice Over + Image Generation"
       );
-      let [voiceOver , imageUrls]: [
+      let [voiceOver, imageUrls]: [
         IProcessedVoiceOver | null,
         string[] | null
       ] = [null, null];
 
       if (jobData.voiceOver) {
-        [voiceOver , imageUrls] = await Promise.all([
+        [voiceOver, imageUrls] = await Promise.all([
           this.processVoiceOverWithProgress(job, jobData, story),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
@@ -542,7 +542,11 @@ export class StoryProcessorService {
         const accent = language?.accents.find(
           (acc) => acc._id.toString() === jobData.voiceOver!.voiceAccent
         );
-        console.log("Lang with Accent" , language!.name.split(" ")[1], accent!.name);
+        console.log(
+          "Lang with Accent",
+          language!.name.split(" ")[1],
+          accent!.name
+        );
         voiceOverText = await openAIService.generateNarrativeText(
           jobData.prompt,
           language?.name[1] || "English",
