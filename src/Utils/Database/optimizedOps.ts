@@ -94,27 +94,11 @@ export const getVoiceELIds = async (
   if (!items || items.length === 0) {
     throw new AppError("No audio models found", HTTP_STATUS_CODE.NOT_FOUND);
   }
-  let filteredItem = items;
-  if (voiceAccent) {
-    filteredItem = items.filter((item) => {
-      if (!item.accent) return false;
-      return item.accent === voiceAccent;
-    });
-    if (!filteredItem) {
-      throw new AppError(
-        "No audio model accent found",
-        HTTP_STATUS_CODE.NOT_FOUND
-      );
-    }
+  let filteredItems = items.filter((item) => item.accent === voiceAccent && item.gender === voiceGender);
+  if (!filteredItems || filteredItems.length === 0) {
+    throw new AppError("No audio models found", HTTP_STATUS_CODE.NOT_FOUND);
   }
-  if (voiceGender) {
-    if (filteredItem.length === 1) return filteredItem[0].elevenLabsId;
-    filteredItem = items.filter((item) => item.gender === voiceGender);
-  }
-  if (!filteredItem) {
-    throw new AppError("No audio model found", HTTP_STATUS_CODE.NOT_FOUND);
-  }
-  return filteredItem[0].elevenLabsId;
+  return filteredItems[0].elevenLabsId;
 };
 
 export const getModelCallApi = async (

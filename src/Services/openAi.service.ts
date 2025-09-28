@@ -206,7 +206,7 @@ export class OpenAIService {
     );
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5",
         messages: [
           {
             role: "system",
@@ -245,7 +245,7 @@ export class OpenAIService {
   ): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4.1-mini",
         messages: [
           {
             role: "system",
