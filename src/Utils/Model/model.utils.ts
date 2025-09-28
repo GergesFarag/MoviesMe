@@ -97,6 +97,7 @@ export const processModelData = async (
   data: any
 ) => {
   const formattedModel = formatModelName(modelName, modelType);
+  console.log("Formatted Model Name: ", formattedModel);
   const url = `https://api.wavespeed.ai/api/v3/${formattedModel}`;
   const headers = {
     "Content-Type": "application/json",

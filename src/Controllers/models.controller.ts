@@ -305,7 +305,7 @@ const modelsController = {
       getCachedUser(req.user!.id, User),
       getCachedModel(modelId),
     ]);
-
+    console.log("Model Name : " , model?.name);
     if (!user || !user.FCMToken) {
       throw new AppError("FCM Token not found", 404);
     }

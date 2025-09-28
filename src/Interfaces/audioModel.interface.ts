@@ -4,6 +4,7 @@ export interface IAudioModel {
   name: string;
   gender: "male" | "female" | "kid";
   language: string;
+  accent?: string;
   thumbnail?: string;
 }
 

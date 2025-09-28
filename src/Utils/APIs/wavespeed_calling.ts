@@ -53,7 +53,7 @@ export const runModel = async (
     //   await new Promise((res) => setTimeout(res, 2000));
     // }
 
-    // Build payload based on model requirements
+    // Build payload based on model requirement
     const payload: any = {
       enable_base64_output: false,
       image: data.image,

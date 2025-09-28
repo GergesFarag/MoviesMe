@@ -36,6 +36,10 @@ const storySchema = new mongoose.Schema<IStory>(
           type: String,
           default: null,
         },
+        voiceAccent: {
+          type: String,
+          default: null,
+        },
         voiceGender: {
           type: String,
           enum: ["male", "female", "kid"],

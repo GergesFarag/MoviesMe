@@ -4,7 +4,6 @@ import { JobId } from "bull";
 export interface IEffectItem {
   _id: Types.ObjectId;
   URL: string;
-  modelType?: string;
   modelName: string;
   isVideo: boolean;
   modelThumbnail: string;
@@ -13,6 +12,7 @@ export interface IEffectItem {
   status: string;
   isFav: boolean;
   duration: number;
+  modelType?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

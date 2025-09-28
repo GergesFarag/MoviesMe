@@ -7,6 +7,7 @@ import {
   generateVoiceSysPrompt,
 } from "../Utils/Format/generateSysPrompt";
 import { Validator } from "./validation.service";
+import { mapLanguageAccent } from "../Utils/Format/languageUtils";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 export class OpenAIService {
   private client: OpenAI;
@@ -190,6 +191,7 @@ export class OpenAIService {
   async generateNarrativeText(
     prompt: string,
     language: string,
+    voiceAccent: string | null,
     numOfScenes: number
   ): Promise<string> {
     console.log("language:", language);
@@ -197,23 +199,33 @@ export class OpenAIService {
     const targetWordsPerScene = 9;
     const totalTargetWords = (numOfScenes - 1) * targetWordsPerScene;
     const tolerance = 2;
+    const SYSTEM_PROMPT = generateVoiceSysPrompt(
+      language,
+      numOfScenes,
+      voiceAccent
+    );
     try {
       const response = await this.client.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: generateVoiceSysPrompt(language, numOfScenes),
+            content: SYSTEM_PROMPT,
           },
           {
             role: "user",
-            content: `${prompt}\n\nIMPORTANT: Generate exactly ${totalTargetWords} words (±${tolerance} words tolerance) for ${numOfScenes} scenes. Each scene should be approximately ${targetWordsPerScene} words.`,
+            content: `${prompt}\nIMPORTANT: Generate exactly ${totalTargetWords} words (±${tolerance} words tolerance) for ${numOfScenes} scenes. Each scene should be approximately ${targetWordsPerScene} words.\nEnsure that the narration is in ${language} ${voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ""}.`,
           },
         ],
       });
 
       const narrativeText = response.choices[0]?.message?.content;
-      console.log("Narrative Text: ", narrativeText);
+      console.log(
+        "Narrative Text: ",
+        narrativeText,
+        "\n with system prompt : ",
+        SYSTEM_PROMPT
+      );
 
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);
@@ -233,7 +245,7 @@ export class OpenAIService {
   ): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4.1-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",

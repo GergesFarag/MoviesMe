@@ -11,7 +11,7 @@ import {
   IStoryRequest,
   IStoryRequestKeys,
 } from "../Interfaces/storyRequest.interface";
-import { cloudUpload } from "../Utils/APIs/cloudinary";
+import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { VideoGenerationService } from "../Services/videoGeneration.service";
 import {
@@ -92,8 +92,11 @@ const storyController = {
 
       // Upload image first if provided
       if (image) {
+        const imageHash = generateHashFromBuffer(image.buffer);
         const imageRes = (await cloudUpload(
-          image?.buffer
+          image?.buffer,
+          `user_${userId}/images/uploaded`,
+          imageHash
         )) as UploadApiResponse;
         storyData.image = imageRes.secure_url;
       }

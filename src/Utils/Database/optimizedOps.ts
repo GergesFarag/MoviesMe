@@ -10,6 +10,7 @@ import { ObjectId } from "mongoose";
 import mongoose from "mongoose";
 import AudioModel from "../../Models/audioModel.model";
 import Model from "../../Models/aiModel.model";
+import { IVoiceOver } from "../../Interfaces/storyRequest.interface";
 
 export interface JobCreationData {
   jobId: string;
@@ -65,7 +66,9 @@ export const getItemFromUser = async (
   const user = await User.findById(userId).lean();
   if (!user) return null;
 
-  const item = user.effectsLib?.find((item: IEffectItem) => item.jobId === jobId);
+  const item = user.effectsLib?.find(
+    (item: IEffectItem) => item.jobId === jobId
+  );
   return item || null;
 };
 
@@ -79,15 +82,46 @@ export const getVoiceName = async (
   return item.name || null;
 };
 
-export const getVoiceELIds = async (voiceGender:string , voiceLanguage:string): Promise<string> => {
-  const item = await AudioModel.findOne({ gender: voiceGender, language: voiceLanguage }).lean();
-  if (!item) {
-    return 'UR972wNGq3zluze0LoIp'
+export const getVoiceELIds = async (
+  voiceGender: string,
+  voiceLanguage: string = "🇬🇧 English",
+  voiceAccent: string | null
+): Promise<string> => {
+  const items = await AudioModel.find().lean();
+  if (!items || items.length === 0) {
+    throw new AppError("No audio models found", HTTP_STATUS_CODE.NOT_FOUND);
   }
-  return item.elevenLabsId.toString();
-}
+  let filteredItem = items.find((item) => item.language === voiceLanguage);
+  if (!filteredItem) {
+    throw new AppError(
+      "No audio model language found",
+      HTTP_STATUS_CODE.NOT_FOUND
+    );
+  }
+  if (voiceAccent) {
+    const accentItem = items.find((item) => {
+      if (!item.accent) return false;
+      return item.accent === voiceAccent;
+    });
+    if (!accentItem) {
+      throw new AppError(
+        "No audio model accent found",
+        HTTP_STATUS_CODE.NOT_FOUND
+      );
+    }
+  }
+  if (voiceGender) {
+    filteredItem = items.find((item) => item.gender === voiceGender);
+  }
+  if (!filteredItem) {
+    throw new AppError("No audio model found", HTTP_STATUS_CODE.NOT_FOUND);
+  }
+  return filteredItem.elevenLabsId;
+};
 
-export const getModelCallApi = async (modelId: string): Promise<string|null> => {
+export const getModelCallApi = async (
+  modelId: string
+): Promise<string | null> => {
   const model = await Model.findById(modelId).lean();
   if (!model) {
     throw new AppError("No audio model found", HTTP_STATUS_CODE.NOT_FOUND);
@@ -95,19 +129,23 @@ export const getModelCallApi = async (modelId: string): Promise<string|null> => 
   return model.wavespeedCall || null;
 };
 
-export const getLocationName = async (locationId?: string): Promise<string | undefined> => {
+export const getLocationName = async (
+  locationId?: string
+): Promise<string | undefined> => {
   if (!locationId) return undefined;
   const generationData = await GenerationInfo.findOne().lean();
-  return generationData?.location.find((loc: any) => 
-    loc._id?.toString() === locationId
+  return generationData?.location.find(
+    (loc: any) => loc._id?.toString() === locationId
   )?.name;
 };
 
-export const getStyleName = async (styleId?: string): Promise<string | undefined> => {
+export const getStyleName = async (
+  styleId?: string
+): Promise<string | undefined> => {
   if (!styleId) return undefined;
   const generationData = await GenerationInfo.findOne().lean();
-  return generationData?.style.find((sty: any) => 
-    sty._id?.toString() === styleId
+  return generationData?.style.find(
+    (sty: any) => sty._id?.toString() === styleId
   )?.name;
 };
 
@@ -167,9 +205,9 @@ export const createStoryAndUpdateUser = async (
   // Update job status to completed
   await Job.findOneAndUpdate(
     { jobId: storyData.jobId },
-    { 
+    {
       status: "completed",
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
   );
 
@@ -209,7 +247,7 @@ export const createInitialStoryAndUpdateUser = async (
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-  console.log("USER ID" , userId);
+  console.log("USER ID", userId);
   // Update user's storiesLib immediately
   const user = await User.findByIdAndUpdate(
     userId,
@@ -252,9 +290,12 @@ export const updateCompletedStory = async (
   try {
     // Validate required fields
     if (!jobId) {
-      throw new AppError("Job ID is required for story update", HTTP_STATUS_CODE.BAD_REQUEST);
+      throw new AppError(
+        "Job ID is required for story update",
+        HTTP_STATUS_CODE.BAD_REQUEST
+      );
     }
-    
+
     // Note: videoUrl is now optional (null means video generation was disabled)
     console.log(`Updating story for jobId: ${jobId}`);
     console.log("Update data:", updateData);
@@ -268,24 +309,28 @@ export const updateCompletedStory = async (
 
     // If story is already completed, log and return it without error
     if (existingStory.status === "completed") {
-      console.log(`Story with jobId: ${jobId} is already completed. Returning existing story.`);
-      
+      console.log(
+        `Story with jobId: ${jobId} is already completed. Returning existing story.`
+      );
+
       // Also ensure the job status is updated to completed if it's not already
       await Job.findOneAndUpdate(
         { jobId },
-        { 
+        {
           status: "completed",
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         { new: true }
       );
-      
+
       return existingStory;
     }
 
     // If story is failed, we can still update it to completed
     if (existingStory.status === "failed") {
-      console.log(`Story with jobId: ${jobId} was marked as failed, but updating to completed.`);
+      console.log(
+        `Story with jobId: ${jobId} was marked as failed, but updating to completed.`
+      );
     }
 
     // Update the existing story with completed data (allow updating from any status)
@@ -297,41 +342,46 @@ export const updateCompletedStory = async (
 
     // Set fields even if they are null (to explicitly mark as no video/thumbnail when generation is disabled)
     updateFields.videoUrl = updateData.videoUrl; // Can be null when video generation is disabled
-    
+
     if (updateData.scenes && updateData.scenes.length > 0) {
       updateFields.scenes = updateData.scenes;
     }
-    
+
     updateFields.thumbnail = updateData.thumbnail; // Can be null when image generation is disabled
-    
+
     if (updateData.location) {
       updateFields.location = updateData.location;
     }
-    
+
     if (updateData.style) {
       updateFields.style = updateData.style;
     }
-    
+
     if (updateData.title) {
       updateFields.title = updateData.title;
     }
-    
+
     if (updateData.genre) {
       updateFields.genre = updateData.genre;
     }
-    
-    if (updateData.voiceOver && updateData.voiceOver.sound && updateData.voiceOver.text) {
+
+    if (
+      updateData.voiceOver &&
+      updateData.voiceOver.sound &&
+      updateData.voiceOver.text
+    ) {
       updateFields.voiceOver = updateData.voiceOver;
     }
 
-    const updatedStory = await Story.findOneAndUpdate(
-      { jobId },
-      updateFields,
-      { new: true }
-    );
+    const updatedStory = await Story.findOneAndUpdate({ jobId }, updateFields, {
+      new: true,
+    });
 
     if (!updatedStory) {
-      throw new AppError("Failed to update story", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
+      throw new AppError(
+        "Failed to update story",
+        HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
+      );
     }
 
     console.log(`Story updated successfully: ${updatedStory._id}`);
@@ -339,15 +389,17 @@ export const updateCompletedStory = async (
     // Update job status to completed
     const jobUpdate = await Job.findOneAndUpdate(
       { jobId },
-      { 
+      {
         status: "completed",
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       { new: true }
     );
 
     if (!jobUpdate) {
-      console.warn(`Job not found for jobId: ${jobId}, but story was updated successfully`);
+      console.warn(
+        `Job not found for jobId: ${jobId}, but story was updated successfully`
+      );
     } else {
       console.log(`Job updated successfully: ${jobUpdate._id}`);
     }
@@ -366,10 +418,10 @@ export const createJobForStory = async (
 ): Promise<void> => {
   try {
     console.log(`Creating job for story - userId: ${userId}, jobId: ${jobId}`);
-    
+
     // Use a valid ObjectId for modelId - create a default one if not provided
     const defaultModelId = new mongoose.Types.ObjectId();
-    
+
     const createdJob = await Job.create({
       jobId,
       userId,
@@ -399,7 +451,10 @@ export const createJobForStory = async (
       console.error(`Failed to update user jobs for userId: ${userId}`);
       // Clean up the created job if user update fails
       await Job.findByIdAndDelete(createdJob._id);
-      throw new AppError("Failed to update user with job", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
+      throw new AppError(
+        "Failed to update user with job",
+        HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR
+      );
     }
 
     console.log(`User jobs updated successfully for userId: ${userId}`);

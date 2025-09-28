@@ -18,6 +18,7 @@ export interface IStory extends Document {
     voiceOverLyrics: string | null;
     voiceGender: string | null;
     voiceLanguage: string | null;
+    voiceAccent: string | null;
     sound: string | null;
     text: string | null;
   };

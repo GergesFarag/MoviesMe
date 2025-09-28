@@ -1,3 +1,5 @@
+import { mapLanguageAccent } from "./languageUtils";
+
 export const generateSysPrompt = (
   scenesNumber: number,
   storyTitle: string = "Generated Story Title",
@@ -93,16 +95,22 @@ Do not describe the character's features.
   return prompt;
 };
 
-export const generateVoiceSysPrompt = (language: string, numOfScenes: number): string => {
+export const generateVoiceSysPrompt = (
+  language: string,
+  numOfScenes: number,
+  voiceAccent: string | null
+): string => {
   const wordsPerScene = 9;
   const totalWords = numOfScenes * wordsPerScene;
-  
+
   return `You are a cinematic narrator and translator.
 TASK:
-Convert the provided story prompt into a narrative suitable for voice narration in the ${language} language. The narration must be precise and fluent, adhering to the following time constraints and guidelines:
+Convert the provided story prompt into a narrative suitable for voice narration in the ${language} language ${voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ""}. The narration must be precise and fluent, adhering to the following time constraints and guidelines:
 
 CRITICAL CONSTRAINTS:
-- The total narration time must fit exactly into ${numOfScenes * 5} seconds (5 seconds per scene)
+- The total narration time must fit exactly into ${
+    numOfScenes * 5
+  } seconds (5 seconds per scene)
 - Use approximately ${wordsPerScene} words per scene for a total of ${totalWords} words
 - Each scene should be narrated in exactly 5 seconds at natural speaking pace (2.4 words per second)
 - The narrative must be divided into ${numOfScenes} distinct parts, each corresponding to one scene

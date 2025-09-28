@@ -1,5 +1,5 @@
 import { UploadApiResponse } from "cloudinary";
-import { cloudUpload } from "../Utils/APIs/cloudinary";
+import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
 import { taskQueue } from "../Queues/model.queue";
 import {
   filterModelType,
@@ -33,7 +33,8 @@ export const processModelJobAsync = async (
   const userId = (user as any)._id.toString();
 
   try {
-    const imageUrl = (await cloudUpload(image.buffer)) as UploadApiResponse;
+    const imageHash = image ? generateHashFromBuffer(image.buffer) : undefined;
+    const imageUrl = (await cloudUpload(image.buffer , `user_${userId}/images/uploaded`, imageHash)) as UploadApiResponse;
     const job = await taskQueue.add(
       {
         modelData: model,

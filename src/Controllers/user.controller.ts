@@ -11,7 +11,7 @@ import { ModelType, modelTypeMapper } from "../Utils/Format/filterModelType";
 import paginator from "../Utils/Pagination/paginator";
 import Job from "../Models/job.model";
 import { UploadApiResponse } from "cloudinary";
-import { cloudUpload, generateImageHash } from "../Utils/APIs/cloudinary";
+import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
 import { ItemDTO } from "../DTOs/item.dto";
 import { IStoryDTO, StoryDTO } from "../DTOs/story.dto";
 import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types";
@@ -32,9 +32,18 @@ const fieldsToSelect: UserProfileResponseDataKeys[] = [
 
 const userController = {
   getProfile: catchError(async (req, res) => {
-    const user = await User.findById(req.user!.id)
-      .select(fieldsToSelect)
-      .select("-items");
+    const projection = fieldsToSelect.reduce((acc, key) => {
+      acc[key] = 1;
+      return acc;
+    }, {} as Record<string, 1>);
+    console.log("UserId", req.user!.id);
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", HTTP_STATUS_CODE.UNAUTHORIZED);
+    }
+    const user = await User.findById(req.user!.id).select(projection);
+    if (!user) {
+      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+    }
     res.status(200).json({
       message: "User profile retrieved successfully",
       data: user,
@@ -51,10 +60,11 @@ const userController = {
       req.body.profilePicture = null;
     } else {
       if (profilePicture) {
-        const imageHash = generateImageHash(profilePicture.buffer);
         const result = (await cloudUpload(
           profilePicture.buffer,
-          imageHash
+          `user_${id}/images/profile`,
+          "profile_picture",
+          { overwrite: true  , invalidate: true }
         )) as UploadApiResponse;
         req.body.profilePicture = result.secure_url;
       }
@@ -367,7 +377,10 @@ const userController = {
 
   getNotifications: catchError(async (req, res) => {
     const userId = req.user!.id;
-    const filter: string[] = (req.query.category as string).trim().toLowerCase().split(",");
+    const filter: string[] = (req.query.category as string)
+      .trim()
+      .toLowerCase()
+      .split(",");
     if (!filter) {
       throw new AppError("Category filter is required", 400);
     }
@@ -377,7 +390,7 @@ const userController = {
       throw new AppError("User not found", 404);
     }
     let filteredNotifications = user.notifications!;
-    if (!filter.includes('all')) {
+    if (!filter.includes("all")) {
       filteredNotifications = user.notifications!.filter((notification) => {
         return filter.includes(notification.category!);
       });

@@ -32,9 +32,6 @@ export function getUserLanguage(req: Request, userLanguage?: string): string {
   return extractLanguageFromRequest(req);
 }
 
-/**
- * Get user's preferred language
- */
 export const getUserLangFromDB = async function (
   userId: string
 ): Promise<string> {
@@ -45,4 +42,17 @@ export const getUserLangFromDB = async function (
     console.error(`❌ Failed to get user language for ${userId}:`, error);
     return "en"; // Default fallback
   }
+};
+
+export const mapLanguageAccent = (accent:string) => {
+  const accentMap: Record<string, string> = {
+    "مصري" : "Egyptian Arabic",
+    "سعودي" : "Saudi Arabic",
+    "لبناني" : "Lebanese Arabic",
+    "مغربي" : "Moroccan Arabic",
+    "شامي" : "Levantine Arabic",
+    "عراقي" : "Iraqi Arabic",
+    "خليجي" : "Gulf Arabic",
+  }
+  return accentMap[accent] || accent;
 };

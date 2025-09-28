@@ -12,8 +12,12 @@ import { updateJobProgress } from "../Utils/Model/model.utils";
 import { IStoryResponse } from "../Interfaces/storyResponse.interface";
 import { IProcessedVoiceOver } from "../Interfaces/audioModel.interface";
 import { updateCompletedStory } from "../Utils/Database/optimizedOps";
-import { cloudUploadVideo } from "../Utils/APIs/cloudinary";
+import {
+  cloudUploadVideo,
+  generateHashFromBuffer,
+} from "../Utils/APIs/cloudinary";
 import { StoryProcessingResult } from "../Interfaces/story.interface";
+import { title } from "process";
 
 export const PROGRESS_STEPS = {
   VALIDATION: 10,
@@ -58,7 +62,6 @@ export class StoryProcessorService {
       }
 
       const { story, seedreamPrompt } = await this.generateStory(job, jobData);
-
       console.log(
         "🚀 Starting parallel processing: Voice Over + Image Generation"
       );
@@ -66,7 +69,7 @@ export class StoryProcessorService {
         IProcessedVoiceOver | null,
         string[] | null
       ] = [null, null];
-      
+
       if (jobData.voiceOver) {
         [voiceOver, imageUrls] = await Promise.all([
           this.processVoiceOverWithProgress(job, jobData, story),
@@ -187,7 +190,6 @@ export class StoryProcessorService {
 
     try {
       const story = await openAIService.generateScenes(jobData.prompt);
-
       console.log("🎯 Generating Seedream prompt...");
       const seedreamPrompt = await openAIService.generateSeedreamPrompt(
         jobData.prompt,
@@ -388,9 +390,11 @@ export class StoryProcessorService {
     console.log("☁️ Uploading final video to cloud storage...");
 
     try {
+      const videoHash = generateHashFromBuffer(videoBuffer);
       const uploadResult = await cloudUploadVideo(
         videoBuffer,
-        `story_videos/${jobId}`
+        `user_${job.data.userId}/videos/generated`,
+        videoHash
       );
 
       if (!uploadResult?.secure_url) {
@@ -434,6 +438,10 @@ export class StoryProcessorService {
           ? {
               sound: voiceOver.url,
               text: voiceOver.text,
+              voiceAccent: voiceOver.data.voiceAccent || null,
+              voiceLanguage: voiceOver.data.voiceLanguage || null,
+              voiceGender: voiceOver.data.voiceGender || null,
+              voiceOverLyrics: voiceOver.data.voiceOverLyrics || null,
             }
           : null,
       };
@@ -532,13 +540,15 @@ export class StoryProcessorService {
         voiceOverText = await openAIService.generateNarrativeText(
           jobData.prompt,
           language,
+          jobData.voiceOver.voiceAccent || null,
           jobData.numOfScenes
         );
       }
       // Generate voice over audio
       const voiceOverData = { ...jobData.voiceOver, text: voiceOverText };
       const voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
-        voiceOverData
+        voiceOverData,
+        jobData.userId
       );
 
       if (!voiceOverUrl) {
