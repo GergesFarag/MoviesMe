@@ -550,7 +550,7 @@ export class StoryProcessorService {
         );
         voiceOverText = await openAIService.generateNarrativeText(
           jobData.prompt,
-          language?.name[1] || "English",
+          language?.name.split(" ")[1] || "English",
           accent?.name || null,
           jobData.numOfScenes
         );
