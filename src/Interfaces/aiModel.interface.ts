@@ -6,6 +6,8 @@ export default interface IAiModel {
   credits: number;
   isNewModel: boolean;
   isTrending: boolean;
+  minImages: number;
+  maxImages: number;
   wavespeedCall: string;
   isVideoEffect?: boolean;
   isImageEffect?: boolean;
@@ -13,5 +15,5 @@ export default interface IAiModel {
   isAITool?: boolean;
   isAI3DTool?: boolean;
   isMarketingTool?: boolean;
-  prompt?:string|null;
+  prompt?: string | null;
 }

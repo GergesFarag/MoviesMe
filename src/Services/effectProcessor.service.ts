@@ -49,7 +49,6 @@ export class EffectProcessorService implements IEffectProcessor {
           size: "2227*3183",
           prompt: prompt
         });
-        console.log("Payload:", payload);
         let modelType = filterModelType(modelData as IAiModel);
         if (!modelType) {
           throw new AppError("Invalid model type", 400);

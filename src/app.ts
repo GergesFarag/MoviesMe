@@ -17,6 +17,7 @@ import { translationService } from "./Services/translation.service";
 import Model from "./Models/aiModel.model";
 import { format } from "path";
 import { formatModelName } from "./Utils/Format/modelNames";
+import { model } from "mongoose";
 const app = express();
 app.use(express.json());
 dotenv.config({ quiet: true });
@@ -40,20 +41,16 @@ app.get(`/`, (req, res) => {
     )
   );
 });
-// app.post(`${basePath}/dbScript`, async (req, res) => {
-//   let imageEffects = await Model.find({ isImageEffect: true }).lean();
-//   // let videoEffects = await Model.find({ isVideoEffect: true }).lean();
-//   await Promise.all(
-//     imageEffects.map((effect) => {
-//       if (effect.prompt) {
-//         Model.findByIdAndUpdate(effect._id, {
-//           wavespeedCall: "bytedance/seedream-v4/edit"
-//         });
-//       }
-//     })
-//   );
-//   res.json({ message: "Database script executed successfully" });
-// });
+app.post(`${basePath}/dbScript`, async (req, res) => {
+  let models = await Model.updateMany(
+    {},
+    {
+      minImages: 1,
+      maxImages: 1,
+    }
+  );
+  res.json({ message: "Database script executed successfully" });
+});
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter);

@@ -8,10 +8,8 @@ export const sendNotificationToClient = async (
 ) => {
   if (!fcmToken || fcmToken.trim() === "") {
     console.error("Invalid FCM token provided");
-    throw new Error("Invalid FCM token");
   }
 
-  // Convert all data values to strings as required by Firebase
   const stringifiedData: Record<string, string> = {};
   if (itemData) {
     Object.keys(itemData).forEach(key => {
@@ -22,7 +20,6 @@ export const sendNotificationToClient = async (
     });
   }
 
-  // Validate that all data values are now strings
   const invalidValues = Object.entries(stringifiedData).filter(([key, value]) => typeof value !== 'string');
   if (invalidValues.length > 0) {
     console.error("Non-string values found in notification data:", invalidValues);
