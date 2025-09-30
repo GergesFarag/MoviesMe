@@ -313,7 +313,6 @@ const modelsController = {
     if (!user || !user.FCMToken) {
       throw new AppError("FCM Token not found", 404);
     }
-
     if (!model) {
       throw new AppError("Model data not found", 404);
     }

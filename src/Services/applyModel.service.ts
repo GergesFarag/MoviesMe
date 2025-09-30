@@ -49,6 +49,7 @@ export const processModelJobAsync = async (
         userId: (user as any)._id,
         data: { image: imageUrl.secure_url, ...rest },
         FCM: user.FCMToken,
+        prompt : model.prompt,
       },
       {
         jobId: jobId,
@@ -105,7 +106,7 @@ export const processModelJobAsync = async (
 export const processMultiImageJobAsync = async (
   data: ProcessMultiImageModelData
 ): Promise<JobResult> => {
-  const { user, model, modelId, images, payload, jobId } = data;
+  const { user, model, images, payload, jobId } = data;
   const { ...rest } = payload;
   const userId = (user as any)._id.toString();
   try {
@@ -124,6 +125,7 @@ export const processMultiImageJobAsync = async (
       }
       imageUrls.push(imageUrl.secure_url);
     }
+    console.log("Model Prompt" , model.prompt);
     const job = await taskQueue.add(
       {
         modelData: model,

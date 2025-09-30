@@ -276,7 +276,7 @@ export class NotificationService {
   /**
    * Save notification to user's notifications array
    */
-  private async saveNotificationToUser(
+  async saveNotificationToUser(
     user: any,
     notificationData: NotificationData
   ): Promise<void> {

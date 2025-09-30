@@ -7,9 +7,6 @@ import Story from "../../Models/story.model";
 export class StoryQueueHandlers {
   private notificationService = new NotificationService();
 
-  /**
-   * Handle job completion
-   */
   async onCompleted(job: Job, result: any) {
     console.log(`✅ Story job with ID ${job.id} has been completed.`);
     console.log("Result:", result);

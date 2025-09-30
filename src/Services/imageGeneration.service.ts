@@ -179,10 +179,7 @@ export class ImageGenerationService {
     }
   }
 
-  /**
-   * LEGACY: Original implementation kept as fallback
-   * This method uses the old fixed-interval polling and should only be used as fallback
-   */
+
   private async generateSeedreamImagesLegacy(
     seedreamPrompt: string,
     numOfScenes: number,
