@@ -161,13 +161,8 @@ const authController = {
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
-    if (!user.FCMToken) {
-      user.FCMToken = FCMToken;
-      await user.save();
-    } else {
-      user.FCMToken = FCMToken;
-      await user.save();
-    }
+    user.FCMToken = FCMToken;
+    await user.save();
     res.status(200).json({
       message: "FCM token added successfully",
       data: { fcmToken: user.FCMToken },
