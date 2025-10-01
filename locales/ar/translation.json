@@ -94,6 +94,20 @@
     "family": "عائلي",
     "sports": "رياضة"
   },
+  "categories": {
+    "all": "الجميع",
+    "fashion": "موضة",
+    "fantasy": "خيال",
+    "gaming": "ألعاب",
+    "romance": "رومانسي",
+    "sports": "رياضة",
+    "cinematic": "سينمائي",
+    "ai tools": "أدوات الذكاء الاصطناعي",
+    "artistic": "فني",
+    "character": "شخصية",
+    "lifestyle": "نمط الحياة",
+    "unknown": "غير معروف"
+  },
   "notifications": {
     "story": {
       "pending": {

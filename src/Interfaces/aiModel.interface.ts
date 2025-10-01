@@ -1,9 +1,24 @@
+import { Document } from "mongoose";
+
+export type TModelCategory =
+  | "fashion"
+  | "fantasy"
+  | "gaming"
+  | "romance"
+  | "sports"
+  | "cinematic"
+  | "ai tools"
+  | "artistic"
+  | "character"
+  | "lifestyle"
+  | "unknown";
 interface IGeneralModel extends Document {
   name: string;
   thumbnail: string;
   isVideo: boolean;
   credits: number;
   wavespeedCall: string;
+  category: TModelCategory;
 }
 export default interface IAiModel extends IGeneralModel {
   previewUrl: string;

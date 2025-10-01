@@ -20,6 +20,7 @@ import Model from "./Models/ai.model.ts";
 import "./Queues/generationLib.queue";
 import "./Queues/story.queue";
 import "./Queues/model.queue";
+import { TModelCategory } from "./Interfaces/aiModel.interface";
 
 const app = express();
 app.use(express.json());
@@ -44,18 +45,17 @@ app.get(`/`, (req, res) => {
     )
   );
 });
-
+  
 //*HERE IS CUSTOM SCRIPTS TO RUN ON DB
-// app.post(`${basePath}/dbScript`, async (req, res) => {
-//   let models = await Model.updateMany(
-//     {},
-//     {
-//       minImages: 1,
-//       maxImages: 1,
-//     }
-//   );
-//   res.json({ message: "Database script executed successfully" });
-// });
+app.post(`${basePath}/dbScript`, async (req, res) => {
+  try {
+    // Your database script logic here
+    res.status(200).json({ message: "DB script executed successfully" });
+  } catch (error) {
+    console.error("Error executing DB script:", error);
+    res.status(500).json({ message: "Error executing DB script" });
+  }
+});
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter);

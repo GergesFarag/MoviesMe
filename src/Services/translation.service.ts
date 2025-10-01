@@ -31,6 +31,7 @@ class TranslationService implements ITranslationService {
       return {
         ...item.toObject(),
         name: translatedName,
+        category: this.translateCategory(item.category, locale),
       };
     });
   }
@@ -55,6 +56,36 @@ class TranslationService implements ITranslationService {
       })
     };
     return translatedData;
+  }
+
+  public translateCategory(category: string, locale: string): string {
+    return this.translateItem("categories", category, locale);
+  }
+
+  public translateCategories(categories: string[], locale: string): string[] {
+    return categories.map((category) => this.translateItem("categories", category, locale));
+  }
+
+  public getCategoryKey(translatedCategory: string, locale: string): string {
+    // If it's already "all", return it as is
+    if (translatedCategory === "all") return "all";
+    
+    // List of all possible category keys
+    const categoryKeys = [
+      "fashion", "fantasy", "gaming", "romance", "sports", 
+      "cinematic", "ai tools", "artistic", "character", "lifestyle", "unknown"
+    ];
+    
+    // Find the key that matches the translated value
+    for (const key of categoryKeys) {
+      const translatedValue = this.translateItem("categories", key, locale);
+      if (translatedValue === translatedCategory) {
+        return key;
+      }
+    }
+    
+    // If no match found, return the original value (might already be a key)
+    return translatedCategory;
   }
 
   public translateText(

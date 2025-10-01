@@ -3,7 +3,10 @@ import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import User from "../Models/user.model";
 import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
-import { processModelJobAsync, processMultiImageJobAsync } from "../Services/applyModel.service";
+import {
+  processModelJobAsync,
+  processMultiImageJobAsync,
+} from "../Services/applyModel.service";
 import { Sorting } from "../Utils/Sorting/sorting";
 import paginator from "../Utils/Pagination/paginator";
 import { TModelFetchQuery } from "../types";
@@ -16,10 +19,17 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
+      category = "all"
     }: TModelFetchQuery = req.query;
-    const models = await Model.find({
-      isVideoEffect: true,
-    }).select("-__v");
+    
+    const locale = req.headers["accept-language"] || "en";
+    const categoryKey = translationService.getCategoryKey(category, locale);
+    
+    let query: Record<string, boolean | string> = { isVideoEffect: true };
+    if (categoryKey !== "all") {
+      query.category = categoryKey;
+    }
+    const models = await Model.find(query).select("-__v");
 
     const sortedModels = Sorting.sortItems(models, sortBy);
     const paginatedModels = paginator(
@@ -41,9 +51,7 @@ const modelsController = {
         paginationData: {
           page: Number(page),
           limit: Number(limit),
-          total: await Model.countDocuments({
-            isVideoEffect: true,
-          }),
+          total: await Model.countDocuments(query),
         },
       },
     });
@@ -54,10 +62,17 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
+      category = "all"
     }: TModelFetchQuery = req.query;
-    const models = await Model.find({
-      isImageEffect: true,
-    }).select("-__v");
+    
+    const locale = req.headers["accept-language"] || "en";
+    const categoryKey = translationService.getCategoryKey(category, locale);
+    
+    let query: Record<string, boolean | string> = { isImageEffect: true };
+    if (categoryKey !== "all") {
+      query.category = categoryKey;
+    }
+    const models = await Model.find(query).select("-__v");
 
     if (!models) {
       throw new AppError("No models found", 404);
@@ -80,9 +95,7 @@ const modelsController = {
         paginationData: {
           page: Number(page),
           limit: Number(limit),
-          total: await Model.countDocuments({
-            isImageEffect: true,
-          }),
+          total: await Model.countDocuments(query),
         },
       },
     });
@@ -93,8 +106,26 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
-    }: TModelFetchQuery = req.query;
-    const models = await Model.find({ isTrending: true }).select("-__v");
+      type = "all",
+      category = "all",
+    }: TModelFetchQuery & { type?: string } = req.query;
+    
+    const locale = req.headers["accept-language"] || "en";
+    const categoryKey = translationService.getCategoryKey(category, locale);
+    
+    const query: Record<string, boolean | string> = { isTrending: true };
+    const filter: Record<string, string> = {
+      video: "isVideoEffect",
+      image: "isImageEffect",
+    };
+ 
+    if (type !== "all") {
+      query[filter[type]] = true;
+    }
+    if (categoryKey !== "all") {
+      query.category = categoryKey;
+    }
+    const models = await Model.find(query).select("-__v");
     if (!models) {
       throw new AppError("No models found", 404);
     }
@@ -115,7 +146,7 @@ const modelsController = {
         paginationData: {
           page,
           limit,
-          total: await Model.countDocuments({ isTrending: true }),
+          total: await Model.countDocuments(query),
         },
       },
     });
@@ -126,8 +157,17 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
+      category = "all"
     }: TModelFetchQuery = req.query;
-    const models = await Model.find({ isCharacterEffect: true }).select("-__v");
+    
+    const locale = req.headers["accept-language"] || "en";
+    const categoryKey = translationService.getCategoryKey(category, locale);
+    
+    let query: Record<string, boolean | string> = { isCharacterEffect: true };
+    if (categoryKey !== "all") {
+      query.category = categoryKey;
+    }
+    const models = await Model.find(query).select("-__v");
 
     const sortedModels = Sorting.sortItems(models, sortBy);
     const paginatedModels = paginator(
@@ -150,7 +190,7 @@ const modelsController = {
         paginationData: {
           page: Number(page),
           limit: Number(limit),
-          total: await Model.countDocuments({ isCharacterEffect: true }),
+          total: await Model.countDocuments(query),
         },
       },
     });
@@ -161,8 +201,17 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
+      category = "all"
     }: TModelFetchQuery = req.query;
-    const models = await Model.find({ isAITool: true }).select("-__v");
+    
+    const locale = req.headers["accept-language"] || "en";
+    const categoryKey = translationService.getCategoryKey(category, locale);
+    
+    let query: Record<string, boolean | string> = { isAITool: true };
+    if (categoryKey !== "all") {
+      query.category = categoryKey;
+    }
+    const models = await Model.find(query).select("-__v");
     if (!models) {
       throw new AppError("No models found", 404);
     }
@@ -184,7 +233,7 @@ const modelsController = {
         paginationData: {
           page: Number(page),
           limit: Number(limit),
-          total: await Model.countDocuments({ isAITool: true }),
+          total: await Model.countDocuments(query),
         },
       },
     });
@@ -195,42 +244,17 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
+      category = "all"
     }: TModelFetchQuery = req.query;
-    const models = await Model.find({ isAI3DTool: true }).select("-__v");
-
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
-    if (!models) {
-      throw new AppError("No models found", 404);
+    
+    const locale = req.headers["accept-language"] || "en";
+    const categoryKey = translationService.getCategoryKey(category, locale);
+    
+    let query: Record<string, boolean | string> = { isAI3DTool: true };
+    if (categoryKey !== "all") {
+      query.category = categoryKey;
     }
-    res.status(200).json({
-      message: "Models retrieved successfully",
-      data: {
-        models: paginatedModels,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments({ isAI3DTool: true }),
-        },
-      },
-    });
-  }),
-
-  getMarketingTools: catchError(async (req, res) => {
-    const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-    }: TModelFetchQuery = req.query;
-    const models = await Model.find({ isMarketingTool: true }).select("-__v");
+    const models = await Model.find(query).select("-__v");
 
     const sortedModels = Sorting.sortItems(models, sortBy);
     const paginatedModels = paginator(
@@ -252,7 +276,51 @@ const modelsController = {
         paginationData: {
           page: Number(page),
           limit: Number(limit),
-          total: await Model.countDocuments({ isMarketingTool: true }),
+          total: await Model.countDocuments(query),
+        },
+      },
+    });
+  }),
+
+  getMarketingTools: catchError(async (req, res) => {
+    const {
+      limit = 5,
+      page = 1,
+      sortBy = "newest",
+      category = "all"
+    }: TModelFetchQuery = req.query;
+
+    const locale = req.headers["accept-language"] || "en";
+    const categoryKey = translationService.getCategoryKey(category, locale);
+
+    let query: Record<string, boolean | string> = { isMarketingTool: true };
+    if (categoryKey !== "all") {
+      query.category = categoryKey;
+    }
+
+    const models = await Model.find(query).select("-__v");
+
+    const sortedModels = Sorting.sortItems(models, sortBy);
+    const paginatedModels = paginator(
+      sortedModels,
+      Number(page),
+      Number(limit)
+    );
+    const translatedModels = translationService.translateModels(
+      paginatedModels,
+      req.headers["accept-language"] || "en"
+    );
+    if (!models) {
+      throw new AppError("No models found", 404);
+    }
+    res.status(200).json({
+      message: "Models retrieved successfully",
+      data: {
+        models: translatedModels,
+        paginationData: {
+          page: Number(page),
+          limit: Number(limit),
+          total: await Model.countDocuments(query),
         },
       },
     });

@@ -3,6 +3,7 @@ export type TModelFetchQuery = {
   limit?: number;
   page?: number;
   sortBy?: TSort;
+  category?:string;
 };
 
 export type TPaginationQuery = {

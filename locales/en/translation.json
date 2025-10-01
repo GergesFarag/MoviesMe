@@ -87,6 +87,20 @@
     "family": "family",
     "sports": "sports"
   },
+  "categories": {
+    "all": "All",
+    "fashion": "Fashion",
+    "fantasy": "Fantasy",
+    "gaming": "Gaming", 
+    "romance": "Romance",
+    "sports": "Sports",
+    "cinematic": "Cinematic",
+    "ai tools": "AI Tools",
+    "artistic": "Artistic",
+    "character": "Character",
+    "lifestyle": "Lifestyle",
+    "unknown": "Unknown"
+  },
   "voiceOver": {
     "voiceGender": {
       "male": "male",
