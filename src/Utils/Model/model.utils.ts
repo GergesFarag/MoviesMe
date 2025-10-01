@@ -3,6 +3,10 @@ import { getIO, sendWebsocket } from "../../Sockets/socket";
 import AppError from "../Errors/AppError";
 import { formatModelName } from "../Format/modelNames";
 import { DefaultEventsMap, Server } from "socket.io";
+import {
+  IGenerationImageLibModel,
+  IGenerationVideoLibModel,
+} from "../../Interfaces/aiModel.interface";
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
 const safeJobUpdate = async (
@@ -135,8 +139,7 @@ export const payloadBuilder = (data: {
     enable_sync_mode: false,
   };
   if (data.images.length === 1) {
-    if(data.hasPrompt){
-
+    if (data.hasPrompt) {
       Object.assign(payload, { images: data.images });
     }
     Object.assign(payload, { image: data.images[0] });
@@ -146,8 +149,65 @@ export const payloadBuilder = (data: {
   if (data.size) {
     Object.assign(payload, { size: data.size });
   }
-  if(data.prompt){
+  if (data.prompt) {
     Object.assign(payload, { prompt: data.prompt });
   }
   return payload;
+};
+
+export const constructImageGenerationPayload = (
+  model: IGenerationImageLibModel,
+  prompt?: string,
+  refImages?: string[]
+): { url: string; payload: any } => {
+  const BASE_URL = `https://api.wavespeed.ai/api/v3/`;
+  const url = `${BASE_URL}${model.wavespeedCall}`;
+  let payload = {
+    enable_base64_output: false,
+    enable_sync_mode: false,
+  };
+  if (model.requirePrompt || (prompt && !model.requirePrompt)) {
+    Object.assign(payload, { prompt });
+  }
+  if (refImages && refImages.length > 0 && model.maxImages !== 0) {
+    if (refImages.length === 1) {
+      if (model.maxImages > 1) {
+        Object.assign(payload, { images: refImages });
+      } else {
+        Object.assign(payload, { image: refImages[0] });
+      }
+    } else {
+      if (refImages.length > model.maxImages) {
+        throw new AppError(
+          `Model supports a maximum of ${model.maxImages} reference images.`,
+          400
+        );
+      }
+      Object.assign(payload, { images: refImages });
+    }
+  }
+  if (refImages && refImages.length < model.minImages) {
+    throw new AppError(
+      `Model requires at least ${model.minImages} reference image(s).`,
+      400
+    );
+  }
+  return { url, payload };
+};
+export const constructVideoGenerationPayload = (
+  model: IGenerationVideoLibModel,
+  prompt?: string,
+  refImages?: string[],
+  videoDuration?: number
+): { url: string; payload: any } => {
+  let { url, payload } = constructImageGenerationPayload(
+    model,
+    prompt,
+    refImages
+  );
+  Object.assign(payload, {
+    duration: videoDuration || model.defaultVideoDuration,
+  });
+
+  return { url, payload };
 };

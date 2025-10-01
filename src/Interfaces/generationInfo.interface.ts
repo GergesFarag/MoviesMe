@@ -1,8 +1,7 @@
 import { Document } from "mongoose";
+import { IGenerationImageLibModel, IGenerationVideoLibModel } from "./aiModel.interface";
 
 export interface IGenerationInfo extends Document {
-    creditsPerImage : number;
-    creditsPerVideo : number;
-    defaultVideoDuration : number;
-    maxVideoDuration : number;
+  imageModels: IGenerationImageLibModel[];
+  videoModels: IGenerationVideoLibModel[];
 }

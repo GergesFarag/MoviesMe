@@ -16,18 +16,18 @@ const generationLibController = {
       if (!userId) {
         throw new AppError("User not authenticated", 401);
       }
-
+      if(req.body.isVideo && (req.body.isVideo == "false" || !req.body.isVideo)){
+        req.body.isVideo = false;
+      }else{
+        req.body.isVideo = true;
+      }
       const requestData: IGenerationLibRequestDTO = req.body;
-      console.log("Request Data:", requestData);
-
+      
       let uploadedImageUrls: string[] = [];
 
       const files = req.files as Express.Multer.File[] | undefined;
       
       if (files && files.length > 0) {
-        console.log(`Uploading ${files.length} images to Cloudinary...`);
-        console.log(`Field names received:`, files.map(f => f.fieldname));
-        
         try {
           const uploadPromises = files.map(async (file: Express.Multer.File) => {
             const fileHash = generateHashFromBuffer(file.buffer);
@@ -77,6 +77,7 @@ const generationLibController = {
       }
     }
   ),
+
   getGenerationInfo: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
 
@@ -87,6 +88,7 @@ const generationLibController = {
       });
     }
   ),
+
   updateGenerationInfo: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const updateData = req.body;

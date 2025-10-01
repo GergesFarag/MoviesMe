@@ -10,6 +10,7 @@ export interface IGenerationLib {
   status: string;
   isFav: boolean;
   duration: number;
+  modelId?:string;
   createdAt?: Date;
   updatedAt?: Date;
 }

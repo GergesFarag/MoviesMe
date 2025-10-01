@@ -6,6 +6,8 @@ import {
 } from "../Utils/APIs/wavespeed_base";
 import { Validator } from "./validation.service";
 import AppError from "../Utils/Errors/AppError";
+import { IGenerationImageLibModel } from "../Interfaces/aiModel.interface";
+import { constructImageGenerationPayload } from "../Utils/Model/model.utils";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
 const baseURL = "https://api.wavespeed.ai/api/v3";
@@ -300,37 +302,30 @@ export class ImageGenerationService {
   }
 
   async generateForGenerationLib(
-    prompt: string,
+    model: IGenerationImageLibModel,
+    prompt?: string,
     refImages?: string[]
   ): Promise<string> {
-    const finalPrompt = this.enableContentSanitization
-      ? this.validator.TextValidator.sanitizeImageDescription(prompt)
-      : prompt;
 
-    let url = "";
-    let payload: any = {
-      enable_base64_output: false,
-      enable_sync_mode: false,
-      output_format: "jpeg",
-      prompt: finalPrompt,
-      size: "2048*2048",
-    };
-
-    if (refImages && refImages.length > 0) {
-      url = `${baseURL}/bytedance/seedream-v4/edit`;
-      payload.images = refImages;
-    } else {
-      url = `${baseURL}/bytedance/seedream-v4`;
-    }
-
+    const { url, payload } = constructImageGenerationPayload(
+      model,
+      prompt,
+      refImages
+    );
+    console.log("Payload for GenerationLib:", payload);
     const headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
 
     try {
-      console.log(`🎨 Starting generation for generationLib with prompt: ${finalPrompt.substring(0, 100)}...`);
-      
+      console.log(
+        `🎨 Starting generation for generationLib with prompt: ${prompt!.substring(
+          0,
+          100
+        )}...`
+      );
+
       const resultUrl = (await wavespeedBaseOptimized(
         url,
         headers,
@@ -339,17 +334,21 @@ export class ImageGenerationService {
 
       if (!resultUrl) {
         throw new AppError(
-          `Failed to generate image for generationLib: ${finalPrompt}`,
+          `Failed to generate image for generationLib: ${prompt}`,
           500
         );
       }
 
-      console.log(`✅ Successfully generated image for generationLib: ${resultUrl}`);
+      console.log(
+        `✅ Successfully generated image for generationLib: ${resultUrl}`
+      );
       return resultUrl;
     } catch (error) {
       console.error(`❌ GenerationLib image generation failed:`, error);
       throw new AppError(
-        `GenerationLib generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `GenerationLib generation failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         500
       );
     }

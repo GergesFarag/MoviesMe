@@ -15,6 +15,7 @@ export interface IGenerationLibDTO {
 
 export interface IGenerationLibRequestDTO {
   prompt: string;
+  modelId: string;
   refImages?: string[];
   isVideo?: boolean;
   size?: string;

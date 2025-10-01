@@ -11,7 +11,7 @@ import AppError from "../Utils/Errors/AppError";
 import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers";
 import { Sorting } from "../Utils/Sorting/sorting";
 import { IGenerationInfo } from "../Interfaces/generationInfo.interface";
-import GenerationInfo from "../Models/generation.moel";
+import GenerationInfo from "../Models/generation.model";
 
 export class GenerationLibService {
   async createGeneration(
@@ -60,6 +60,7 @@ export class GenerationLibService {
         refImages: requestData.refImages,
         isVideo: requestData.isVideo,
         size: requestData.size,
+        modelId: requestData.modelId,
         jobId,
       };
       await generationLibQueue.add(jobData, {
@@ -302,7 +303,7 @@ export class GenerationLibService {
       );
     }
   }
-  
+
   async updateGenerationInfo(
     updates: Partial<IGenerationInfo>
   ): Promise<IGenerationInfo> {

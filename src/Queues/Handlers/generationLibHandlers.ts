@@ -13,13 +13,16 @@ import { getUserLangFromDB } from "../../Utils/Format/languageUtils";
 import { translationService } from "../../Services/translation.service";
 import { Types } from "mongoose";
 import { VideoGenerationService } from "../../Services/videoGeneration.service";
+import GenerationInfo from "../../Models/generation.model";
 
 export interface IGenerationLibJobData {
   userId: string;
   prompt: string;
   refImages?: string[];
   isVideo?: boolean;
+  modelId?: string;
   size?: string;
+  duration?: number;
   jobId: string;
 }
 
@@ -35,7 +38,15 @@ export class GenerationLibQueueHandler {
   }
 
   async processGenerationLib(job: Job<IGenerationLibJobData>) {
-    const { userId, prompt, refImages, isVideo = false, jobId } = job.data;
+    const {
+      userId,
+      prompt,
+      refImages,
+      isVideo = false,
+      duration = 5,
+      jobId,
+      modelId,
+    } = job.data;
     let intervalId: NodeJS.Timeout | null = null;
 
     try {
@@ -56,7 +67,7 @@ export class GenerationLibQueueHandler {
           await updateJobProgress(
             job,
             progress,
-            "Generating image...",
+            "Generating...",
             getIO(),
             "generationLib:progress"
           );
@@ -71,9 +82,20 @@ export class GenerationLibQueueHandler {
         "generationLib:progress"
       );
       let result = null;
+      const generationInfo = await GenerationInfo.findOne();
+      if (!generationInfo) {
+        throw new AppError("No Generation Data Found", 404);
+      }
       if (!isVideo) {
+        const model = generationInfo.imageModels.find(
+          (m: any) => m._id.toString() === modelId
+        );
+        if (!model) {
+          throw new AppError("Model not found in imageModels", 404);
+        }
         const resultURL =
           await this.imageGenerationService.generateForGenerationLib(
+            model,
             prompt,
             refImages
           );
@@ -103,16 +125,23 @@ export class GenerationLibQueueHandler {
           thumbnail,
           prompt,
           isVideo,
-          duration: isVideo ? 10 : 0,
+          duration: isVideo ? 5 : 0,
           refImages,
         };
         console.log(`✅ Successfully processed GenerationLib job ${jobId}`);
       } else {
+        const model = generationInfo.videoModels.find(
+          (m: any) => m._id.toString() === modelId
+        );
+        if (!model) {
+          throw new AppError("Model not found in videoModels", 404);
+        }
         const resultURL =
           await this.videoGenerationService.generateVideoForGenerationLib(
-            refImages && refImages[0] ? refImages[0] : undefined,
-            5,
-            prompt
+            refImages,
+            duration,
+            prompt,
+            model
           );
         if (!resultURL) {
           throw new AppError("Video generation failed", 500);

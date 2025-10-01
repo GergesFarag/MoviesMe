@@ -10,6 +10,8 @@ import fs from "fs";
 import { Readable } from "stream";
 import AppError from "../Utils/Errors/AppError";
 import { downloadFile } from "../Utils/Format/downloadFile";
+import { IGenerationVideoLibModel } from "../Interfaces/aiModel.interface";
+import { constructImageGenerationPayload, constructVideoGenerationPayload } from "../Utils/Model/model.utils";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
 const baseURL = "https://api.wavespeed.ai/api/v3";
@@ -513,26 +515,16 @@ export class VideoGenerationService {
   }
 
   async generateVideoForGenerationLib(
-    refImage: string | undefined,
+    refImages: string[] | undefined,
     duration: number,
-    prompt: string
+    prompt: string,
+    model: IGenerationVideoLibModel
   ): Promise<string> {
-    let url = "";
-    if (!refImage) {
-      url = `${baseURL}/bytedance/seedance-v1-lite-t2v-480p`;
-    } else {
-      url = `${baseURL}/bytedance/seedance-v1-lite-i2v-480p`;
-    }
     const headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
-    const payload: any = {
-      image: refImage,
-      duration,
-      seed: -1,
-    };
-    prompt && Object.assign(payload, { prompt });
+    const {url , payload} = constructVideoGenerationPayload(model , prompt , refImages,duration);
     console.log("Payload for video generation:", payload);
     console.log("URL for video generation:", url);
     try {

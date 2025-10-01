@@ -1,14 +1,16 @@
-export default interface IAiModel {
+interface IGeneralModel extends Document {
   name: string;
   thumbnail: string;
-  previewUrl: string;
   isVideo: boolean;
   credits: number;
+  wavespeedCall: string;
+}
+export default interface IAiModel extends IGeneralModel {
+  previewUrl: string;
   isNewModel: boolean;
   isTrending: boolean;
   minImages: number;
   maxImages: number;
-  wavespeedCall: string;
   isVideoEffect?: boolean;
   isImageEffect?: boolean;
   isCharacterEffect?: boolean;
@@ -16,4 +18,16 @@ export default interface IAiModel {
   isAI3DTool?: boolean;
   isMarketingTool?: boolean;
   prompt?: string | null;
+}
+export interface IGenerationImageLibModel extends IGeneralModel {
+  minImages: number;
+  maxImages: number;
+  requirePrompt: boolean;
+}
+export interface IGenerationVideoLibModel extends IGeneralModel {
+  minImages: number;
+  maxImages: number;
+  requirePrompt: boolean;
+  defaultVideoDuration: number;
+  maxVideoDuration: number;
 }
