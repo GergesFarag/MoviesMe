@@ -125,7 +125,7 @@ export class GenerationLibQueueHandler {
           thumbnail,
           prompt,
           isVideo,
-          duration: isVideo ? 5 : 0,
+          duration: duration ? duration : isVideo ? 5 : 0,
           refImages,
         };
         console.log(`✅ Successfully processed GenerationLib job ${jobId}`);
