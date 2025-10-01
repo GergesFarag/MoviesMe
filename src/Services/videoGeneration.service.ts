@@ -1,5 +1,8 @@
 import path from "path";
-import { wavespeedBase, wavespeedBaseOptimized } from "../Utils/APIs/wavespeed_base";
+import {
+  wavespeedBase,
+  wavespeedBaseOptimized,
+} from "../Utils/APIs/wavespeed_base";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import { IScene } from "../Interfaces/scene.interface";
@@ -25,7 +28,8 @@ export class VideoGenerationService {
 
   async generateVideoFromImage(
     refImageUrl: string,
-    duration: number
+    duration: number,
+    prompt?: string
   ): Promise<string> {
     let url = `${baseURL}/bytedance/seedance-v1-lite-i2v-480p`;
     const headers = {
@@ -37,35 +41,60 @@ export class VideoGenerationService {
       image: refImageUrl,
       seed: -1,
     };
-    
+    console.log("Payload for video generation:", payload);
     try {
       console.log(`🎥 Starting optimized video generation from image...`);
-      
-      // Use optimized polling for better performance
-      const resultUrl = await wavespeedBaseOptimized(url, headers, payload) as string;
-      
+
+      const resultUrl = (await wavespeedBaseOptimized(
+        url,
+        headers,
+        payload
+      )) as string;
+
       if (!resultUrl) {
-        throw new AppError("No video URL returned from optimized generation", 500);
+        throw new AppError(
+          "No video URL returned from optimized generation",
+          500
+        );
       }
-      
-      console.log(`✅ Video generated successfully with optimized polling: ${resultUrl.substring(0, 50)}...`);
+
+      console.log(
+        `✅ Video generated successfully with optimized polling: ${resultUrl.substring(
+          0,
+          50
+        )}...`
+      );
       return resultUrl;
-      
     } catch (error) {
       console.error("❌ Optimized video generation failed:", error);
-      
+
       // Fallback to original implementation
       console.log("🔄 Falling back to legacy video generation...");
       try {
-        const resultUrl = await wavespeedBase(url, headers, payload) as string;
+        const resultUrl = (await wavespeedBase(
+          url,
+          headers,
+          payload
+        )) as string;
         if (!resultUrl) {
-          throw new AppError("Failed to generate video from image using fallback", 500);
+          throw new AppError(
+            "Failed to generate video from image using fallback",
+            500
+          );
         }
-        console.log(`✅ Video generated with legacy polling: ${resultUrl.substring(0, 50)}...`);
+        console.log(
+          `✅ Video generated with legacy polling: ${resultUrl.substring(
+            0,
+            50
+          )}...`
+        );
         return resultUrl;
       } catch (fallbackError) {
         console.error("❌ Legacy video generation also failed:", fallbackError);
-        throw new AppError("Video generation failed (both optimized and legacy methods)", 500);
+        throw new AppError(
+          "Video generation failed (both optimized and legacy methods)",
+          500
+        );
       }
     }
   }
@@ -98,7 +127,9 @@ export class VideoGenerationService {
         downloadFile(audioUrl, "audio"),
       ]);
 
-      console.log(`🎵 Downloaded audio buffer size: ${downloadedAudioBuffer.length} bytes`);
+      console.log(
+        `🎵 Downloaded audio buffer size: ${downloadedAudioBuffer.length} bytes`
+      );
 
       if (!downloadedAudioBuffer || downloadedAudioBuffer.length === 0) {
         throw new AppError("Downloaded audio buffer is empty", 500);
@@ -132,13 +163,15 @@ export class VideoGenerationService {
 
       // Use default video duration (no ffprobe)
       const videoDuration = numOfScenes * 5; // 5 seconds per scene
-      console.log(`📹 Using calculated video duration: ${videoDuration} seconds`);
+      console.log(
+        `📹 Using calculated video duration: ${videoDuration} seconds`
+      );
 
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()
           .input(tempVideoPath)
           .input(tempAudioPath)
-          .videoCodec("copy") 
+          .videoCodec("copy")
           .audioCodec("aac")
           .audioChannels(2)
           .audioFrequency(44100) // Standard audio frequency
@@ -147,9 +180,12 @@ export class VideoGenerationService {
             "0:v:0", // Map first video stream
             "-map",
             "1:a:0", // Map first audio stream
-            "-c:v", "copy", // Copy video without re-encoding
-            "-c:a", "aac", // Encode audio as AAC
-            "-t", videoDuration.toString(), // Cut to video duration (audio will be trimmed if longer)
+            "-c:v",
+            "copy", // Copy video without re-encoding
+            "-c:a",
+            "aac", // Encode audio as AAC
+            "-t",
+            videoDuration.toString(), // Cut to video duration (audio will be trimmed if longer)
             "-avoid_negative_ts",
             "make_zero",
             "-fflags",
@@ -160,7 +196,9 @@ export class VideoGenerationService {
           ])
           .output(outputPath);
 
-        console.log(`🎵 Audio will be cut to match video duration: ${videoDuration} seconds`);
+        console.log(
+          `🎵 Audio will be cut to match video duration: ${videoDuration} seconds`
+        );
 
         command
           .on("start", (commandLine) => {
@@ -354,10 +392,7 @@ export class VideoGenerationService {
     const videoUrls: string[] = [];
     for (const image of sceneImages) {
       try {
-        const videoUrl = await this.generateVideoFromImage(
-          image,
-          5
-        );
+        const videoUrl = await this.generateVideoFromImage(image, 5);
         videoUrls.push(videoUrl);
       } catch (error) {
         console.error("Error generating video for scene:", error);
@@ -372,29 +407,45 @@ export class VideoGenerationService {
     }
 
     console.log(`🎬 Generating ${sceneImages.length} videos in parallel...`);
-    
+
     // Create promises for parallel video generation
     const videoGenerationPromises = sceneImages.map(async (imageUrl, index) => {
       const sceneNumber = index + 1;
-      
+
       try {
-        console.log(`🎥 Starting video generation for scene ${sceneNumber}/${sceneImages.length}`);
-        
+        console.log(
+          `🎥 Starting video generation for scene ${sceneNumber}/${sceneImages.length}`
+        );
+
         const videoUrl = await this.generateVideoFromImage(imageUrl, 5);
-        
-        if (!videoUrl || typeof videoUrl !== 'string' || !videoUrl.startsWith('http')) {
-          throw new AppError(`Invalid video URL generated for scene ${sceneNumber}`, 500);
+
+        if (
+          !videoUrl ||
+          typeof videoUrl !== "string" ||
+          !videoUrl.startsWith("http")
+        ) {
+          throw new AppError(
+            `Invalid video URL generated for scene ${sceneNumber}`,
+            500
+          );
         }
-        
-        console.log(`✅ Scene ${sceneNumber} video generated successfully: ${videoUrl.substring(0, 50)}...`);
+
+        console.log(
+          `✅ Scene ${sceneNumber} video generated successfully: ${videoUrl.substring(
+            0,
+            50
+          )}...`
+        );
         return { index, videoUrl, success: true };
-        
       } catch (error) {
-        console.error(`❌ Failed to generate video for scene ${sceneNumber}:`, error);
-        return { 
-          index, 
-          error: error instanceof Error ? error.message : 'Unknown error',
-          success: false 
+        console.error(
+          `❌ Failed to generate video for scene ${sceneNumber}:`,
+          error
+        );
+        return {
+          index,
+          error: error instanceof Error ? error.message : "Unknown error",
+          success: false,
         };
       }
     });
@@ -402,15 +453,15 @@ export class VideoGenerationService {
     try {
       // Wait for all video generation promises to settle
       const results = await Promise.allSettled(videoGenerationPromises);
-      
+
       // Process results and handle errors
       const videoUrls: string[] = new Array(sceneImages.length);
       const failedScenes: number[] = [];
-      
+
       results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           const { index: sceneIndex, videoUrl, success, error } = result.value;
-          
+
           if (success && videoUrl) {
             videoUrls[sceneIndex] = videoUrl;
           } else {
@@ -425,27 +476,81 @@ export class VideoGenerationService {
 
       // Check for failures
       if (failedScenes.length > 0) {
-        const errorMessage = `Failed to generate videos for ${failedScenes.length} scene(s): ${failedScenes.join(', ')}`;
+        const errorMessage = `Failed to generate videos for ${
+          failedScenes.length
+        } scene(s): ${failedScenes.join(", ")}`;
         console.error(`❌ ${errorMessage}`);
         throw new AppError(errorMessage, 500);
       }
 
       // Validate all URLs are present
-      const missingUrls = videoUrls.map((url, index) => url ? null : index + 1).filter(Boolean);
+      const missingUrls = videoUrls
+        .map((url, index) => (url ? null : index + 1))
+        .filter(Boolean);
       if (missingUrls.length > 0) {
-        throw new AppError(`Missing video URLs for scenes: ${missingUrls.join(', ')}`, 500);
+        throw new AppError(
+          `Missing video URLs for scenes: ${missingUrls.join(", ")}`,
+          500
+        );
       }
 
-      console.log(`🎉 Successfully generated ${videoUrls.length} videos in parallel`);
+      console.log(
+        `🎉 Successfully generated ${videoUrls.length} videos in parallel`
+      );
       return videoUrls;
-
     } catch (error) {
       console.error("❌ Parallel video generation failed:", error);
       if (error instanceof AppError) {
         throw error;
       }
       throw new AppError(
-        `Parallel video generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        `Parallel video generation failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        500
+      );
+    }
+  }
+
+  async generateVideoForGenerationLib(
+    refImage: string | undefined,
+    duration: number,
+    prompt: string
+  ): Promise<string> {
+    let url = "";
+    if (!refImage) {
+      url = `${baseURL}/bytedance/seedance-v1-lite-t2v-480p`;
+    } else {
+      url = `${baseURL}/bytedance/seedance-v1-lite-i2v-480p`;
+    }
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+    };
+    const payload: any = {
+      image: refImage,
+      duration,
+      seed: -1,
+    };
+    prompt && Object.assign(payload, { prompt });
+    console.log("Payload for video generation:", payload);
+    console.log("URL for video generation:", url);
+    try {
+      const response = (await wavespeedBaseOptimized(url, headers, payload)) as string;
+      console.log("RESPONSE : " , response)
+      console.log(
+        `✅ Video generated successfully for generation lib: ${url.substring(
+          0,
+          50
+        )}...`
+      );
+      return response;
+    } catch (error) {
+      console.error("Error generating video for generation lib:", error);
+      throw new AppError(
+        `Video generation failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         500
       );
     }

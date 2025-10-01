@@ -3,13 +3,13 @@ import Job from "../../Models/job.model";
 import Story from "../../Models/story.model";
 import { IEffectItem } from "../../Interfaces/effectItem.interface";
 import { IStory } from "../../Interfaces/story.interface";
-import GenerationInfo from "../../Models/generationInfo.model";
+import StoryGenerationInfo from "../../Models/storyGenerationInfo.model";
 import { appendFile } from "fs";
 import AppError, { HTTP_STATUS_CODE } from "../Errors/AppError";
 import { ObjectId } from "mongoose";
 import mongoose from "mongoose";
-import AudioModel from "../../Models/audioModel.model";
-import Model from "../../Models/aiModel.model";
+import AudioModel from "../../Models/audio.model";
+import Model from "../../Models/ai.model.ts";
 import { IVoiceOver } from "../../Interfaces/storyRequest.interface";
 
 export interface JobCreationData {
@@ -115,7 +115,7 @@ export const getLocationName = async (
   locationId?: string
 ): Promise<string | undefined> => {
   if (!locationId) return undefined;
-  const generationData = await GenerationInfo.findOne().lean();
+  const generationData = await StoryGenerationInfo.findOne().lean();
   return generationData?.location.find(
     (loc: any) => loc._id?.toString() === locationId
   )?.name;
@@ -125,14 +125,14 @@ export const getStyleName = async (
   styleId?: string
 ): Promise<string | undefined> => {
   if (!styleId) return undefined;
-  const generationData = await GenerationInfo.findOne().lean();
+  const generationData = await StoryGenerationInfo.findOne().lean();
   return generationData?.style.find(
     (sty: any) => sty._id?.toString() === styleId
   )?.name;
 };
 
 export const checkGenereExists = async (genere: string): Promise<boolean> => {
-  const generationData = await GenerationInfo.findOne().lean();
+  const generationData = await StoryGenerationInfo.findOne().lean();
   return generationData?.genres.includes(genere.toLowerCase()) || false;
 };
 

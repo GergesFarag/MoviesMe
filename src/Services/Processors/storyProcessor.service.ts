@@ -17,7 +17,7 @@ import {
   generateHashFromBuffer,
 } from "../../Utils/APIs/cloudinary";
 import { StoryProcessingResult } from "../../Interfaces/story.interface";
-import GenerationInfo from "../../Models/generationInfo.model";
+import StoryGenerationInfo from "../../Models/storyGenerationInfo.model";
 
 export const PROGRESS_STEPS = {
   VALIDATION: 10,
@@ -534,7 +534,7 @@ export class StoryProcessorService {
           jobData.genere,
           jobData.location
         );
-        const generationInfo = await GenerationInfo.findOne().lean();
+        const generationInfo = await StoryGenerationInfo.findOne().lean();
 
         const language = generationInfo?.languages.find(
           (lang: any) => lang._id.toString() === jobData.voiceOver!.voiceLanguage

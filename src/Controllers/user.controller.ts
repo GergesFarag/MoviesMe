@@ -424,12 +424,18 @@ const userController = {
     const { type } = req.query;
     let generations;
 
+
     if (type === 'video') {
       generations = await generationLibService.getUserVideoGenerations(userId);
+
     } else if (type === 'image') {
       generations = await generationLibService.getUserImageGenerations(userId);
-    } else {
+
+    } else if(type === 'all'){
       generations = await generationLibService.getUserGenerations(userId);
+
+    } else {
+      throw new AppError("Invalid type parameter. Must be 'video', 'image', or 'all'.", 400);
     }
 
     res.status(200).json({

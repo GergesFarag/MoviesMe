@@ -17,16 +17,6 @@ export const generationLibQueue = new Queue(QUEUE_NAMES.GENERATION_LIB, {
 
 const generationLibQueueHandlers = new GenerationLibQueueHandler();
 
-generationLibQueue.process("generateImage", async (job) => {
-  const data = await generationLibQueueHandlers.processGenerationLib(job);
-  return data;
-});
-
-generationLibQueue.process("generateVideo", async (job) => {
-  const data = await generationLibQueueHandlers.processGenerationLib(job);
-  return data;
-});
-
 generationLibQueue.process(async (job) => {
   const data = await generationLibQueueHandlers.processGenerationLib(job);
   return data;

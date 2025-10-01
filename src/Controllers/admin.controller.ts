@@ -4,7 +4,7 @@ import catchError from "../Utils/Errors/catchError";
 import AppError from "../Utils/Errors/AppError";
 import { firebaseAdmin } from "../Config/firebase";
 import { FirebaseAppError } from "firebase-admin/app";
-import AudioModel from "../Models/audioModel.model";
+import AudioModel from "../Models/audio.model";
 import { TPaginationQuery } from "../types";
 import paginator from "../Utils/Pagination/paginator";
 import { Validator } from "../Services/validation.service";

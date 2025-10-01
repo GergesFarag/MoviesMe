@@ -2,13 +2,17 @@ import { Job } from "bull";
 import User from "../../Models/user.model";
 import JobModel from "../../Models/job.model";
 import { ImageGenerationService } from "../../Services/imageGeneration.service";
-import { NotificationService, NotificationData } from "../../Services/notification.service";
+import {
+  NotificationService,
+  NotificationData,
+} from "../../Services/notification.service";
 import { getIO } from "../../Sockets/socket";
 import { updateJobProgress } from "../../Utils/Model/model.utils";
 import AppError from "../../Utils/Errors/AppError";
 import { getUserLangFromDB } from "../../Utils/Format/languageUtils";
 import { translationService } from "../../Services/translation.service";
 import { Types } from "mongoose";
+import { VideoGenerationService } from "../../Services/videoGeneration.service";
 
 export interface IGenerationLibJobData {
   userId: string;
@@ -22,10 +26,12 @@ export interface IGenerationLibJobData {
 export class GenerationLibQueueHandler {
   private notificationService: NotificationService;
   private imageGenerationService: ImageGenerationService;
+  private videoGenerationService: VideoGenerationService;
 
   constructor() {
     this.notificationService = new NotificationService();
     this.imageGenerationService = new ImageGenerationService();
+    this.videoGenerationService = new VideoGenerationService();
   }
 
   async processGenerationLib(job: Job<IGenerationLibJobData>) {
@@ -33,7 +39,9 @@ export class GenerationLibQueueHandler {
     let intervalId: NodeJS.Timeout | null = null;
 
     try {
-      console.log(`🎨 Processing GenerationLib job ${jobId} for user ${userId}`);
+      console.log(
+        `🎨 Processing GenerationLib job ${jobId} for user ${userId}`
+      );
 
       await JobModel.findOneAndUpdate(
         { jobId: jobId },
@@ -44,7 +52,7 @@ export class GenerationLibQueueHandler {
       intervalId = setInterval(async () => {
         if (job && progress < 90) {
           console.log(`📈 GenerationLib Progress: ${progress}%`);
-          progress += 5; 
+          progress += 5;
           await updateJobProgress(
             job,
             progress,
@@ -62,47 +70,85 @@ export class GenerationLibQueueHandler {
         getIO(),
         "generationLib:progress"
       );
+      let result = null;
+      if (!isVideo) {
+        const resultURL =
+          await this.imageGenerationService.generateForGenerationLib(
+            prompt,
+            refImages
+          );
 
-      const resultURL = await this.imageGenerationService.generateForGenerationLib(
-        prompt,
-        refImages
-      );
+        await updateJobProgress(
+          job,
+          95,
+          "Finalizing...",
+          getIO(),
+          "generationLib:progress"
+        );
 
+        const thumbnail = resultURL;
+
+        await updateJobProgress(
+          job,
+          100,
+          "Completed",
+          getIO(),
+          "generationLib:progress"
+        );
+
+        result = {
+          userId,
+          jobId,
+          resultURL,
+          thumbnail,
+          prompt,
+          isVideo,
+          duration: isVideo ? 10 : 0,
+          refImages,
+        };
+        console.log(`✅ Successfully processed GenerationLib job ${jobId}`);
+      } else {
+        const resultURL =
+          await this.videoGenerationService.generateVideoForGenerationLib(
+            refImages && refImages[0] ? refImages[0] : undefined,
+            5,
+            prompt
+          );
+        if (!resultURL) {
+          throw new AppError("Video generation failed", 500);
+        }
+        await updateJobProgress(
+          job,
+          95,
+          "Finalizing...",
+          getIO(),
+          "generationLib:progress"
+        );
+        const thumbnail = refImages && refImages[0] ? refImages[0] : resultURL;
+
+        await updateJobProgress(
+          job,
+          100,
+          "Completed",
+          getIO(),
+          "generationLib:progress"
+        );
+
+        result = {
+          userId,
+          jobId,
+          resultURL,
+          thumbnail,
+          prompt,
+          isVideo,
+          duration: 5,
+          refImages,
+        };
+      }
       if (intervalId) {
         clearInterval(intervalId);
         intervalId = null;
       }
-
-      await updateJobProgress(
-        job,
-        95,
-        "Finalizing...",
-        getIO(),
-        "generationLib:progress"
-      );
-
-      const thumbnail = resultURL;
-
-      await updateJobProgress(
-        job,
-        100,
-        "Completed",
-        getIO(),
-        "generationLib:progress"
-      );
-
-      const result = {
-        userId,
-        jobId,
-        resultURL,
-        thumbnail,
-        prompt,
-        isVideo,
-        duration: isVideo ? 10 : 0,
-        refImages,
-      };
-
-      console.log(`✅ Successfully processed GenerationLib job ${jobId}`);
       return result;
     } catch (error) {
       console.error(`❌ Error processing GenerationLib job ${jobId}:`, error);
@@ -111,10 +157,7 @@ export class GenerationLibQueueHandler {
         clearInterval(intervalId);
       }
 
-      await JobModel.findOneAndUpdate(
-        { jobId: jobId },
-        { status: "failed" }
-      );
+      await JobModel.findOneAndUpdate({ jobId: jobId }, { status: "failed" });
 
       await updateJobProgress(
         job,
@@ -207,7 +250,7 @@ export class GenerationLibQueueHandler {
         thumbnail: result.thumbnail,
         timestamp: Date.now(),
       };
-      
+
       const roomName = `user:${result.userId}`;
       io.to(roomName).emit("generationLib:completed", payload);
 
@@ -231,25 +274,28 @@ export class GenerationLibQueueHandler {
         };
 
         const translatedNotificationData: NotificationData = {
-          title: translationService.translateText(
-            "notifications.generation.completion",
-            "title",
-            locale
-          ) || "Generation Complete",
-          message: translationService.translateText(
-            "notifications.generation.completion", 
-            "message",
-            locale
-          ) || "Your generation has been completed successfully!",
+          title:
+            translationService.translateText(
+              "notifications.generation.completion",
+              "title",
+              locale
+            ) || "Generation Complete",
+          message:
+            translationService.translateText(
+              "notifications.generation.completion",
+              "message",
+              locale
+            ) || "Your generation has been completed successfully!",
           data: rawNotificationData.data,
           redirectTo: rawNotificationData.redirectTo,
           category: rawNotificationData.category,
         };
 
-        const notificationResult = await this.notificationService.sendPushNotificationToUser(
-          result.userId,
-          translatedNotificationData
-        );
+        const notificationResult =
+          await this.notificationService.sendPushNotificationToUser(
+            result.userId,
+            translatedNotificationData
+          );
 
         if (notificationResult) {
           await this.notificationService.saveNotificationToUser(
@@ -266,7 +312,9 @@ export class GenerationLibQueueHandler {
         }
       }
 
-      console.log(`✅ GenerationLib job ${result.jobId} completed successfully`);
+      console.log(
+        `✅ GenerationLib job ${result.jobId} completed successfully`
+      );
     } catch (error) {
       console.error(`❌ Error in GenerationLib onCompleted handler:`, error);
       throw error;
@@ -329,28 +377,34 @@ export class GenerationLibQueueHandler {
         };
 
         const translatedNotificationData: NotificationData = {
-          title: translationService.translateText(
-            "notifications.generation.failure",
-            "title",
-            user.preferredLanguage || locale || "en"
-          ) || "Generation Failed",
-          message: translationService.translateText(
-            "notifications.generation.failure",
-            "message", 
-            user.preferredLanguage || locale || "en"
-          ) || "Your image generation has failed. Please try again.",
+          title:
+            translationService.translateText(
+              "notifications.generation.failure",
+              "title",
+              user.preferredLanguage || locale || "en"
+            ) || "Generation Failed",
+          message:
+            translationService.translateText(
+              "notifications.generation.failure",
+              "message",
+              user.preferredLanguage || locale || "en"
+            ) || "Your image generation has failed. Please try again.",
           data: rawNotificationData.data,
           redirectTo: rawNotificationData.redirectTo,
           category: rawNotificationData.category,
         };
 
-        await this.notificationService.saveNotificationToUser(user, rawNotificationData);
+        await this.notificationService.saveNotificationToUser(
+          user,
+          rawNotificationData
+        );
 
         if (user?.FCMToken) {
-          const notificationResult = await this.notificationService.sendPushNotificationToUser(
-            userId,
-            translatedNotificationData
-          );
+          const notificationResult =
+            await this.notificationService.sendPushNotificationToUser(
+              userId,
+              translatedNotificationData
+            );
           if (notificationResult) {
             console.log(`✅ Failure notification sent to user ${userId}`);
           } else {

@@ -1,4 +1,4 @@
-import Model from "../Models/aiModel.model";
+import Model from "../Models/ai.model.ts";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import User from "../Models/user.model";

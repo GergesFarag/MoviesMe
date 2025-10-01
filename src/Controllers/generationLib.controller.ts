@@ -8,22 +8,17 @@ import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
 const generationLibService = new GenerationLibService();
 
 const generationLibController = {
+
   createGeneration: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      console.log("Request body:", req.body);
-      console.log("Request files:", req.files);
-      console.log("Content-Type:", req.get('Content-Type'));
-      
+
       const userId = req.user?.id;
       if (!userId) {
         throw new AppError("User not authenticated", 401);
       }
 
       const requestData: IGenerationLibRequestDTO = req.body;
-
-      if (!requestData.prompt) {
-        throw new AppError("Prompt is required", 400);
-      }
+      console.log("Request Data:", requestData);
 
       let uploadedImageUrls: string[] = [];
 
@@ -82,94 +77,23 @@ const generationLibController = {
       }
     }
   ),
-
-  getUserGenerations: catchError(
+  getGenerationInfo: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { userId } = req.user?.id;
-      if (!userId) {
-        throw new AppError("User not authenticated", 401);
-      }
-      const generations = await generationLibService.getUserGenerations(userId);
 
+      const generationInfo = await generationLibService.getGenerationInfo();    
       res.status(200).json({
-        success: true,
-        message: "Generations retrieved successfully",
-        data: generations,
+        message: "Generation info retrieved successfully", 
+        data: generationInfo,
       });
     }
   ),
-
-  getGenerationById: catchError(
+  updateGenerationInfo: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { userId } = req.user?.id;
-      if (!userId) {
-        throw new AppError("User not authenticated", 401);
-      }
-      const { id } = req.params;
-      if (!id) {
-        throw new AppError("Generation ID is required", 400);
-      }
-
-      const generation = await generationLibService.getGenerationById(
-        userId,
-        id
-      );
-
+      const updateData = req.body;
+      const updatedInfo = await generationLibService.updateGenerationInfo(updateData);
       res.status(200).json({
-        success: true,
-        message: "Generation retrieved successfully",
-        data: generation,
-      });
-    }
-  ),
-
-  updateFavoriteStatus: catchError(
-    async (req: Request, res: Response, next: NextFunction) => {
-      const { userId } = req.user?.id;
-      if (!userId) {
-        throw new AppError("User not authenticated", 401);
-      }
-      const { id } = req.params;
-      const { isFavorite } = req.body;
-
-      if (!id) {
-        throw new AppError("Generation ID is required", 400);
-      }
-
-      if (typeof isFavorite !== "boolean") {
-        throw new AppError("isFavorite must be a boolean value", 400);
-      }
-
-      const updatedGeneration = await generationLibService.updateFavoriteStatus(
-        userId,
-        id,
-        isFavorite
-      );
-
-      res.status(200).json({
-        success: true,
-        message: "Favorite status updated successfully",
-        data: updatedGeneration,
-      });
-    }
-  ),
-
-  deleteGeneration: catchError(
-    async (req: Request, res: Response, next: NextFunction) => {
-      const { userId } = req.user?.id;
-      if (!userId) {
-        throw new AppError("User not authenticated", 401);
-      }
-      const { id } = req.params;
-      if (!id) {
-        throw new AppError("Generation ID is required", 400);
-      }
-
-      await generationLibService.deleteGeneration(userId, id);
-
-      res.status(200).json({
-        success: true,
-        message: "Generation deleted successfully",
+        message: "Generation info updated successfully",
+        data: updatedInfo,
       });
     }
   ),

@@ -5,7 +5,7 @@ import User from "../Models/user.model";
 import Job from "../Models/job.model";
 import AppError from "../Utils/Errors/AppError";
 import mongoose, { Types } from "mongoose";
-import GenerationInfo from "../Models/generationInfo.model";
+import StoryGenerationInfo from "../Models/storyGenerationInfo.model";
 import {
   genderType,
   IStoryRequest,
@@ -202,7 +202,7 @@ const storyController = {
   ),
 
   getGenerationData: catchError(async (req: Request, res: Response) => {
-    const generationData = await GenerationInfo.findOne().lean();
+    const generationData = await StoryGenerationInfo.findOne().lean();
     if (!generationData) {
       throw new AppError("Generation data not found", 404);
     }
@@ -218,7 +218,7 @@ const storyController = {
 
   updateGenerationData: catchError(async (req: Request, res: Response) => {
     const { ...updatingKeys } = req.body;
-    const generationData = await GenerationInfo.findOneAndUpdate(
+    const generationData = await StoryGenerationInfo.findOneAndUpdate(
       {},
       { $set: updatingKeys },
       { new: true }

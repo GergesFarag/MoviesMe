@@ -18,14 +18,12 @@ export const taskQueue = new Queue(QUEUE_NAMES.MODEL_PROCESSING, {
 const effectQueueHandlers = new EffectsQueueHandler();
 let effectProcessorService = null;
 
-// Process regular model tasks
 taskQueue.process(async (job) => {
   effectProcessorService = new EffectProcessorService();
   const data = await effectProcessorService.processEffect(job);
   return data;
 });
 
-// Event handlers for regular model tasks
 taskQueue.on(
   "completed",
   effectQueueHandlers.onCompleted.bind(effectQueueHandlers)

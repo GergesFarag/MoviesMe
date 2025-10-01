@@ -1,5 +1,5 @@
 import NodeCache from 'node-cache';
-import Model from '../../Models/aiModel.model';
+import Model from '../../Models/ai.model.ts';
 import IAiModel from '../../Interfaces/aiModel.interface';
 import { IUser } from '../../Interfaces/user.interface';
 

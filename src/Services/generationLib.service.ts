@@ -2,12 +2,18 @@ import { Types } from "mongoose";
 import User from "../Models/user.model";
 import JobModel from "../Models/job.model";
 import { generationLibQueue } from "../Queues/generationLib.queue";
-import { IGenerationLibRequestDTO, IGenerationLibResponseDTO, GenerationLibDTO } from "../DTOs/generationLib.dto";
+import {
+  IGenerationLibRequestDTO,
+  IGenerationLibResponseDTO,
+  GenerationLibDTO,
+} from "../DTOs/generationLib.dto";
 import AppError from "../Utils/Errors/AppError";
 import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers";
+import { Sorting } from "../Utils/Sorting/sorting";
+import { IGenerationInfo } from "../Interfaces/generationInfo.interface";
+import GenerationInfo from "../Models/generation.moel";
 
 export class GenerationLibService {
-
   async createGeneration(
     userId: string,
     requestData: IGenerationLibRequestDTO
@@ -35,7 +41,7 @@ export class GenerationLibService {
       const newGenerationItem = {
         _id: new Types.ObjectId(),
         jobId,
-        URL: null, 
+        URL: null,
         status: "pending",
         thumbnail: null,
         duration: requestData.isVideo ? 10 : 0,
@@ -56,34 +62,35 @@ export class GenerationLibService {
         size: requestData.size,
         jobId,
       };
-
-      // Determine job type based on whether it's video or image generation
-      const jobType = requestData.isVideo ? "generateVideo" : "generateImage";
-
-      await generationLibQueue.add(jobType, jobData, {
+      await generationLibQueue.add(jobData, {
         backoff: {
           type: "exponential",
           delay: 2000,
         },
       });
 
-      console.log(`✅ GenerationLib job ${jobId} added to queue for user ${userId}`);
+      console.log(
+        `✅ GenerationLib job ${jobId} added to queue for user ${userId}`
+      );
 
       return {
         success: true,
         message: "Generation task created successfully",
         jobId,
-        data: new GenerationLibDTO(newGenerationItem as any).toDTO(newGenerationItem as any),
+        data: new GenerationLibDTO(newGenerationItem as any).toDTO(
+          newGenerationItem as any
+        ),
       };
     } catch (error) {
       console.error("Error creating generation task:", error);
       throw new AppError(
-        error instanceof Error ? error.message : "Failed to create generation task",
+        error instanceof Error
+          ? error.message
+          : "Failed to create generation task",
         500
       );
     }
   }
-
 
   async getUserGenerations(userId: string): Promise<any[]> {
     try {
@@ -95,12 +102,14 @@ export class GenerationLibService {
       if (!user.generationLib || user.generationLib.length === 0) {
         return [];
       }
-
-      return GenerationLibDTO.toDTOArray(user.generationLib);
+      const sortedGenerations = Sorting.sortItems(user.generationLib, "newest");
+      return GenerationLibDTO.toDTOArray(sortedGenerations);
     } catch (error) {
       console.error("Error getting user generations:", error);
       throw new AppError(
-        error instanceof Error ? error.message : "Failed to get user generations",
+        error instanceof Error
+          ? error.message
+          : "Failed to get user generations",
         500
       );
     }
@@ -135,7 +144,6 @@ export class GenerationLibService {
     }
   }
 
-
   async updateFavoriteStatus(
     userId: string,
     generationId: string,
@@ -169,12 +177,13 @@ export class GenerationLibService {
     } catch (error) {
       console.error("Error updating favorite status:", error);
       throw new AppError(
-        error instanceof Error ? error.message : "Failed to update favorite status",
+        error instanceof Error
+          ? error.message
+          : "Failed to update favorite status",
         500
       );
     }
   }
-
 
   async deleteGeneration(userId: string, generationId: string): Promise<void> {
     try {
@@ -226,13 +235,20 @@ export class GenerationLibService {
         return [];
       }
 
-      // Filter only video generations
-      const videoGenerations = user.generationLib.filter((generation: any) => generation.isVideo === true);
-      return GenerationLibDTO.toDTOArray(videoGenerations);
+      const videoGenerations = user.generationLib.filter(
+        (generation: any) => generation.isVideo === true
+      );
+      const sortedVidGenerations = Sorting.sortItems(
+        videoGenerations,
+        "newest"
+      );
+      return GenerationLibDTO.toDTOArray(sortedVidGenerations);
     } catch (error) {
       console.error("Error getting user video generations:", error);
       throw new AppError(
-        error instanceof Error ? error.message : "Failed to get user video generations",
+        error instanceof Error
+          ? error.message
+          : "Failed to get user video generations",
         500
       );
     }
@@ -250,15 +266,63 @@ export class GenerationLibService {
       }
 
       // Filter only image generations
-      const imageGenerations = user.generationLib.filter((generation: any) => generation.isVideo === false);
-      return GenerationLibDTO.toDTOArray(imageGenerations);
+      const imageGenerations = user.generationLib.filter(
+        (generation: any) => generation.isVideo === false
+      );
+      const sortedImgGenerations = Sorting.sortItems(
+        imageGenerations,
+        "newest"
+      );
+      return GenerationLibDTO.toDTOArray(sortedImgGenerations);
     } catch (error) {
       console.error("Error getting user image generations:", error);
       throw new AppError(
-        error instanceof Error ? error.message : "Failed to get user image generations",
+        error instanceof Error
+          ? error.message
+          : "Failed to get user image generations",
         500
       );
     }
   }
 
+  async getGenerationInfo(): Promise<IGenerationInfo | null> {
+    try {
+      const generations = await GenerationInfo.findOne({});
+      if (!generations) {
+        throw new AppError("Generation info not found", 404);
+      }
+      return generations;
+    } catch (error) {
+      console.error("Error getting generation info:", error);
+      throw new AppError(
+        error instanceof Error
+          ? error.message
+          : "Failed to get generation info",
+        500
+      );
+    }
+  }
+  
+  async updateGenerationInfo(
+    updates: Partial<IGenerationInfo>
+  ): Promise<IGenerationInfo> {
+    try {
+      let generationInfo = await GenerationInfo.findOne({});
+      if (!generationInfo) {
+        generationInfo = new GenerationInfo(updates);
+      } else {
+        Object.assign(generationInfo, updates);
+      }
+      await generationInfo.save();
+      return generationInfo;
+    } catch (error) {
+      console.error("Error updating generation info:", error);
+      throw new AppError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update generation info",
+        500
+      );
+    }
+  }
 }

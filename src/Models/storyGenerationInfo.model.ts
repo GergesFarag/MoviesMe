@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { generationInfo } from "../Interfaces/generationInfo.interface";
-const generationInfoSchema = new mongoose.Schema<generationInfo>({
+import { IStoryGenerationInfo } from "../Interfaces/storyGenerationInfo.interface";
+const storyGenerationInfoSchema = new mongoose.Schema<IStoryGenerationInfo>({
   location: [
     {
       name: { type: String, required: true },
@@ -45,8 +45,8 @@ const generationInfoSchema = new mongoose.Schema<generationInfo>({
   },
 });
 
-const GenerationInfo = mongoose.model<generationInfo>(
-  "GenerationInfo",
-  generationInfoSchema
+const StoryGenerationInfo = mongoose.model<IStoryGenerationInfo>(
+  "storyGenerationInfo",
+  storyGenerationInfoSchema
 );
-export default GenerationInfo;
+export default StoryGenerationInfo;

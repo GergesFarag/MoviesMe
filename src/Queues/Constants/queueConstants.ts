@@ -14,7 +14,7 @@ export const QUEUE_EVENTS = {
 } as const;
 
 export const JOB_OPTIONS = {
-  timeout: 1800000, // 30 minutes in milliseconds
+  timeout: 1800000,
   removeOnComplete: 10,
   removeOnFail: 5,
 } as const;
