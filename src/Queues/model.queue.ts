@@ -6,7 +6,7 @@ import {
   QUEUE_SETTINGS,
 } from "./Constants/queueConstants";
 import { EffectsQueueHandler } from "./Handlers/effectHandlers";
-import { EffectProcessorService } from "../Services/effectProcessor.service";
+import { EffectProcessorService } from "../Services/Processors/effectProcessor.service";
 
 const redisConfig = getRedisConfig();
 export const taskQueue = new Queue(QUEUE_NAMES.MODEL_PROCESSING, {
@@ -14,14 +14,18 @@ export const taskQueue = new Queue(QUEUE_NAMES.MODEL_PROCESSING, {
   defaultJobOptions: JOB_OPTIONS,
   settings: QUEUE_SETTINGS,
 });
+
 const effectQueueHandlers = new EffectsQueueHandler();
 let effectProcessorService = null;
+
+// Process regular model tasks
 taskQueue.process(async (job) => {
   effectProcessorService = new EffectProcessorService();
   const data = await effectProcessorService.processEffect(job);
   return data;
 });
 
+// Event handlers for regular model tasks
 taskQueue.on(
   "completed",
   effectQueueHandlers.onCompleted.bind(effectQueueHandlers)

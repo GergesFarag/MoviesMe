@@ -33,24 +33,37 @@ export class EffectsQueueHandler {
         return;
       }
 
-      if (!user.effectsLib || user.effectsLib.length === 0) {
+      // Initialize effectsLib if it doesn't exist (but don't overwrite existing data)
+      if (!user.effectsLib) {
         console.warn(
-          `User effectsLib is empty for userId: ${result.userId}, initializing...`
+          `User effectsLib is undefined for userId: ${result.userId}, initializing...`
         );
-        if (!user.effectsLib) {
-          user.effectsLib = [];
-        }
+        user.effectsLib = [];
+      }
 
-        const modelType =
-          modelTypeMapper[result.modelType as keyof typeof modelTypeMapper] ||
-          result.modelType ||
-          "unknown";
+      const modelType =
+        modelTypeMapper[result.modelType as keyof typeof modelTypeMapper] ||
+        result.modelType ||
+        "unknown";
 
-        if (!result.resultURL) {
-          console.error("Result URL is missing for jobId:", result.jobId);
-          throw new AppError("Result URL is missing", 500);
-        }
+      if (!result.resultURL) {
+        console.error("Result URL is missing for jobId:", result.jobId);
+        throw new AppError("Result URL is missing", 500);
+      }
 
+      const existingEffectIndex = user.effectsLib.findIndex(
+        (item) => item.jobId === result.jobId
+      );
+
+      if (existingEffectIndex >= 0) {
+        const existingEffect = user.effectsLib[existingEffectIndex];
+        existingEffect.URL = result.resultURL;
+        existingEffect.status = "completed";
+        existingEffect.effectThumbnail = result.effectThumbnail || result.resultURL;
+        existingEffect.modelType = modelType;
+        existingEffect.duration = result.duration || 0;
+        existingEffect.updatedAt = new Date();
+      } else {
         const newEffect = {
           jobId: result.jobId,
           URL: result.resultURL,
@@ -66,65 +79,7 @@ export class EffectsQueueHandler {
           isFav: false,
         };
 
-        // Use direct push - Mongoose will handle _id generation
         (user.effectsLib as any).push(newEffect);
-      } else {
-        // Update existing effectsLib
-        const updatedItems = user.effectsLib.map((item) => {
-          if (item.jobId === result.jobId) {
-            const modelType =
-              modelTypeMapper[
-                result.modelType as keyof typeof modelTypeMapper
-              ] ||
-              result.modelType ||
-              "unknown";
-
-            if (!result.resultURL) {
-              console.error("Result URL is missing for jobId:", result.jobId);
-              throw new AppError("Result URL is missing", 500);
-            }
-
-            item.URL = result.resultURL;
-            item.status = "completed";
-            item.effectThumbnail = result.effectThumbnail || result.resultURL;
-            item.modelType = modelType || "unknown";
-            item.duration = result.duration || 0;
-            item.updatedAt = new Date();
-          }
-          return item;
-        });
-
-        // Check if any item was actually updated
-        const updatedItem = updatedItems.find(
-          (item) => item.jobId === result.jobId
-        );
-        if (!updatedItem) {
-          console.error("No item found with jobId:", result.jobId);
-
-          const modelType =
-            modelTypeMapper[result.modelType as keyof typeof modelTypeMapper] ||
-            result.modelType ||
-            "unknown";
-
-          const newEffect = {
-            jobId: result.jobId,
-            URL: result.resultURL,
-            status: "completed",
-            effectThumbnail: result.effectThumbnail || result.resultURL,
-            modelType: modelType,
-            modelName: result.modelName,
-            duration: result.duration || 0,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            isVideo: result.isVideo || false,
-            modelThumbnail: result.modelThumbnail,
-            isFav: false,
-          };
-
-          (updatedItems as any).push(newEffect);
-        }
-
-        user.effectsLib = updatedItems;
       }
 
       try {

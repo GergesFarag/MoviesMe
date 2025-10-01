@@ -4,7 +4,7 @@ import { IJob } from "../Interfaces/job.interface";
 const jobSchema = new Schema<IJob>({
     jobId: { type: String, required: true, unique: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    modelId: { type: Schema.Types.ObjectId, ref: "Model", required: true },
+    modelId: { type: Schema.Types.ObjectId, ref: "Model", required: false },
     status: { type: String, default: "pending" },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }

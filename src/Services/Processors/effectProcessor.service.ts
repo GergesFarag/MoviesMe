@@ -1,13 +1,13 @@
-import IAiModel from "../Interfaces/aiModel.interface";
-import { IEffectProcessor } from "../Interfaces/effectProcessor.interface";
-import { getIO } from "../Sockets/socket";
-import { wavespeedBase } from "../Utils/APIs/wavespeed_base";
-import AppError from "../Utils/Errors/AppError";
+import IAiModel from "../../Interfaces/aiModel.interface";
+import { IEffectProcessor } from "../../Interfaces/effectProcessor.interface";
+import { getIO } from "../../Sockets/socket";
+import { wavespeedBase } from "../../Utils/APIs/wavespeed_base";
+import AppError from "../../Utils/Errors/AppError";
 import {
   filterModelType,
   reverseModelTypeMapper,
-} from "../Utils/Format/filterModelType";
-import { payloadBuilder, updateJobProgress } from "../Utils/Model/model.utils";
+} from "../../Utils/Format/filterModelType";
+import { payloadBuilder, updateJobProgress } from "../../Utils/Model/model.utils";
 export class EffectProcessorService implements IEffectProcessor {
   private WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
   async processEffect(job: any): Promise<any> {

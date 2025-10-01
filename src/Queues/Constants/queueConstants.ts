@@ -1,12 +1,16 @@
 export const QUEUE_NAMES = {
   STORY_PROCESSING: "storyProcessing",
   MODEL_PROCESSING: "modelProcessing",
+  GENERATION_LIB: "generationLib",
 } as const;
 
 export const QUEUE_EVENTS = {
   STORY_PROGRESS: "story:progress",
   STORY_COMPLETED: "story:completed",
   STORY_FAILED: "story:failed",
+  GENERATION_LIB_PROGRESS: "generationLib:progress",
+  GENERATION_LIB_COMPLETED: "generationLib:completed",
+  GENERATION_LIB_FAILED: "generationLib:failed",
 } as const;
 
 export const JOB_OPTIONS = {

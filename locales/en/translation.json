@@ -122,6 +122,20 @@
         "title": "❌ Oops! Effect Creation Failed",
         "message": "An error popped up while creating your effect. Please try again, and your awesome effect will be back on track!"
       }
+    },
+    "generation": {
+      "pending": {
+        "title": "🎨 Your Image is Being Generated! ✨",
+        "message": "We're creating your custom image using AI magic. This won't take long - we'll notify you when it's ready!"
+      },
+      "completion": {
+        "title": "🎉 Your Generated Image is Ready! 🖼️",
+        "message": "Perfect! Your AI-generated image has been created successfully and is now available in your Generation Library!"
+      },
+      "failure": {
+        "title": "❌ Image Generation Failed",
+        "message": "Something went wrong while generating your image. Please check your prompt and try again!"
+      }
     }
   },
   "messages": {

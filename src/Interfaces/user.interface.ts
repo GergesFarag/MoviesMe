@@ -1,5 +1,6 @@
 import { ObjectId } from "mongoose";
 import { IEffectItem } from "./effectItem.interface";
+import { IGenerationLib } from "./generationLib.interface";
 import { INotification } from "./notification.interface";
 
 export interface IUser {
@@ -14,6 +15,7 @@ export interface IUser {
   createdAt?: Date | null;
   updatedAt?: Date | null;
   effectsLib?: IEffectItem[];
+  generationLib?: IGenerationLib[];
   storiesLib?: ObjectId[];
   jobs?: { _id: ObjectId; jobId: string }[];
   notifications?: INotification[] | null;

@@ -133,7 +133,6 @@ export const processMultiImageJobAsync = async (
         data: { images: imageUrls, ...rest },
         FCM: user.FCMToken,
         prompt: model.prompt,
-        skipModelTypeFilteration: true,
       },
       { jobId: jobId, removeOnComplete: true, removeOnFail: true }
     );

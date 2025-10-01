@@ -1,24 +1,23 @@
 import { Job } from "bull";
-import { IStoryProcessingDTO } from "../DTOs/storyRequest.dto";
-import JobModel from "../Models/job.model";
-import Story from "../Models/story.model";
-import AppError from "../Utils/Errors/AppError";
-import { ImageGenerationService } from "./imageGeneration.service";
-import { OpenAIService } from "./openAi.service";
-import { VideoGenerationService } from "./videoGeneration.service";
-import { VoiceGenerationService } from "./voiceGeneration.service";
-import { getIO } from "../Sockets/socket";
-import { updateJobProgress } from "../Utils/Model/model.utils";
-import { IStoryResponse } from "../Interfaces/storyResponse.interface";
-import { IProcessedVoiceOver } from "../Interfaces/audioModel.interface";
-import { updateCompletedStory } from "../Utils/Database/optimizedOps";
+import { IStoryProcessingDTO } from "../../DTOs/storyRequest.dto";
+import JobModel from "../../Models/job.model";
+import Story from "../../Models/story.model";
+import AppError from "../../Utils/Errors/AppError";
+import { ImageGenerationService } from "../imageGeneration.service";
+import { OpenAIService } from "../openAi.service";
+import { VideoGenerationService } from "../videoGeneration.service";
+import { VoiceGenerationService } from "../voiceGeneration.service";
+import { getIO } from "../../Sockets/socket";
+import { updateJobProgress } from "../../Utils/Model/model.utils";
+import { IStoryResponse } from "../../Interfaces/storyResponse.interface";
+import { IProcessedVoiceOver } from "../../Interfaces/audioModel.interface";
+import { updateCompletedStory } from "../../Utils/Database/optimizedOps";
 import {
   cloudUploadVideo,
   generateHashFromBuffer,
-} from "../Utils/APIs/cloudinary";
-import { StoryProcessingResult } from "../Interfaces/story.interface";
-import { title } from "process";
-import GenerationInfo from "../Models/generationInfo.model";
+} from "../../Utils/APIs/cloudinary";
+import { StoryProcessingResult } from "../../Interfaces/story.interface";
+import GenerationInfo from "../../Models/generationInfo.model";
 
 export const PROGRESS_STEPS = {
   VALIDATION: 10,
@@ -88,9 +87,9 @@ export class StoryProcessorService {
       console.log(
         "✅ Parallel processing completed: Voice Over + Image Generation"
       );
-      const updatedStory = this.updateStoryWithImages(story, imageUrls);
+  const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
 
-      const videoUrls = await this.generateVideos(job, imageUrls);
+  const videoUrls = await this.generateVideos(job, imageUrls ?? []);
 
       const finalVideoBuffer = await this.mergeAndComposeVideo(
         job,
@@ -257,9 +256,9 @@ export class StoryProcessorService {
         );
       }
 
-      const invalidUrls = videoUrls.filter(
-        (url) => !url || typeof url !== "string" || !url.startsWith("http")
-      );
+        const invalidUrls = videoUrls.filter(
+          (url: string | null | undefined) => !url || typeof url !== "string" || !url.startsWith("http")
+        );
 
       if (invalidUrls.length > 0) {
         throw new AppError(
@@ -490,7 +489,7 @@ export class StoryProcessorService {
 
     return {
       ...story,
-      scenes: story.scenes.map((scene, index) => ({
+      scenes: story.scenes.map((scene: any, index: number) => ({
         ...scene,
         image: imageUrls[index],
       })),
@@ -538,12 +537,12 @@ export class StoryProcessorService {
         const generationInfo = await GenerationInfo.findOne().lean();
 
         const language = generationInfo?.languages.find(
-          (lang) => lang._id.toString() === jobData.voiceOver!.voiceLanguage
+          (lang: any) => lang._id.toString() === jobData.voiceOver!.voiceLanguage
         );
-        let accent = null;
+        let accent: any = null;
         if (jobData.voiceOver!.voiceLanguage && jobData.voiceOver.voiceAccent) {
           accent = language?.accents.find(
-            (acc) => acc._id.toString() === jobData.voiceOver!.voiceAccent
+            (acc: any) => acc._id.toString() === jobData.voiceOver!.voiceAccent
           );
         }
         voiceOverText = await openAIService.generateNarrativeText(
@@ -634,7 +633,7 @@ export class StoryProcessorService {
       }
 
       const invalidImages = imageUrls.filter(
-        (url) => !url || typeof url !== "string" || !url.startsWith("http")
+        (url: string) => !url || typeof url !== "string" || !url.startsWith("http")
       );
 
       if (invalidImages.length > 0) {

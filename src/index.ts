@@ -2,6 +2,9 @@ import app from "./app";
 import connectDB from "./Config/db";
 import { getIO, initSocket } from "./Sockets/socket";
 import http from "http";
+// Initialize queues
+import "./Queues/model.queue";
+import "./Queues/generationLib.queue";
 
 const PORT = process.env.PORT_NUMBER || 3000;
 

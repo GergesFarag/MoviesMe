@@ -35,4 +35,14 @@ userRouter
   .get(optionalAuth, userController.getUserStory)
   .delete(authMiddle, userController.deleteUserStory);
 
+userRouter
+  .route("/lib/generations")
+  .get(authMiddle, userController.getUserGenerations);
+
+userRouter
+  .route("/lib/generations/:id")
+  .get(authMiddle, userController.getGenerationById)
+  .patch(authMiddle, userController.updateGenerationFavoriteStatus)
+  .delete(authMiddle, userController.deleteGeneration);
+
 export default userRouter;

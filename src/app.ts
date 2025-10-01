@@ -12,12 +12,15 @@ import swaggerUi from "swagger-ui-express";
 import swaggerDoc from "./swagger";
 import storyRouter from "./Routes/story.routes";
 import modelsRouter from "./Routes/models.routes";
+import generationLibRouter from "./Routes/generationLib.routes";
 import { cleanupRedisJobs } from "./Utils/Cache/redisCleanup";
 import { translationService } from "./Services/translation.service";
 import Model from "./Models/aiModel.model";
-import { format } from "path";
-import { formatModelName } from "./Utils/Format/modelNames";
-import { model } from "mongoose";
+// Import queues to ensure they are initialized
+import "./Queues/generationLib.queue";
+import "./Queues/story.queue";
+import "./Queues/model.queue";
+
 const app = express();
 app.use(express.json());
 dotenv.config({ quiet: true });
@@ -41,21 +44,24 @@ app.get(`/`, (req, res) => {
     )
   );
 });
-app.post(`${basePath}/dbScript`, async (req, res) => {
-  let models = await Model.updateMany(
-    {},
-    {
-      minImages: 1,
-      maxImages: 1,
-    }
-  );
-  res.json({ message: "Database script executed successfully" });
-});
+
+//*HERE IS CUSTOM SCRIPTS TO RUN ON DB
+// app.post(`${basePath}/dbScript`, async (req, res) => {
+//   let models = await Model.updateMany(
+//     {},
+//     {
+//       minImages: 1,
+//       maxImages: 1,
+//     }
+//   );
+//   res.json({ message: "Database script executed successfully" });
+// });
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter);
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
+app.use(`${basePath}/generation`, generationLibRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use(ErrorHandler);

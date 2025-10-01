@@ -18,6 +18,7 @@ import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types";
 import { Sorting } from "../Utils/Sorting/sorting";
 import mongoose, { ObjectId } from "mongoose";
 import { IStory } from "../Interfaces/story.interface";
+import { GenerationLibService } from "../Services/generationLib.service";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -29,6 +30,8 @@ const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "isMale",
   "profilePicture",
 ];
+
+const generationLibService = new GenerationLibService();
 
 const userController = {
   getProfile: catchError(async (req, res) => {
@@ -409,6 +412,99 @@ const userController = {
       data: {
         notifications: validNotifications,
       },
+    });
+  }),
+
+  getUserGenerations: catchError(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+    }
+
+    const { type } = req.query;
+    let generations;
+
+    if (type === 'video') {
+      generations = await generationLibService.getUserVideoGenerations(userId);
+    } else if (type === 'image') {
+      generations = await generationLibService.getUserImageGenerations(userId);
+    } else {
+      generations = await generationLibService.getUserGenerations(userId);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Generations retrieved successfully",
+      data: generations,
+    });
+  }),
+
+  getGenerationById: catchError(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+    }
+    
+    const { id } = req.params;
+    if (!id) {
+      throw new AppError("Generation ID is required", 400);
+    }
+
+    const generation = await generationLibService.getGenerationById(userId, id);
+
+    res.status(200).json({
+      success: true,
+      message: "Generation retrieved successfully",
+      data: generation,
+    });
+  }),
+
+  updateGenerationFavoriteStatus: catchError(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+    }
+    
+    const { id } = req.params;
+    const { isFavorite } = req.body;
+
+    if (!id) {
+      throw new AppError("Generation ID is required", 400);
+    }
+
+    if (typeof isFavorite !== "boolean") {
+      throw new AppError("isFavorite must be a boolean value", 400);
+    }
+
+    const updatedGeneration = await generationLibService.updateFavoriteStatus(
+      userId,
+      id,
+      isFavorite
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Favorite status updated successfully",
+      data: updatedGeneration,
+    });
+  }),
+
+  deleteGeneration: catchError(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+    }
+    
+    const { id } = req.params;
+    if (!id) {
+      throw new AppError("Generation ID is required", 400);
+    }
+
+    await generationLibService.deleteGeneration(userId, id);
+
+    res.status(200).json({
+      success: true,
+      message: "Generation deleted successfully",
     });
   }),
 };

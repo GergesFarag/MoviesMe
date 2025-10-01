@@ -1,6 +1,7 @@
 import { model, Schema, Types } from "mongoose";
 import { IUser } from "../Interfaces/user.interface";
 import effectItemSchema from "./effectItem.model";
+import generationLibSchema from "./generationLib.model";
 import notificationSchema from "./notification.model";
 
 const userSchema = new Schema<IUser>({
@@ -22,6 +23,10 @@ const userSchema = new Schema<IUser>({
   profilePicture: { type: String, default: null, select: true },
   effectsLib: {
     type: [effectItemSchema],
+    default: [],
+  },
+  generationLib: {
+    type: [generationLibSchema],
     default: [],
   },
   storiesLib: [{ type: Schema.Types.ObjectId, ref: "Story" }],

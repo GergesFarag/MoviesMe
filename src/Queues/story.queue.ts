@@ -1,6 +1,6 @@
 import Queue from "bull";
 import { getRedisConfig } from "../Config/redis";
-import { StoryProcessorService } from "../Services/storyProcessor.service";
+import { StoryProcessorService } from "../Services/Processors/storyProcessor.service";
 import { StoryQueueHandlers } from "./Handlers/storyHandlers";
 import { QUEUE_NAMES, JOB_OPTIONS, QUEUE_SETTINGS } from "./Constants/queueConstants";
 
