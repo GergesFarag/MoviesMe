@@ -93,7 +93,10 @@ export class GenerationLibService {
     }
   }
 
-  async getUserGenerations(userId: string): Promise<any[]> {
+  async getUserGenerations(
+    userId: string,
+    query: Record<string, string>
+  ): Promise<any[]> {
     try {
       const user = await User.findById(userId).select("generationLib");
       if (!user) {
@@ -102,6 +105,11 @@ export class GenerationLibService {
 
       if (!user.generationLib || user.generationLib.length === 0) {
         return [];
+      }
+      if (query.status) {
+        user.generationLib = user.generationLib.filter(
+          (generation: any) => generation.status === query.status
+        );
       }
       const sortedGenerations = Sorting.sortItems(user.generationLib, "newest");
       return GenerationLibDTO.toDTOArray(sortedGenerations);
@@ -225,7 +233,10 @@ export class GenerationLibService {
     }
   }
 
-  async getUserVideoGenerations(userId: string): Promise<any[]> {
+  async getUserVideoGenerations(
+    userId: string,
+    query: Record<string, string>
+  ): Promise<any[]> {
     try {
       const user = await User.findById(userId).select("generationLib");
       if (!user) {
@@ -237,7 +248,8 @@ export class GenerationLibService {
       }
 
       const videoGenerations = user.generationLib.filter(
-        (generation: any) => generation.isVideo === true
+        (generation: any) =>
+          generation.isVideo === true && generation.status === query.status
       );
       const sortedVidGenerations = Sorting.sortItems(
         videoGenerations,
@@ -255,7 +267,10 @@ export class GenerationLibService {
     }
   }
 
-  async getUserImageGenerations(userId: string): Promise<any[]> {
+  async getUserImageGenerations(
+    userId: string,
+    query: Record<string, string>
+  ): Promise<any[]> {
     try {
       const user = await User.findById(userId).select("generationLib");
       if (!user) {
@@ -268,7 +283,8 @@ export class GenerationLibService {
 
       // Filter only image generations
       const imageGenerations = user.generationLib.filter(
-        (generation: any) => generation.isVideo === false
+        (generation: any) =>
+          generation.isVideo === false && generation.status === query.status
       );
       const sortedImgGenerations = Sorting.sortItems(
         imageGenerations,

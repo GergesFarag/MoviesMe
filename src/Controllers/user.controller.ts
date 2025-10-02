@@ -423,30 +423,43 @@ const userController = {
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
-    const { page = 1, limit = 10, type } = req.query;
+    const { page = 1, limit = 10, status, type } = req.query;
     let generations;
 
     if (type === "video") {
-      generations = await generationLibService.getUserVideoGenerations(userId);
+      generations = await generationLibService.getUserVideoGenerations(userId, {
+        status: status as string,
+      });
     } else if (type === "image") {
-      generations = await generationLibService.getUserImageGenerations(userId);
+      generations = await generationLibService.getUserImageGenerations(userId, {
+        status: status as string,
+      });
     } else if (type === "all") {
-      generations = await generationLibService.getUserGenerations(userId);
+      generations = await generationLibService.getUserGenerations(userId, {
+        status: status as string,
+      });
+      console.log(generations);
     } else {
       throw new AppError(
         "Invalid type parameter. Must be 'video', 'image', or 'all'.",
         400
       );
     }
-    const paginatedGenerations = paginator(generations, Number(page), Number(limit));
+    const paginatedGenerations = paginator(
+      generations,
+      Number(page),
+      Number(limit)
+    );
     res.status(200).json({
       success: true,
       message: "Generations retrieved successfully",
-      data: paginatedGenerations,
-      paginationData: {
-        total: generations.length,
-        page: Number(page),
-        limit: Number(limit),
+      data: {
+        items: paginatedGenerations,
+        paginationData: {
+          total: generations.length,
+          page: Number(page),
+          limit: Number(limit),
+        },
       },
     });
   }),
