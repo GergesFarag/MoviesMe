@@ -67,7 +67,7 @@ const userController = {
           profilePicture.buffer,
           `user_${id}/images/profile`,
           "profile_picture",
-          { overwrite: true  , invalidate: true }
+          { overwrite: true, invalidate: true }
         )) as UploadApiResponse;
         req.body.profilePicture = result.secure_url;
       }
@@ -418,36 +418,48 @@ const userController = {
   getUserGenerations: catchError(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
-      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "User not authenticated",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
-
-    const { type } = req.query;
+    const { page = 1, limit = 10, type } = req.query;
     let generations;
 
-
-    if (type === 'video') {
+    if (type === "video") {
       generations = await generationLibService.getUserVideoGenerations(userId);
-    } else if (type === 'image') {
+    } else if (type === "image") {
       generations = await generationLibService.getUserImageGenerations(userId);
-    } else if(type === 'all'){
+    } else if (type === "all") {
       generations = await generationLibService.getUserGenerations(userId);
     } else {
-      throw new AppError("Invalid type parameter. Must be 'video', 'image', or 'all'.", 400);
+      throw new AppError(
+        "Invalid type parameter. Must be 'video', 'image', or 'all'.",
+        400
+      );
     }
-
+    const paginatedGenerations = paginator(generations, Number(page), Number(limit));
     res.status(200).json({
       success: true,
       message: "Generations retrieved successfully",
-      data: generations,
+      data: paginatedGenerations,
+      paginationData: {
+        total: generations.length,
+        page: Number(page),
+        limit: Number(limit),
+      },
     });
   }),
 
   getGenerationById: catchError(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
-      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "User not authenticated",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
-    
+
     const { id } = req.params;
     if (!id) {
       throw new AppError("Generation ID is required", 400);
@@ -465,9 +477,12 @@ const userController = {
   updateGenerationFavoriteStatus: catchError(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
-      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "User not authenticated",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
-    
+
     const { id } = req.params;
     const { isFavorite } = req.body;
 
@@ -495,9 +510,12 @@ const userController = {
   deleteGeneration: catchError(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
-      throw new AppError("User not authenticated", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError(
+        "User not authenticated",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
     }
-    
+
     const { id } = req.params;
     if (!id) {
       throw new AppError("Generation ID is required", 400);
