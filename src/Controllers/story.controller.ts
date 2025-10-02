@@ -7,7 +7,6 @@ import AppError from "../Utils/Errors/AppError";
 import mongoose, { Types } from "mongoose";
 import StoryGenerationInfo from "../Models/storyGenerationInfo.model";
 import {
-  genderType,
   IStoryRequest,
   IStoryRequestKeys,
 } from "../Interfaces/storyRequest.interface";
@@ -76,16 +75,6 @@ const storyController = {
         }
         storyData.genere = genreValue;
       }
-      console.log("Genre Value", storyData.genere);
-
-      if (storyData.voiceOver && storyData.voiceOver.voiceGender) {
-        const genderValue = getJsonKey(
-          translation["voiceOver"]["voiceGender"],
-          storyData.voiceOver.voiceGender
-        );
-        storyData.voiceOver.voiceGender = genderValue as genderType;
-      }
-
       const jobId = `${generateRandomNumber()}_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 9)}`;

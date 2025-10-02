@@ -100,7 +100,7 @@ export const generateVoiceSysPrompt = (
   numOfScenes: number,
   voiceAccent: string | null
 ): string => {
-  const wordsPerScene = 9;
+  const wordsPerScene = 7;
   const totalWords = numOfScenes * wordsPerScene;
 
   return `You are a cinematic narrator and translator.

@@ -103,9 +103,9 @@
   },
   "voiceOver": {
     "voiceGender": {
-      "male": "male",
-      "female": "female",
-      "kid": "kid"
+      "68de9a077addca7b6c66a4c3": "male",
+      "68de9a077addca7b6c66a4c4": "female",
+      "68de9a077addca7b6c66a4c5": "kid"
     }
   },
   "notifications": {

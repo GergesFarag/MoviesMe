@@ -5,6 +5,10 @@ export interface ILanguage {
   name:string;
   accents:{_id: Types.ObjectId , name:string}[];
 }
+export interface IGenderOption {
+  _id:Types.ObjectId;
+  name:string;
+}
 export interface IStoryGenerationInfo {
   location: {
     name: string;
@@ -17,6 +21,7 @@ export interface IStoryGenerationInfo {
   genres: string[];
   estimatedTimePerSecond: number;
   languages: ILanguage[];
+  genderOptions: IGenderOption[];
   voiceOverCredits: number;
   generationCredits: number;
   createdAt: Date;

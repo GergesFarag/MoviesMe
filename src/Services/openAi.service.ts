@@ -196,7 +196,7 @@ export class OpenAIService {
   ): Promise<string> {
     console.log("language:", language);
 
-    const targetWordsPerScene = 9;
+    const targetWordsPerScene = 7;
     const totalTargetWords = (numOfScenes - 1) * targetWordsPerScene;
     const tolerance = 2;
     const SYSTEM_PROMPT = generateVoiceSysPrompt(
@@ -265,7 +265,7 @@ export class OpenAIService {
         temperature: 0.7,
       });
       const responseContent = response.choices[0]?.message?.content;
-      let narrativeText = `GENERATE ${numOfScenes} SEPARATE IMAGES \n${responseContent}`;
+      let narrativeText = `GENERATE ${numOfScenes} SEPARATE IMAGES !!DO NOT MIX IMAGES IN ONE IMAGE!! \n${responseContent}`;
       console.log("Narrative Text: ", narrativeText);
       if (!narrativeText) {
         throw new AppError("No narrative text generated from OpenAI", 500);

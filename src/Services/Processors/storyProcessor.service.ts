@@ -88,7 +88,6 @@ export class StoryProcessorService {
         "✅ Parallel processing completed: Voice Over + Image Generation"
       );
   const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
-
   const videoUrls = await this.generateVideos(job, imageUrls ?? []);
 
       const finalVideoBuffer = await this.mergeAndComposeVideo(

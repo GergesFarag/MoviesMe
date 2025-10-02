@@ -42,7 +42,6 @@ const storySchema = new mongoose.Schema<IStory>(
         },
         voiceGender: {
           type: String,
-          enum: ["male", "female", "kid"],
           default: null,
         },
         sound: { type: String, default: null },
@@ -53,7 +52,7 @@ const storySchema = new mongoose.Schema<IStory>(
     },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 );
 

@@ -7,6 +7,7 @@ import {
   generateHashFromBuffer,
 } from "../Utils/APIs/cloudinary";
 import { streamToBuffer } from "../Utils/Format/streamToBuffer";
+import { TextToSpeechRequest } from "@elevenlabs/elevenlabs-js/api";
 
 const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY as string) || "";
 export class VoiceGenerationService {
@@ -46,9 +47,8 @@ export class VoiceGenerationService {
     userId: string
   ): Promise<string> {
     let voiceId: string | null = null;
-    console.log("voiceOverData: ",data);
+    console.log("voiceOverData: ", data);
     if (data?.voiceGender && data.voiceLanguage) {
-      console.log("Gone Here");
       voiceId = await getVoiceELIds(
         data!.voiceGender,
         data!.voiceLanguage,
@@ -57,7 +57,7 @@ export class VoiceGenerationService {
       if (!voiceId)
         throw new AppError("No voiceId found", HTTP_STATUS_CODE.NOT_FOUND);
     }
-    console.log("voiceId: ",voiceId);
+    console.log("voiceId: ", voiceId);
     if (!data?.text) {
       throw new AppError(
         "No voiceOverLyrics or narration provided",
@@ -65,16 +65,18 @@ export class VoiceGenerationService {
       );
     }
     try {
+      const requestData: TextToSpeechRequest = {
+        text: data!.text,
+        modelId: "eleven_v3",
+        outputFormat: "mp3_44100_128",
+        voiceSettings: {
+          stability: 0.5,
+          speed: 1.1,
+        },
+      };
       const audio = await this.client.textToSpeech.convert(
         voiceId || "UR972wNGq3zluze0LoIp",
-        {
-          text: data!.text,
-          modelId: "eleven_multilingual_v2",
-          outputFormat: "mp3_44100_128",
-          voiceSettings: {
-            speed: 1.1,
-          },
-        }
+        requestData
       );
       if (!audio) {
         throw new AppError(

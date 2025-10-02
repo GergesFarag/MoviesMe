@@ -87,16 +87,17 @@ export const getVoiceELIds = async (
   voiceLanguage: string,
   voiceAccent: string | null
 ): Promise<string> => {
+  console.log("Voice Data" , voiceGender, voiceLanguage, voiceAccent);
   if(voiceLanguage !== "68d963ffbf1a7f7cdefb689a"){ //id langauge !== Arabic
     voiceLanguage = "68d963ffbf1a7f7cdefb6897"; // Default to English if not supported
   }
   const items = await AudioModel.find({ language: voiceLanguage }).lean();
   if (!items || items.length === 0) {
-    throw new AppError("No audio models found", HTTP_STATUS_CODE.NOT_FOUND);
+    throw new AppError("No audio models found for this language", HTTP_STATUS_CODE.NOT_FOUND);
   }
   let filteredItems = items.filter((item) => item.accent === voiceAccent && item.gender === voiceGender);
   if (!filteredItems || filteredItems.length === 0) {
-    throw new AppError("No audio models found", HTTP_STATUS_CODE.NOT_FOUND);
+    throw new AppError("No audio models found for this voice accent or gender", HTTP_STATUS_CODE.NOT_FOUND);
   }
   return filteredItems[0].elevenLabsId;
 };

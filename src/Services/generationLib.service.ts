@@ -111,6 +111,11 @@ export class GenerationLibService {
           (generation: any) => generation.status === query.status
         );
       }
+      if (query.isFav) {
+        user.generationLib = user.generationLib.filter(
+          (generation: any) => generation.isFav === Boolean(query.isFav)
+        );
+      }
       const sortedGenerations = Sorting.sortItems(user.generationLib, "newest");
       return GenerationLibDTO.toDTOArray(sortedGenerations);
     } catch (error) {
@@ -251,6 +256,11 @@ export class GenerationLibService {
         (generation: any) =>
           generation.isVideo === true && generation.status === query.status
       );
+      if (query.isFav) {
+        user.generationLib = user.generationLib.filter(
+          (generation: any) => generation.isFav === Boolean(query.isFav)
+        );
+      }
       const sortedVidGenerations = Sorting.sortItems(
         videoGenerations,
         "newest"
@@ -286,6 +296,11 @@ export class GenerationLibService {
         (generation: any) =>
           generation.isVideo === false && generation.status === query.status
       );
+      if (query.isFav) {
+        user.generationLib = user.generationLib.filter(
+          (generation: any) => generation.isFav === Boolean(query.isFav)
+        );
+      }
       const sortedImgGenerations = Sorting.sortItems(
         imageGenerations,
         "newest"

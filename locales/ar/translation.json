@@ -75,9 +75,9 @@
   },
   "voiceOver": {
     "voiceGender": {
-      "male": "ذكر",
-      "female": "أنثى",
-      "kid": "أطفال"
+      "68de9a077addca7b6c66a4c3": "ذكر",
+      "68de9a077addca7b6c66a4c4": "أنثى",
+      "68de9a077addca7b6c66a4c5": "أطفال"
     }
   },
   "genres": {

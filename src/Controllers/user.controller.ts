@@ -423,20 +423,23 @@ const userController = {
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
-    const { page = 1, limit = 10, status, type } = req.query;
+    const { page = 1, limit = 10, status, isFav , type } = req.query;
     let generations;
 
     if (type === "video") {
       generations = await generationLibService.getUserVideoGenerations(userId, {
         status: status as string,
+        isFav: isFav as string,
       });
     } else if (type === "image") {
       generations = await generationLibService.getUserImageGenerations(userId, {
         status: status as string,
+        isFav: isFav as string,
       });
     } else if (type === "all") {
       generations = await generationLibService.getUserGenerations(userId, {
         status: status as string,
+        isFav: isFav as string,
       });
       console.log(generations);
     } else {
@@ -497,20 +500,20 @@ const userController = {
     }
 
     const { id } = req.params;
-    const { isFavorite } = req.body;
+    const { isFav } = req.body;
 
     if (!id) {
       throw new AppError("Generation ID is required", 400);
     }
 
-    if (typeof isFavorite !== "boolean") {
-      throw new AppError("isFavorite must be a boolean value", 400);
+    if (typeof isFav !== "boolean") {
+      throw new AppError("isFav must be a boolean value", 400);
     }
 
     const updatedGeneration = await generationLibService.updateFavoriteStatus(
       userId,
       id,
-      isFavorite
+      isFav
     );
 
     res.status(200).json({

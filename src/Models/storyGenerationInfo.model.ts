@@ -33,6 +33,11 @@ const storyGenerationInfoSchema = new mongoose.Schema<IStoryGenerationInfo>({
       ],
     },
   ],
+  genderOptions: [
+    {
+      name: { type: String, required: true },
+    },
+  ],
   voiceOverCredits: {
     type: Number,
     required: true,

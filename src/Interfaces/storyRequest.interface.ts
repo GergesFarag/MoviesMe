@@ -1,8 +1,8 @@
-export type genderType = "male" | "female" | "kid";
+
 export interface IVoiceOver {
   voiceOverLyrics: string | null;
   voiceLanguage: string | null;
-  voiceGender: genderType;
+  voiceGender: string;
   voiceAccent: string | null;
   sound: string | null;
   text: string | null;
