@@ -48,11 +48,11 @@ export class VoiceGenerationService {
   ): Promise<string> {
     let voiceId: string | null = null;
     console.log("voiceOverData: ", data);
-    if (data?.voiceGender && data.voiceLanguage) {
+    if (data?.voiceGender && data?.voiceLanguage) {
       voiceId = await getVoiceELIds(
-        data!.voiceGender,
-        data!.voiceLanguage,
-        data!.voiceAccent
+        data?.voiceGender,
+        data?.voiceLanguage,
+        data?.voiceAccent
       );
       if (!voiceId)
         throw new AppError("No voiceId found", HTTP_STATUS_CODE.NOT_FOUND);

@@ -1,4 +1,3 @@
-
 export interface IVoiceOver {
   voiceOverLyrics: string | null;
   voiceLanguage: string | null;

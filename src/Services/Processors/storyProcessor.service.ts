@@ -83,7 +83,8 @@ export class StoryProcessorService {
           seedreamPrompt
         );
       }
-
+      throw new AppError("Image generation returned no images", 500) 
+      
       console.log(
         "✅ Parallel processing completed: Voice Over + Image Generation"
       );

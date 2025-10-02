@@ -19,12 +19,12 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
-      category = "all"
+      category = "all",
     }: TModelFetchQuery = req.query;
-    
+
     const locale = req.headers["accept-language"] || "en";
     const categoryKey = translationService.getCategoryKey(category, locale);
-    
+
     let query: Record<string, boolean | string> = { isVideoEffect: true };
     if (categoryKey !== "all") {
       query.category = categoryKey;
@@ -62,12 +62,12 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
-      category = "all"
+      category = "all",
     }: TModelFetchQuery = req.query;
-    
+
     const locale = req.headers["accept-language"] || "en";
     const categoryKey = translationService.getCategoryKey(category, locale);
-    
+
     let query: Record<string, boolean | string> = { isImageEffect: true };
     if (categoryKey !== "all") {
       query.category = categoryKey;
@@ -109,16 +109,16 @@ const modelsController = {
       type = "all",
       category = "all",
     }: TModelFetchQuery & { type?: string } = req.query;
-    
+
     const locale = req.headers["accept-language"] || "en";
     const categoryKey = translationService.getCategoryKey(category, locale);
-    
+
     const query: Record<string, boolean | string> = { isTrending: true };
     const filter: Record<string, string> = {
       video: "isVideoEffect",
       image: "isImageEffect",
     };
- 
+
     if (type !== "all") {
       query[filter[type]] = true;
     }
@@ -157,12 +157,12 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
-      category = "all"
+      category = "all",
     }: TModelFetchQuery = req.query;
-    
+
     const locale = req.headers["accept-language"] || "en";
     const categoryKey = translationService.getCategoryKey(category, locale);
-    
+
     let query: Record<string, boolean | string> = { isCharacterEffect: true };
     if (categoryKey !== "all") {
       query.category = categoryKey;
@@ -201,12 +201,12 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
-      category = "all"
+      category = "all",
     }: TModelFetchQuery = req.query;
-    
+
     const locale = req.headers["accept-language"] || "en";
     const categoryKey = translationService.getCategoryKey(category, locale);
-    
+
     let query: Record<string, boolean | string> = { isAITool: true };
     if (categoryKey !== "all") {
       query.category = categoryKey;
@@ -244,12 +244,12 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
-      category = "all"
+      category = "all",
     }: TModelFetchQuery = req.query;
-    
+
     const locale = req.headers["accept-language"] || "en";
     const categoryKey = translationService.getCategoryKey(category, locale);
-    
+
     let query: Record<string, boolean | string> = { isAI3DTool: true };
     if (categoryKey !== "all") {
       query.category = categoryKey;
@@ -287,7 +287,7 @@ const modelsController = {
       limit = 5,
       page = 1,
       sortBy = "newest",
-      category = "all"
+      category = "all",
     }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
@@ -327,13 +327,30 @@ const modelsController = {
   }),
 
   getModelsCategories: catchError(async (req, res) => {
-    const categories = await Model.distinct("category") as string[];
-    console.log("CATEGORIES:", categories);
-    if (!categories || categories.length === 0) {
-      throw new AppError("No categories found", 404);
+    const { type, isTrending } = req.query;
+    console.log("isTrending:", isTrending);
+    const filter: Record<string, string> = {
+      video: "isVideoEffect",
+      image: "isImageEffect",
+      character: "isCharacterEffect",
+      aitool: "isAITool",
+      ai3dtool: "isAI3DTool",
+      marketingtool: "isMarketingTool",
+    };
+    let query: Record<string, boolean | string> = {};
+    if (type && filter[type as keyof typeof filter]) {
+      query[filter[type as keyof typeof filter]] = true;
     }
+    if (isTrending !== undefined) {
+      query["isTrending"] = isTrending === "true";
+    }
+    console.log("Query:", query);
+    const categories = (await Model.distinct("category").where(query)) as string[];
     const locale = req.headers["accept-language"] || "en";
-    const translatedCategories = translationService.translateCategories(categories, locale);
+    const translatedCategories = translationService.translateCategories(
+      categories,
+      locale
+    );
     res.status(200).json({
       message: "Categories retrieved successfully",
       data: translatedCategories,
