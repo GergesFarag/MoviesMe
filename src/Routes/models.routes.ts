@@ -11,6 +11,7 @@ modelsRouter.get("/aiTools", modelsController.getAITools);
 modelsRouter.get("/ai3dTools", modelsController.getAI3DTools);
 modelsRouter.get("/marketingTools", modelsController.getMarketingTools);
 modelsRouter.get("/trending", modelsController.getTrendingModels);
+modelsRouter.get("/categories", modelsController.getModelsCategories);
 modelsRouter.post("/", modelsController.addModel);
 modelsRouter.post(
   "/applyModel",

@@ -326,6 +326,20 @@ const modelsController = {
     });
   }),
 
+  getModelsCategories: catchError(async (req, res) => {
+    const categories = await Model.distinct("category") as string[];
+    console.log("CATEGORIES:", categories);
+    if (!categories || categories.length === 0) {
+      throw new AppError("No categories found", 404);
+    }
+    const locale = req.headers["accept-language"] || "en";
+    const translatedCategories = translationService.translateCategories(categories, locale);
+    res.status(200).json({
+      message: "Categories retrieved successfully",
+      data: translatedCategories,
+    });
+  }),
+
   addModel: catchError(async (req, res) => {
     const newModel = new Model(req.body);
     await newModel.save();
