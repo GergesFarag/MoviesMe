@@ -7,342 +7,204 @@ import {
   processModelJobAsync,
   processMultiImageJobAsync,
 } from "../Services/applyModel.service";
-import { Sorting } from "../Utils/Sorting/sorting";
-import paginator from "../Utils/Pagination/paginator";
+import { getModelsByType, getTrendingModels } from "../Services/modelFetch.service";
 import { TModelFetchQuery } from "../types";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { translationService } from "../Services/translation.service";
+import { MODEL_FILTER_TYPE, QUERY_TYPE_TO_FILTER } from "../Constants/modelConstants";
+import { UserWithId } from "../types/modelProcessing.types";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
     const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-      category = "all",
+      limit,
+      page,
+      sortBy,
+      category,
     }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
-    const categoryKey = translationService.getCategoryKey(category, locale);
 
-    let query: Record<string, boolean | string> = { isVideoEffect: true };
-    if (categoryKey !== "all") {
-      query.category = categoryKey;
-    }
-    const models = await Model.find(query).select("-__v");
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
+    const result = await getModelsByType({
+      filterType: MODEL_FILTER_TYPE.VIDEO,
+      limit,
+      page,
+      sortBy,
+      category,
+      locale,
+    });
+
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
-        models: translatedModels,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments(query),
-        },
-      },
+      data: result,
     });
   }),
 
   getImageModels: catchError(async (req, res) => {
     const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-      category = "all",
+      limit,
+      page,
+      sortBy,
+      category,
     }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
-    const categoryKey = translationService.getCategoryKey(category, locale);
 
-    let query: Record<string, boolean | string> = { isImageEffect: true };
-    if (categoryKey !== "all") {
-      query.category = categoryKey;
-    }
-    const models = await Model.find(query).select("-__v");
+    const result = await getModelsByType({
+      filterType: MODEL_FILTER_TYPE.IMAGE,
+      limit,
+      page,
+      sortBy,
+      category,
+      locale,
+    });
 
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
-
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
-        models: translatedModels,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments(query),
-        },
-      },
+      data: result,
     });
   }),
 
   getTrendingModels: catchError(async (req, res) => {
     const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-      type = "all",
-      category = "all",
+      limit,
+      page,
+      sortBy,
+      type,
+      category,
     }: TModelFetchQuery & { type?: string } = req.query;
 
     const locale = req.headers["accept-language"] || "en";
-    const categoryKey = translationService.getCategoryKey(category, locale);
 
-    const query: Record<string, boolean | string> = { isTrending: true };
-    const filter: Record<string, string> = {
-      video: "isVideoEffect",
-      image: "isImageEffect",
-    };
+    const result = await getTrendingModels({
+      filterType: MODEL_FILTER_TYPE.TRENDING,
+      limit,
+      page,
+      sortBy,
+      category,
+      locale,
+      type,
+    });
 
-    if (type !== "all") {
-      query[filter[type]] = true;
-    }
-    if (categoryKey !== "all") {
-      query.category = categoryKey;
-    }
-    const models = await Model.find(query).select("-__v");
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
-        models: translatedModels,
-        paginationData: {
-          page,
-          limit,
-          total: await Model.countDocuments(query),
-        },
-      },
+      data: result,
     });
   }),
 
   getCharacterEffects: catchError(async (req, res) => {
     const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-      category = "all",
+      limit,
+      page,
+      sortBy,
+      category,
     }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
-    const categoryKey = translationService.getCategoryKey(category, locale);
 
-    let query: Record<string, boolean | string> = { isCharacterEffect: true };
-    if (categoryKey !== "all") {
-      query.category = categoryKey;
-    }
-    const models = await Model.find(query).select("-__v");
+    const result = await getModelsByType({
+      filterType: MODEL_FILTER_TYPE.CHARACTER,
+      limit,
+      page,
+      sortBy,
+      category,
+      locale,
+    });
 
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
-        models: translatedModels,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments(query),
-        },
-      },
+      data: result,
     });
   }),
 
   getAITools: catchError(async (req, res) => {
     const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-      category = "all",
+      limit,
+      page,
+      sortBy,
+      category,
     }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
-    const categoryKey = translationService.getCategoryKey(category, locale);
 
-    let query: Record<string, boolean | string> = { isAITool: true };
-    if (categoryKey !== "all") {
-      query.category = categoryKey;
-    }
-    const models = await Model.find(query).select("-__v");
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
+    const result = await getModelsByType({
+      filterType: MODEL_FILTER_TYPE.AI_TOOL,
+      limit,
+      page,
+      sortBy,
+      category,
+      locale,
+    });
 
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
-        models: translatedModels,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments(query),
-        },
-      },
+      data: result,
     });
   }),
 
   getAI3DTools: catchError(async (req, res) => {
     const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-      category = "all",
+      limit,
+      page,
+      sortBy,
+      category,
     }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
-    const categoryKey = translationService.getCategoryKey(category, locale);
 
-    let query: Record<string, boolean | string> = { isAI3DTool: true };
-    if (categoryKey !== "all") {
-      query.category = categoryKey;
-    }
-    const models = await Model.find(query).select("-__v");
+    const result = await getModelsByType({
+      filterType: MODEL_FILTER_TYPE.AI_3D_TOOL,
+      limit,
+      page,
+      sortBy,
+      category,
+      locale,
+    });
 
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
-        models: translatedModels,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments(query),
-        },
-      },
+      data: result,
     });
   }),
 
   getMarketingTools: catchError(async (req, res) => {
     const {
-      limit = 5,
-      page = 1,
-      sortBy = "newest",
-      category = "all",
+      limit,
+      page,
+      sortBy,
+      category,
     }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
-    const categoryKey = translationService.getCategoryKey(category, locale);
 
-    let query: Record<string, boolean | string> = { isMarketingTool: true };
-    if (categoryKey !== "all") {
-      query.category = categoryKey;
-    }
+    const result = await getModelsByType({
+      filterType: MODEL_FILTER_TYPE.MARKETING_TOOL,
+      limit,
+      page,
+      sortBy,
+      category,
+      locale,
+    });
 
-    const models = await Model.find(query).select("-__v");
-
-    const sortedModels = Sorting.sortItems(models, sortBy);
-    const paginatedModels = paginator(
-      sortedModels,
-      Number(page),
-      Number(limit)
-    );
-    const translatedModels = translationService.translateModels(
-      paginatedModels,
-      req.headers["accept-language"] || "en"
-    );
-    if (!models) {
-      throw new AppError("No models found", 404);
-    }
     res.status(200).json({
       message: "Models retrieved successfully",
-      data: {
-        models: translatedModels,
-        paginationData: {
-          page: Number(page),
-          limit: Number(limit),
-          total: await Model.countDocuments(query),
-        },
-      },
+      data: result,
     });
   }),
 
   getModelsCategories: catchError(async (req, res) => {
     const { type, isTrending } = req.query;
-    console.log("isTrending:", isTrending);
-    const filter: Record<string, string> = {
-      video: "isVideoEffect",
-      image: "isImageEffect",
-      character: "isCharacterEffect",
-      aitool: "isAITool",
-      ai3dtool: "isAI3DTool",
-      marketingtool: "isMarketingTool",
-    };
+
     let query: Record<string, boolean | string> = {};
-    if (type && filter[type as keyof typeof filter]) {
-      query[filter[type as keyof typeof filter]] = true;
+    
+    if (type && QUERY_TYPE_TO_FILTER[type as string]) {
+      query[QUERY_TYPE_TO_FILTER[type as string]] = true;
     }
+    
     if (isTrending !== undefined) {
-      query["isTrending"] = isTrending === "true";
+      query[MODEL_FILTER_TYPE.TRENDING] = isTrending === "true";
     }
+    
     console.log("Query:", query);
     const categories = (await Model.distinct("category").where(query)) as string[];
     const locale = req.headers["accept-language"] || "en";
@@ -394,43 +256,41 @@ const modelsController = {
   applyModel: catchError(async (req, res) => {
     const { modelId, payload } = req.body;
     const files = req.files as Express.Multer.File[];
-    let images: Express.Multer.File[] = [];
-    let image: Express.Multer.File = {} as Express.Multer.File;
-    if (files && files.length > 1) {
-      images = files;
-    } else {
-      image = files[0];
+
+    if (!modelId || !files || files.length === 0) {
+      throw new AppError("Model ID and at least one image are required", 400);
     }
-    if (!modelId || (!image && images.length === 0)) {
-      throw new AppError("Model ID and images are required", 400);
-    }
+
     const [user, model] = await Promise.all([
       getCachedUser(req.user!.id, User),
       getCachedModel(modelId),
     ]);
+
     if (!user) {
       throw new AppError("User not found", 404);
     }
     if (!model) {
       throw new AppError("Model data not found", 404);
     }
+
     const jobId = `${modelId}_${Date.now()}_${Math.random()
       .toString(36)
       .slice(2, 9)}`;
 
     res.status(202).json({
       message: "Model processing request accepted",
-      jobId: jobId,
+      jobId,
       status: "accepted",
     });
 
     try {
-      if (image && !images.length) {
-        const result = await processModelJobAsync({
-          user,
+      const isMultiImage = files.length > 1;
+      if (isMultiImage) {
+        const result = await processMultiImageJobAsync({
+          user: user as UserWithId,
           model,
           modelId,
-          image,
+          images: files,
           payload,
           jobId,
         });
@@ -442,12 +302,12 @@ const modelsController = {
         } else {
           console.error(`Failed to start model processing: ${result.error}`);
         }
-      } else if (images && images.length > 0) {
-        const result = await processMultiImageJobAsync({
-          user,
+      } else {
+        const result = await processModelJobAsync({
+          user: user as UserWithId,
           model,
           modelId,
-          images,
+          image: files[0],
           payload,
           jobId,
         });
