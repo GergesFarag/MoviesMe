@@ -83,14 +83,24 @@ export class StoryProcessorService {
           seedreamPrompt
         );
       }
-      throw new AppError("Image generation returned no images", 500) 
-      
       console.log(
         "✅ Parallel processing completed: Voice Over + Image Generation"
       );
-  const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
-  const videoUrls = await this.generateVideos(job, imageUrls ?? []);
-
+      const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
+      const videoUrls = await this.generateVideos(job, imageUrls ?? []);
+      if (jobData.audio) {
+        console.log("⏭️ Using provided audio, skipping voice over generation");
+        voiceOver = {
+          url: jobData.audio,
+          text: null,
+          data: {
+            voiceOverLyrics: null,
+            voiceLanguage: null,
+            voiceGender: null,
+            voiceAccent: null,
+          },
+        };
+      }
       const finalVideoBuffer = await this.mergeAndComposeVideo(
         job,
         videoUrls,
@@ -256,9 +266,10 @@ export class StoryProcessorService {
         );
       }
 
-        const invalidUrls = videoUrls.filter(
-          (url: string | null | undefined) => !url || typeof url !== "string" || !url.startsWith("http")
-        );
+      const invalidUrls = videoUrls.filter(
+        (url: string | null | undefined) =>
+          !url || typeof url !== "string" || !url.startsWith("http")
+      );
 
       if (invalidUrls.length > 0) {
         throw new AppError(
@@ -537,7 +548,8 @@ export class StoryProcessorService {
         const generationInfo = await StoryGenerationInfo.findOne().lean();
 
         const language = generationInfo?.languages.find(
-          (lang: any) => lang._id.toString() === jobData.voiceOver!.voiceLanguage
+          (lang: any) =>
+            lang._id.toString() === jobData.voiceOver!.voiceLanguage
         );
         let accent: any = null;
         if (jobData.voiceOver!.voiceLanguage && jobData.voiceOver.voiceAccent) {
@@ -633,7 +645,8 @@ export class StoryProcessorService {
       }
 
       const invalidImages = imageUrls.filter(
-        (url: string) => !url || typeof url !== "string" || !url.startsWith("http")
+        (url: string) =>
+          !url || typeof url !== "string" || !url.startsWith("http")
       );
 
       if (invalidImages.length > 0) {

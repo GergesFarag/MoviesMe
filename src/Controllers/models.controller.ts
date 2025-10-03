@@ -30,7 +30,6 @@ const modelsController = {
       query.category = categoryKey;
     }
     const models = await Model.find(query).select("-__v");
-
     const sortedModels = Sorting.sortItems(models, sortBy);
     const paginatedModels = paginator(
       sortedModels,

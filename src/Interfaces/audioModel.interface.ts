@@ -9,7 +9,7 @@ export interface IAudioModel {
 }
 
 export interface IProcessedVoiceOver {
-  url: string;
-  text: string;
-  data: any;
+  url: string|null;
+  text: string|null;
+  data: any|null;
 }

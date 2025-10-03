@@ -13,6 +13,7 @@ export interface IStoryProcessingDTO {
   title?: string;
   genere?: string;
   image?: string;
+  audio?: string;
 }
 interface IStoryRequestDTOMapper {
   toDTO(style: string, location: string): IStoryProcessingDTO;
@@ -34,6 +35,7 @@ export class StoryProcessingDTO implements IStoryRequestDTOMapper {
       genere: this.story.genere,
       numOfScenes: this.story.storyDuration / 5,
       image: this.story.image,
+      audio: this.story.audio,
     };
   }
 }

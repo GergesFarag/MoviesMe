@@ -41,7 +41,14 @@ const storyController = {
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { prompt, storyDuration } = req.body;
-      const image = req.file;
+      const image =
+        req.files && "image" in req.files
+          ? (req.files["image"] as Express.Multer.File[])[0]
+          : null;
+      const audio =
+        req.files && "audio" in req.files
+          ? (req.files["audio"] as Express.Multer.File[])[0]
+          : null;
       const userId = req.user!.id;
       console.log("Request Body: ", req.body, " and image : ", image);
       Object.keys(req.body).forEach((key) => {
@@ -89,8 +96,15 @@ const storyController = {
         )) as UploadApiResponse;
         storyData.image = imageRes.secure_url;
       }
-
-      // Resolve location and style names if provided
+      if(audio){
+        const audioHash = generateHashFromBuffer(audio.buffer);
+        const audioRes = (await cloudUpload(
+          audio?.buffer,
+          `user_${userId}/audio/uploaded`,
+          audioHash
+        )) as UploadApiResponse;
+        storyData.audio = audioRes.secure_url;
+      }
       let locationName, styleName;
       if (storyData.storyLocationId) {
         locationName = await getLocationName(storyData.storyLocationId);

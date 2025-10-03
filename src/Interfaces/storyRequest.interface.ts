@@ -15,5 +15,6 @@ export interface IStoryRequest {
   storyTitle?: string;
   genere?: string;
   image?: string;
+  audio?: string;
 }
 export type IStoryRequestKeys = keyof IStoryRequest;

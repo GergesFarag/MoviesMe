@@ -5,17 +5,17 @@ export const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
+    const imageAllowedTypes = [
       "image/jpeg",
       "image/png",
       "image/gif",
       "image/webp",
-      "video/mp4",
-      "video/x-msvideo",
-      "video/x-flv",
-      "video/avi",
     ];
-    if (allowedTypes.includes(file.mimetype)) {
+    const audioAllowedTypes = ["audio/mpeg", "audio/wav", "audio/mp3"];
+    if (
+      imageAllowedTypes.includes(file.mimetype) ||
+      audioAllowedTypes.includes(file.mimetype)
+    ) {
       cb(null, true);
     } else {
       cb(new AppError("Invalid file type", 400));
