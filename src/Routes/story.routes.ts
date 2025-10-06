@@ -14,8 +14,7 @@ storyRouter.route("/").post(
   storyController.generateStory
 );
 
-// Retry failed job endpoint
-storyRouter.route("/retry/:jobId").post(authMiddle, storyController.retryFailedJob);
+storyRouter.route("/retry/:jobId").post(authMiddle, storyController.retryStoryJob);
 
 storyRouter.route("/:storyID").delete(authMiddle, storyController.deleteStory);
 storyRouter

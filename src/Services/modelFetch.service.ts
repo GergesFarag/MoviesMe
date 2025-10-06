@@ -114,14 +114,13 @@ export const getTrendingModels = async (
     locale
   );
 
-  const total = await Model.countDocuments(query);
 
   return {
     items: translatedModels,
     paginationData: {
       page: Number(page),
       limit: Number(limit),
-      total,
+      total : filteredModels.length,
     },
   };
 };

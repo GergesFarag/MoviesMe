@@ -26,6 +26,7 @@ import { translationService } from "../Services/translation.service";
 import { extractLanguageFromRequest } from "../Utils/Format/languageUtils";
 import path from "path";
 import { getJsonKey } from "../Utils/Format/json";
+import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
 const validKeys: IStoryRequestKeys[] = [
   "prompt",
   "storyDuration",
@@ -405,6 +406,79 @@ const storyController = {
       message: "Generation data updated successfully",
       data: generationData,
     });
+  }),
+
+  retryStoryJob: catchError(async (req: Request, res: Response) => {
+    const { jobId } = req.params;
+    const userId = req.user?.id;
+
+    if (!jobId) {
+      throw new AppError("Job ID is required", 400);
+    }
+
+    if (!userId) {
+      throw new AppError("User authentication required", 401);
+    }
+
+    // Find the story job
+    const jobData = await Story.findOne({
+      _id: jobId,
+      userId: userId,
+      status: { $in: ["failed", "error", "cancelled"] },
+    });
+
+    if (!jobData) {
+      throw new AppError("No failed story job found with the provided ID for this user", 404);
+    }
+
+    const existingStoryId = (jobData._id as Types.ObjectId).toString();
+
+    // Check if a story generation job with this story ID is already active
+    const existingJob = await storyQueue.getJob(`story_generation_${existingStoryId}`);
+    
+    if (existingJob && !["completed", "failed"].includes(existingJob.finishedOn ? "completed" : "failed")) {
+      throw new AppError(`A job for story ${existingStoryId} is already being processed`, 409);
+    }
+
+    // Create queue job data
+    const queueJobData = {
+      storyId: existingStoryId,
+      userId: userId.toString(),
+      story: jobData,
+    };
+
+    try {
+      // Add job to story queue
+      const job = await storyQueue.add(QUEUE_NAMES.STORY_PROCESSING, queueJobData, {
+        jobId: `story_generation_${existingStoryId}`,
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+        removeOnComplete: 10,
+        removeOnFail: 10,
+      });
+
+      // Update story status to pending
+      await Story.findByIdAndUpdate(existingStoryId, {
+        status: "pending",
+        updatedAt: new Date(),
+      });
+
+      res.status(200).json({
+        message: "Story job successfully added back to queue",
+        data: {
+          jobId: job.id,
+          storyId: existingStoryId,
+          status: "pending",
+          queueType: "story",
+        },
+      });
+    } catch (queueError) {
+      console.error("Error adding story job to queue:", queueError);
+      throw new AppError("Failed to add story job to processing queue", 500);
+    }
   }),
 };
 

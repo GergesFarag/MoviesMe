@@ -426,13 +426,13 @@ const userController = {
     const { page = 1, limit = 10, status, isFav, types } = req.query;
     let generations = [];
     if (!types) {
-      throw new AppError("Type parameter is required", 400);
+      throw new AppError("Types parameter is required", 400);
     }
-    if (types?.toString().toLowerCase() !== "all") {
-      const typesList = types
-        .toString()
-        .split(",")
-        .map((type) => type.trim());
+    const typesList = types
+      .toString()
+      .split(",")
+      .map((type) => type.trim());
+    if (typesList[0].toLowerCase() !== "all") {
       if (typesList.includes("videoEffects")) {
         generations.push(
           ...(await generationLibService.getUserVideoGenerations(userId, {
@@ -441,7 +441,7 @@ const userController = {
           }))
         );
       }
-      if (types === "imageEffects") {
+      if (typesList.includes("videoEffects")) {
         generations.push(
           ...(await generationLibService.getUserImageGenerations(userId, {
             status: status as string,

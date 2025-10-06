@@ -2,6 +2,7 @@ import Model from "../Models/ai.model.ts";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import User from "../Models/user.model";
+import Job from "../Models/job.model";
 import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
 import {
   processModelJobAsync,
@@ -13,6 +14,9 @@ import IAiModel from "../Interfaces/aiModel.interface";
 import { translationService } from "../Services/translation.service";
 import { MODEL_FILTER_TYPE, QUERY_TYPE_TO_FILTER } from "../Constants/modelConstants";
 import { UserWithId } from "../types/modelProcessing.types";
+import { taskQueue } from "../Queues/model.queue";
+import { Types } from "mongoose";
+import { QUEUE_NAMES } from "../Queues/Constants/queueConstants.js";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -322,6 +326,79 @@ const modelsController = {
       }
     } catch (error) {
       console.error(`Unexpected error in model processing:`, error);
+    }
+  }),
+
+  retryEffectJob: catchError(async (req, res) => {
+    const { jobId } = req.params;
+    const userId = req.user?.id;
+
+    if (!jobId) {
+      throw new AppError("Job ID is required", 400);
+    }
+
+    if (!userId) {
+      throw new AppError("User authentication required", 401);
+    }
+
+    // Find the model/effects job
+    const jobData = await Job.findOne({
+      _id: jobId,
+      userId: userId,
+      status: { $in: ["failed", "error", "cancelled"] },
+    });
+
+    if (!jobData) {
+      throw new AppError("No failed effect job found with the provided ID for this user", 404);
+    }
+
+    const existingJobId = (jobData._id as Types.ObjectId).toString();
+
+    // Check if a job with this ID is already active in the model queue
+    const existingModelJob = await taskQueue.getJob(`job_${existingJobId}`);
+    
+    if (existingModelJob && !["completed", "failed"].includes(existingModelJob.finishedOn ? "completed" : "failed")) {
+      throw new AppError(`Job ${existingJobId} is already being processed`, 409);
+    }
+
+    // Create queue job data for model job
+    const modelQueueJobData = {
+      jobId: existingJobId,
+      userId: userId.toString(),
+      jobData: jobData,
+    };
+
+    try {
+      // Add job to model queue
+      const job = await taskQueue.add(QUEUE_NAMES.MODEL_PROCESSING, modelQueueJobData, {
+        jobId: `job_${existingJobId}`,
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+        removeOnComplete: 10,
+        removeOnFail: 10,
+      });
+
+      // Update job status to pending
+      await Job.findByIdAndUpdate(existingJobId, {
+        status: "pending",
+        updatedAt: new Date(),
+      });
+
+      res.status(200).json({
+        message: "Effect job successfully added back to queue",
+        data: {
+          jobId: job.id,
+          originalJobId: existingJobId,
+          status: "pending",
+          queueType: "model",
+        },
+      });
+    } catch (queueError) {
+      console.error("Error adding model job to queue:", queueError);
+      throw new AppError("Failed to add model job to processing queue", 500);
     }
   }),
 };

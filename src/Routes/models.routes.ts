@@ -20,6 +20,7 @@ modelsRouter.post(
   updateUserLanguagePreference,
   modelsController.applyModel
 );
+modelsRouter.post("/retry/:jobId", authMiddle, modelsController.retryEffectJob);
 modelsRouter
   .route("/:id")
   .patch(modelsController.updateModel)
