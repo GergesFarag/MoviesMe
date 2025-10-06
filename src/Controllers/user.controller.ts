@@ -423,31 +423,39 @@ const userController = {
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
-    const { page = 1, limit = 10, status, isFav , type } = req.query;
-    let generations;
-
-    if (type === "video") {
-      generations = await generationLibService.getUserVideoGenerations(userId, {
-        status: status as string,
-        isFav: isFav as string,
-      });
-    } else if (type === "image") {
-      generations = await generationLibService.getUserImageGenerations(userId, {
-        status: status as string,
-        isFav: isFav as string,
-      });
-    } else if (type === "all") {
+    const { page = 1, limit = 10, status, isFav, types } = req.query;
+    let generations = [];
+    if (!types) {
+      throw new AppError("Type parameter is required", 400);
+    }
+    if (types?.toString().toLowerCase() !== "all") {
+      const typesList = types
+        .toString()
+        .split(",")
+        .map((type) => type.trim());
+      if (typesList.includes("videoEffects")) {
+        generations.push(
+          ...(await generationLibService.getUserVideoGenerations(userId, {
+            status: status as string,
+            isFav: isFav as string,
+          }))
+        );
+      }
+      if (types === "imageEffects") {
+        generations.push(
+          ...(await generationLibService.getUserImageGenerations(userId, {
+            status: status as string,
+            isFav: isFav as string,
+          }))
+        );
+      }
+    } else {
       generations = await generationLibService.getUserGenerations(userId, {
         status: status as string,
         isFav: isFav as string,
       });
-      console.log(generations);
-    } else {
-      throw new AppError(
-        "Invalid type parameter. Must be 'video', 'image', or 'all'.",
-        400
-      );
     }
+    console.log(generations);
     const paginatedGenerations = paginator(
       generations,
       Number(page),

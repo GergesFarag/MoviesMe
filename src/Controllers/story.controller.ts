@@ -219,11 +219,6 @@ const storyController = {
     });
   }),
 
-  /**
-   * Retry a failed job by adding it back to the queue
-   * @param req - Request containing jobId
-   * @param res - Response
-   */
   retryFailedJob: catchError(async (req: Request, res: Response) => {
     const { jobId } = req.params;
     const userId = req.user?.id;
