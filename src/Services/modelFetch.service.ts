@@ -17,7 +17,10 @@ import {
   PAGINATION_DEFAULTS, 
   SORT_DEFAULTS, 
   CATEGORY_DEFAULTS,
-  ModelFilterType 
+  ModelFilterType, 
+  QueryType,
+  MODEL_FILTER_TYPE,
+  QUERY_TYPE_TO_FILTER
 } from "../Constants/modelConstants";
 import { TSort } from "../types";
 
@@ -71,7 +74,7 @@ export const getModelsByType = async (
 
 
 export const getTrendingModels = async (
-  config: ModelQueryConfig & { type?: string }
+  config: ModelQueryConfig & { types?: string }
 ): Promise<ModelFetchResult> => {
   const {
     limit = PAGINATION_DEFAULTS.LIMIT,
@@ -79,29 +82,27 @@ export const getTrendingModels = async (
     sortBy = SORT_DEFAULTS.SORT_BY,
     category = CATEGORY_DEFAULTS.ALL,
     locale,
-    type = CATEGORY_DEFAULTS.ALL,
+    types = CATEGORY_DEFAULTS.ALL,
   } = config;
 
   const categoryKey = translationService.getCategoryKey(category, locale);
 
   const query: Record<string, boolean | string> = { isTrending: true };
-
-  const typeFilterMap: Record<string, string> = {
-    video: "isVideoEffect",
-    image: "isImageEffect",
-  };
-
-  if (type !== CATEGORY_DEFAULTS.ALL && typeFilterMap[type]) {
-    query[typeFilterMap[type]] = true;
-  }
+  const typesList = types.split(",").map(type => type.trim());
 
   if (categoryKey !== CATEGORY_DEFAULTS.ALL) {
     query.category = categoryKey;
   }
-
+  console.log("Query:", query);
   const models = await Model.find(query).select("-__v");
+  const filteredModels = typesList[0].toLowerCase() === CATEGORY_DEFAULTS.ALL ? models : models.filter(model => {
+    return typesList.some(type => {
+      const filterKey = QUERY_TYPE_TO_FILTER[type];
+      return filterKey && (model as any)[filterKey] === true;
+    });
+  });
 
-  const sortedModels = Sorting.sortItems(models, sortBy as TSort);
+  const sortedModels = Sorting.sortItems(filteredModels, sortBy as TSort);
   const paginatedModels = paginator(
     sortedModels,
     Number(page),

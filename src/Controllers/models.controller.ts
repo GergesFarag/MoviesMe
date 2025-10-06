@@ -70,9 +70,9 @@ const modelsController = {
       limit,
       page,
       sortBy,
-      type,
+      types,
       category,
-    }: TModelFetchQuery & { type?: string } = req.query;
+    }: TModelFetchQuery & { types?: string } = req.query;
 
     const locale = req.headers["accept-language"] || "en";
 
@@ -83,7 +83,7 @@ const modelsController = {
       sortBy,
       category,
       locale,
-      type,
+      types,
     });
 
     res.status(200).json({
@@ -193,12 +193,12 @@ const modelsController = {
   }),
 
   getModelsCategories: catchError(async (req, res) => {
-    const { type, isTrending } = req.query;
+    const { types, isTrending } = req.query;
 
     let query: Record<string, boolean | string> = {};
     
-    if (type && QUERY_TYPE_TO_FILTER[type as string]) {
-      query[QUERY_TYPE_TO_FILTER[type as string]] = true;
+    if (types && QUERY_TYPE_TO_FILTER[types as string]) {
+      query[QUERY_TYPE_TO_FILTER[types as string]] = true;
     }
     
     if (isTrending !== undefined) {

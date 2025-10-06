@@ -21,12 +21,12 @@ export const MODEL_FILTER_TYPE = {
   FAVORITE: "isFavorite",
 } as const;
 export const QUERY_TYPE_TO_FILTER: Record<string, string> = {
-  video: MODEL_FILTER_TYPE.VIDEO,
-  image: MODEL_FILTER_TYPE.IMAGE,
-  character: MODEL_FILTER_TYPE.CHARACTER,
-  aitool: MODEL_FILTER_TYPE.AI_TOOL,
-  ai3dtool: MODEL_FILTER_TYPE.AI_3D_TOOL,
-  marketingtool: MODEL_FILTER_TYPE.MARKETING_TOOL,
+  videoEffects: MODEL_FILTER_TYPE.VIDEO,
+  imageEffects: MODEL_FILTER_TYPE.IMAGE,
+  characterEffects: MODEL_FILTER_TYPE.CHARACTER,
+  aiTools: MODEL_FILTER_TYPE.AI_TOOL,
+  ai3DTools: MODEL_FILTER_TYPE.AI_3D_TOOL,
+  marketingTools: MODEL_FILTER_TYPE.MARKETING_TOOL,
 };
 export const UPLOAD_PATHS = {
   USER_IMAGES: (userId: string) => `user_${userId}/images/uploaded`,
@@ -48,3 +48,5 @@ export const CATEGORY_DEFAULTS = {
 export type JobStatus = typeof JOB_STATUS[keyof typeof JOB_STATUS];
 export type ModelType = typeof MODEL_TYPE[keyof typeof MODEL_TYPE];
 export type ModelFilterType = typeof MODEL_FILTER_TYPE[keyof typeof MODEL_FILTER_TYPE];
+
+export type QueryType = keyof typeof QUERY_TYPE_TO_FILTER;
