@@ -219,6 +219,183 @@ const storyController = {
     });
   }),
 
+  /**
+   * Retry a failed job by adding it back to the queue
+   * @param req - Request containing jobId
+   * @param res - Response
+   */
+  retryFailedJob: catchError(async (req: Request, res: Response) => {
+    const { jobId } = req.params;
+    const userId = req.user?.id;
+
+    if (!jobId) {
+      throw new AppError("Job ID is required", 400);
+    }
+
+    if (!userId) {
+      throw new AppError("User authentication required", 401);
+    }
+
+    // Find the job in the database
+    const job = await Job.findOne({ jobId }).populate('userId');
+    
+    if (!job) {
+      throw new AppError("Job not found", 404);
+    }
+
+    // Verify that the job belongs to the authenticated user
+    if (job.userId.toString() !== userId) {
+      throw new AppError("Unauthorized to retry this job", 403);
+    }
+
+    // Check if job is actually failed
+    if (job.status !== "failed") {
+      throw new AppError(`Job is currently ${job.status}. Only failed jobs can be retried`, 400);
+    }
+
+    try {
+      // Check if this is a story job or model job based on the presence of modelId
+      if (job.modelId) {
+        // This is a model/effect job - add to model queue
+        const { taskQueue } = await import("../Queues/model.queue");
+        
+        // Get the original job data from user's effectsLib
+        const user = await User.findById(userId);
+        if (!user) {
+          throw new AppError("User not found", 404);
+        }
+
+        // Check if user has effectsLib before accessing it
+        if (!user.effectsLib || user.effectsLib.length === 0) {
+          throw new AppError("User has no effects library", 404);
+        }
+
+        // Find the effect item in user's library
+        const effectItem = user.effectsLib.find(item => item.jobId === jobId);
+        if (!effectItem) {
+          throw new AppError("Effect item not found in user library", 404);
+        }
+
+        // Get the model data
+        const { getCachedModel } = await import("../Utils/Cache/caching");
+        const model = await getCachedModel(job.modelId.toString());
+        if (!model) {
+          throw new AppError("Model not found", 404);
+        }
+
+        // Add job back to the queue with original data
+        const newJob = await taskQueue.add({
+          modelData: model,
+          userId: job.userId,
+          data: { image: effectItem.URL }, // Use the original image URL
+          FCM: user.FCMToken,
+          prompt: model.prompt,
+        }, {
+          jobId: jobId, // Use the same jobId to maintain consistency
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+        });
+
+        console.log(`🔄 Model job ${jobId} added back to queue with Bull job ID: ${newJob.id}`);
+
+      } else {
+        // This is a story job - add to story queue
+        
+        // Find the story associated with this job
+        const story = await Story.findOne({ jobId });
+        if (!story) {
+          throw new AppError("Story associated with this job not found", 404);
+        }
+
+        // Add job back to story queue with original story data
+        const newJob = await storyQueue.add({
+          jobId: jobId,
+          userId: job.userId,
+          storyId: story._id,
+          storyData: {
+            prompt: story.prompt,
+            duration: story.duration,
+            voiceOver: story.voiceOver,
+            location: story.location,
+            style: story.style,
+            title: story.title,
+            genre: story.genre,
+            thumbnail: story.thumbnail,
+            videoUrl: story.videoUrl,
+          },
+          FCM: (job.userId as any).FCMToken,
+        }, {
+          jobId: jobId, // Use the same jobId
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 10000,
+          },
+        });
+
+        console.log(`🔄 Story job ${jobId} added back to queue with Bull job ID: ${newJob.id}`);
+      }
+
+      // Update job status back to pending
+      await Job.findOneAndUpdate(
+        { jobId },
+        { 
+          status: "pending",
+          updatedAt: new Date()
+        }
+      );
+
+      // Update status in user's library as well
+      if (job.modelId) {
+        // Update effectsLib for model jobs
+        await User.findOneAndUpdate(
+          { _id: userId, "effectsLib.jobId": jobId },
+          { 
+            $set: { 
+              "effectsLib.$.status": "pending",
+              "effectsLib.$.updatedAt": new Date()
+            }
+          }
+        );
+      } else {
+        // Update story status for story jobs
+        await Story.findOneAndUpdate(
+          { jobId },
+          { 
+            status: "pending",
+            updatedAt: new Date()
+          }
+        );
+      }
+
+      res.status(200).json({
+        message: "Job successfully added back to queue",
+        data: {
+          jobId,
+          status: "pending",
+          retryTimestamp: new Date(),
+          jobType: job.modelId ? "model" : "story"
+        }
+      });
+
+    } catch (error: any) {
+      console.error(`❌ Error retrying job ${jobId}:`, error);
+      
+      // If it's a queue-related error, provide more specific message
+      if (error?.message?.includes("Queue") || error?.message?.includes("Redis")) {
+        throw new AppError("Queue service is currently unavailable. Please try again later.", 503);
+      }
+      
+      throw new AppError(
+        error?.message || "Failed to retry job. Please try again later.",
+        500
+      );
+    }
+  }),
+
   updateGenerationData: catchError(async (req: Request, res: Response) => {
     const { ...updatingKeys } = req.body;
     const generationData = await StoryGenerationInfo.findOneAndUpdate(

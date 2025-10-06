@@ -13,6 +13,10 @@ storyRouter.route("/").post(
   updateUserLanguagePreference,
   storyController.generateStory
 );
+
+// Retry failed job endpoint
+storyRouter.route("/retry/:jobId").post(authMiddle, storyController.retryFailedJob);
+
 storyRouter.route("/:storyID").delete(authMiddle, storyController.deleteStory);
 storyRouter
   .route("/generationData")
