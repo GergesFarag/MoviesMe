@@ -12,7 +12,7 @@ export type TPaginationQuery = {
 };
 
 export type TUserLibraryQuery = TPaginationQuery & {
-  modelType?: string;
+  types?: string;
   status?: string;
   isFav?: string;
   sortBy?: TSort;
