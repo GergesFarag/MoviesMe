@@ -16,7 +16,7 @@ import { MODEL_FILTER_TYPE, QUERY_TYPE_TO_FILTER } from "../Constants/modelConst
 import { UserWithId } from "../types/modelProcessing.types";
 import { taskQueue } from "../Queues/model.queue";
 import { Types } from "mongoose";
-import { QUEUE_NAMES } from "../Queues/Constants/queueConstants.js";
+import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
