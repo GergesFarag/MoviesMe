@@ -45,7 +45,7 @@ export const getModelsByType = async (
     query.category = categoryKey;
   }
 
-  const models = await Model.find(query).select("-__v +isVideoEffect +isImageEffect +isCharacterEffect +isAITool +isAI3DTool +isMarketingTool");
+  const models = await Model.find(query).lean();
 
   const sortedModels = Sorting.sortItems(models, sortBy as TSort);
 
@@ -103,7 +103,7 @@ export const getTrendingModels = async (
     return hasMatchingType;
   });
   const sanitizedKeysModels = filteredModels.map((model) => {
-    const sanitizedModel = model.toObject();
+    const sanitizedModel = model
     Object.values(MODEL_FILTER_TYPE).forEach((key) => {
       if (sanitizedModel.hasOwnProperty(key)) {
         delete (sanitizedModel as any)[key];
