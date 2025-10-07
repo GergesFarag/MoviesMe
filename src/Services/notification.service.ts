@@ -6,6 +6,8 @@ import { TNotificationCategory } from "../types";
 import { translationService } from "./translation.service";
 import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 import AppError from "../Utils/Errors/AppError";
+import { INotificationItemDTO } from "../DTOs/item.dto";
+import { INotification } from "../Interfaces/notification.interface";
 
 export interface NotificationData {
   title: string;
@@ -30,10 +32,8 @@ interface SocketNotificationPayload {
 }
 
 export class NotificationService {
-    
-    
-    /**
-     * Send story completion notification (both push and socket)
+  /**
+   * Send story completion notification (both push and socket)
    */
   async sendStoryCompletionNotification(
     userId: string,
@@ -41,9 +41,8 @@ export class NotificationService {
     finalVideoUrl: string,
     jobId: string
   ): Promise<void> {
-
-      const locale = await getUserLangFromDB(userId);
-      // Validate story data
+    const locale = await getUserLangFromDB(userId);
+    // Validate story data
     if (!storyData) {
       console.error("❌ No story found in result object");
       await this.sendSocketNotification(userId, "story:failed", {
@@ -297,6 +296,56 @@ export class NotificationService {
       console.log(`✅ Notification saved to user ${user._id} database`);
     } catch (error) {
       console.error(`❌ Failed to save notification to user database:`, error);
+    }
+  }
+
+  static getNotificationStatusAndType(
+    notification: INotification
+  ): INotificationItemDTO {
+    const status = NotificationService.getNotificationStatus(notification);
+    const type = NotificationService.getNotificationType(notification);
+    return { status, type };
+  }
+
+  private static getNotificationStatus(notification: INotification): string {
+    type validStatuses = "completed"| "pending"| "failed";
+    const statusMapper: Record<validStatuses, string> = {
+      completed: "completion",
+      pending: "pending",
+      failed: "failure",
+    };
+    return statusMapper[notification.data.status as validStatuses];
+  }
+  private static getNotificationType(notification: INotification): string {
+    const notificationStatus =
+      NotificationService.getNotificationStatus(notification);
+    if (
+      notificationStatus === "completed" ||
+      notificationStatus === "pending"
+    ) {
+      if (notification.redirectTo === "/storyDetails") {
+        return "story";
+      } else if (notification.redirectTo === "/effectDetails") {
+        return "effect";
+      } else if (notification.redirectTo === "/promotions") {
+        return "promotion";
+      } else if (notification.redirectTo === "/generationLib") {
+        return "generation";
+      } else {
+        return "system";
+      }
+    } else {
+      if (notification.title.toLowerCase().includes("story")) {
+        return "story";
+      } else if (notification.title.toLowerCase().includes("effect")) {
+        return "effect";
+      } else if (notification.title.toLowerCase().includes("promotion")) {
+        return "promotion";
+      } else if (notification.title.toLowerCase().includes("generation")) {
+        return "generation";
+      } else {
+        return "system";
+      }
     }
   }
 }

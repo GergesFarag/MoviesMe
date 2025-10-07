@@ -19,6 +19,8 @@ import { Sorting } from "../Utils/Sorting/sorting";
 import mongoose, { ObjectId } from "mongoose";
 import { IStory } from "../Interfaces/story.interface";
 import { GenerationLibService } from "../Services/generationLib.service";
+import { translationService } from "../Services/translation.service";
+import { NotificationService } from "../Services/notification.service";
 
 const fieldsToSelect: UserProfileResponseDataKeys[] = [
   "username",
@@ -387,30 +389,55 @@ const userController = {
     if (!filter) {
       throw new AppError("Category filter is required", 400);
     }
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
 
     if (!user) {
       throw new AppError("User not found", 404);
     }
-    let filteredNotifications = user.notifications!;
+    let filteredNotifications = user.notifications || [];
     if (!filter.includes("all")) {
       filteredNotifications = user.notifications!.filter((notification) => {
         return filter.includes(notification.category!);
       });
     }
 
-    Sorting.sortItems(filteredNotifications, "newest") || [];
+    const sortedNotifications = filteredNotifications.length > 0 ? Sorting.sortItems(filteredNotifications, "newest") : [];
 
-    const validNotifications = filteredNotifications.filter((notification) => {
+    const validNotifications = sortedNotifications.filter((notification) => {
       if (notification.expiresAt) {
         return new Date(notification.expiresAt) > new Date();
       }
+      return true;
     });
-
+    let notificationStatus,
+      notificationType = "";
+    const userLang = req.headers["accept-language"] || "en";
+    const translatedNotifications = validNotifications.map((notification) => {
+      ({ status: notificationStatus, type: notificationType } =
+        NotificationService.getNotificationStatusAndType(notification));
+      console.log(
+        "Notificaion Status , and type",
+        notificationStatus,
+        notificationType
+      );
+      return {
+        ...notification,
+        title: translationService.translateText(
+          `notifications.${notificationType}.${notificationStatus}`,
+          "title",
+          userLang
+        ),
+        message: translationService.translateText(
+          `notifications.${notificationType}.${notificationStatus}`,
+          "message",
+          userLang
+        ),
+      };
+    });
     res.status(200).json({
       message: "User notifications retrieved successfully",
       data: {
-        notifications: validNotifications,
+        notifications: translatedNotifications,
       },
     });
   }),
@@ -438,18 +465,20 @@ const userController = {
     if (typesList[0].toLowerCase() !== "all") {
       if (typesList.includes("videoEffects")) {
         console.log("Fetching video generations...");
-        const videoGenerations = await generationLibService.getUserVideoGenerations(userId, {
-          status: status as string,
-          isFav: isFav as string,
-        });
+        const videoGenerations =
+          await generationLibService.getUserVideoGenerations(userId, {
+            status: status as string,
+            isFav: isFav as string,
+          });
         console.log("Video generations found:", videoGenerations.length);
         generations.push(...videoGenerations);
       }
       if (typesList.includes("imageEffects")) {
-        const imageGenerations = await generationLibService.getUserImageGenerations(userId, {
-          status: status as string,
-          isFav: isFav as string,
-        });
+        const imageGenerations =
+          await generationLibService.getUserImageGenerations(userId, {
+            status: status as string,
+            isFav: isFav as string,
+          });
         console.log("Image generations found:", imageGenerations.length);
         generations.push(...imageGenerations);
       }
