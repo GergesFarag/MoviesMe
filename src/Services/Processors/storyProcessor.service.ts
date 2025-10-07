@@ -65,7 +65,7 @@ export class StoryProcessorService {
       console.log(
         "🚀 Starting parallel processing: Voice Over + Image Generation"
       );
-
+      throw new AppError("Testing error handling in story processing", 500); //! TO BE DELETED
       let [voiceOver, imageUrls]: [
         IProcessedVoiceOver | null,
         string[] | null
@@ -88,19 +88,20 @@ export class StoryProcessorService {
       );
       const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
       const videoUrls = await this.generateVideos(job, imageUrls ?? []);
-      if (jobData.audio) {
-        console.log("⏭️ Using provided audio, skipping voice over generation");
-        voiceOver = {
-          url: jobData.audio,
-          text: null,
-          data: {
-            voiceOverLyrics: null,
-            voiceLanguage: null,
-            voiceGender: null,
-            voiceAccent: null,
-          },
-        };
-      }
+      // if (jobData.audio) {
+      //   console.log("⏭️ Using provided audio, skipping voice over generation");
+      //   voiceOver = {
+      //     url: jobData.audio,
+      //     text: null,
+      //     data: {
+      //       voiceOverLyrics: null,
+      //       voiceLanguage: null,
+      //       voiceGender: null,
+      //       voiceAccent: null,
+      //     },
+      //   };
+      // } 
+      //! TO BE UNCOMMENTED
       const finalVideoBuffer = await this.mergeAndComposeVideo(
         job,
         videoUrls,
