@@ -93,7 +93,7 @@ export const getTrendingModels = async (
   if (categoryKey !== CATEGORY_DEFAULTS.ALL) {
     query.category = categoryKey;
   }
-  const models = await Model.find(query).select("-__v +isVideoEffect +isImageEffect +isCharacterEffect +isAITool +isAI3DTool +isMarketingTool");
+  const models = await Model.find(query).select("-__v +isVideoEffect +isImageEffect +isCharacterEffect +isAITool +isAI3DTool +isMarketingTool").lean();
   const filteredModels = typesList[0].toLowerCase() === CATEGORY_DEFAULTS.ALL ? models : models.filter(model => {
     const hasMatchingType = typesList.some((type) => {
       const filterKey = QUERY_TYPE_TO_FILTER[type];
