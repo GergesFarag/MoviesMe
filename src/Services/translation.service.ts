@@ -29,7 +29,7 @@ class TranslationService implements ITranslationService {
     return items.map((item) => {
       const translatedName = this.translateItem("models", item._id, locale);
       return {
-        ...item.toObject(),
+        ...item,
         name: translatedName,
         category: this.translateCategory(item.category, locale),
       };

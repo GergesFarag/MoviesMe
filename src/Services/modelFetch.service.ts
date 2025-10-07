@@ -45,7 +45,7 @@ export const getModelsByType = async (
     query.category = categoryKey;
   }
 
-  const models = await Model.find(query).select("-__v");
+  const models = await Model.find(query).select("-__v +isVideoEffect +isImageEffect +isCharacterEffect +isAITool +isAI3DTool +isMarketingTool");
 
   const sortedModels = Sorting.sortItems(models, sortBy as TSort);
 
@@ -93,16 +93,25 @@ export const getTrendingModels = async (
   if (categoryKey !== CATEGORY_DEFAULTS.ALL) {
     query.category = categoryKey;
   }
-  console.log("Query:", query);
-  const models = await Model.find(query).select("-__v");
+  const models = await Model.find(query).select("-__v +isVideoEffect +isImageEffect +isCharacterEffect +isAITool +isAI3DTool +isMarketingTool");
   const filteredModels = typesList[0].toLowerCase() === CATEGORY_DEFAULTS.ALL ? models : models.filter(model => {
-    return typesList.some(type => {
+    const hasMatchingType = typesList.some((type) => {
       const filterKey = QUERY_TYPE_TO_FILTER[type];
-      return filterKey && (model as any)[filterKey] === true;
+      const hasType = filterKey && (model as any)[filterKey] === true;
+      return hasType;
     });
+    return hasMatchingType;
   });
-
-  const sortedModels = Sorting.sortItems(filteredModels, sortBy as TSort);
+  const sanitizedKeysModels = filteredModels.map((model) => {
+    const sanitizedModel = model.toObject();
+    Object.values(MODEL_FILTER_TYPE).forEach((key) => {
+      if (sanitizedModel.hasOwnProperty(key)) {
+        delete (sanitizedModel as any)[key];
+      }
+    });
+    return sanitizedModel;
+  });
+  const sortedModels = Sorting.sortItems(sanitizedKeysModels, sortBy as TSort);
   const paginatedModels = paginator(
     sortedModels,
     Number(page),
