@@ -432,30 +432,36 @@ const userController = {
       .toString()
       .split(",")
       .map((type) => type.trim());
+    console.log("LIST TYPES", typesList);
+    console.log("Query parameters:", { status, isFav, types });
+
     if (typesList[0].toLowerCase() !== "all") {
       if (typesList.includes("videoEffects")) {
-        generations.push(
-          ...(await generationLibService.getUserVideoGenerations(userId, {
-            status: status as string,
-            isFav: isFav as string,
-          }))
-        );
+        console.log("Fetching video generations...");
+        const videoGenerations = await generationLibService.getUserVideoGenerations(userId, {
+          status: status as string,
+          isFav: isFav as string,
+        });
+        console.log("Video generations found:", videoGenerations.length);
+        generations.push(...videoGenerations);
       }
-      if (typesList.includes("videoEffects")) {
-        generations.push(
-          ...(await generationLibService.getUserImageGenerations(userId, {
-            status: status as string,
-            isFav: isFav as string,
-          }))
-        );
+      if (typesList.includes("imageEffects")) {
+        const imageGenerations = await generationLibService.getUserImageGenerations(userId, {
+          status: status as string,
+          isFav: isFav as string,
+        });
+        console.log("Image generations found:", imageGenerations.length);
+        generations.push(...imageGenerations);
       }
     } else {
       generations = await generationLibService.getUserGenerations(userId, {
         status: status as string,
         isFav: isFav as string,
       });
+      console.log("All generations found:", generations.length);
     }
-    console.log(generations);
+    console.log("Final generations count:", generations.length);
+    console.log("Sample generation:", generations[0]);
     const paginatedGenerations = paginator(
       generations,
       Number(page),

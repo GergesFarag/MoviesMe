@@ -208,6 +208,7 @@ export const createInitialStoryAndUpdateUser = async (
     style?: string | null;
     duration: number;
     thumbnail?: string;
+    refImage?: string | null;
   }
 ): Promise<IStory> => {
   // Create the story with pending status and basic data
@@ -225,6 +226,7 @@ export const createInitialStoryAndUpdateUser = async (
     location: storyData.location || null,
     style: storyData.style || null,
     thumbnail: storyData.thumbnail || null, // Will be set when image generation completes
+    refImage: storyData.refImage || null,
     scenes: [], // Will be populated when job completes
     voiceOver: null, // Will be set only if voice over is requested and completed
     createdAt: new Date(),
@@ -402,7 +404,6 @@ export const createJobForStory = async (
   try {
     console.log(`Creating job for story - userId: ${userId}, jobId: ${jobId}`);
 
-    // Use a valid ObjectId for modelId - create a default one if not provided
     const defaultModelId = new mongoose.Types.ObjectId();
 
     const createdJob = await Job.create({

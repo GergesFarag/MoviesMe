@@ -17,6 +17,7 @@ const storySchema = new mongoose.Schema<IStory>(
       default: "pending",
       required: true,
     },
+    refImage: { type: String, required: false, default: null },
     videoUrl: { type: String, required: false, default: null },
     duration: { type: Number, required: [true, "Duration is required"] },
     isFav: { type: Boolean, default: false },

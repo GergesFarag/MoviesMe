@@ -106,17 +106,25 @@ export class GenerationLibService {
       if (!user.generationLib || user.generationLib.length === 0) {
         return [];
       }
-      if (query.status) {
-        user.generationLib = user.generationLib.filter(
+
+      let filteredGenerations = [...user.generationLib];
+
+      // Apply status filter if provided
+      if (query.status && query.status !== "all") {
+        filteredGenerations = filteredGenerations.filter(
           (generation: any) => generation.status === query.status
         );
       }
-      if (query.isFav) {
-        user.generationLib = user.generationLib.filter(
-          (generation: any) => generation.isFav === Boolean(query.isFav)
+
+      // Apply favorite filter if provided
+      if (query.isFav !== undefined) {
+        const isFavValue = query.isFav === "true";
+        filteredGenerations = filteredGenerations.filter(
+          (generation: any) => generation.isFav === isFavValue
         );
       }
-      const sortedGenerations = Sorting.sortItems(user.generationLib, "newest");
+
+      const sortedGenerations = Sorting.sortItems(filteredGenerations, "newest");
       return GenerationLibDTO.toDTOArray(sortedGenerations);
     } catch (error) {
       console.error("Error getting user generations:", error);
@@ -252,15 +260,26 @@ export class GenerationLibService {
         return [];
       }
 
-      const videoGenerations = user.generationLib.filter(
-        (generation: any) =>
-          generation.isVideo === true && generation.status === query.status
+      // Filter video generations
+      let videoGenerations = user.generationLib.filter(
+        (generation: any) => generation.isVideo === true
       );
-      if (query.isFav) {
-        user.generationLib = user.generationLib.filter(
-          (generation: any) => generation.isFav === Boolean(query.isFav)
+
+      // Apply status filter if provided
+      if (query.status && query.status !== "all") {
+        videoGenerations = videoGenerations.filter(
+          (generation: any) => generation.status === query.status
         );
       }
+
+      // Apply favorite filter if provided
+      if (query.isFav !== undefined) {
+        const isFavValue = query.isFav === "true";
+        videoGenerations = videoGenerations.filter(
+          (generation: any) => generation.isFav === isFavValue
+        );
+      }
+
       const sortedVidGenerations = Sorting.sortItems(
         videoGenerations,
         "newest"
@@ -291,16 +310,26 @@ export class GenerationLibService {
         return [];
       }
 
-      // Filter only image generations
-      const imageGenerations = user.generationLib.filter(
-        (generation: any) =>
-          generation.isVideo === false && generation.status === query.status
+      // Filter image generations
+      let imageGenerations = user.generationLib.filter(
+        (generation: any) => generation.isVideo === false
       );
-      if (query.isFav) {
-        user.generationLib = user.generationLib.filter(
-          (generation: any) => generation.isFav === Boolean(query.isFav)
+
+      // Apply status filter if provided
+      if (query.status && query.status !== "all") {
+        imageGenerations = imageGenerations.filter(
+          (generation: any) => generation.status === query.status
         );
       }
+
+      // Apply favorite filter if provided
+      if (query.isFav !== undefined) {
+        const isFavValue = query.isFav === "true";
+        imageGenerations = imageGenerations.filter(
+          (generation: any) => generation.isFav === isFavValue
+        );
+      }
+
       const sortedImgGenerations = Sorting.sortItems(
         imageGenerations,
         "newest"

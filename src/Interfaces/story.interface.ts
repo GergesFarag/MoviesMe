@@ -14,6 +14,8 @@ export interface IStory extends Document {
   genre: string;
   scenes: IScene[];
   jobId: string;
+  userId: mongoose.Schema.Types.ObjectId;
+  refImage?: string;
   voiceOver?: {
     voiceOverLyrics: string | null;
     voiceGender: string | null;
@@ -22,7 +24,6 @@ export interface IStory extends Document {
     sound: string | null;
     text: string | null;
   };
-  userId: mongoose.Schema.Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }

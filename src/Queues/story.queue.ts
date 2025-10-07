@@ -18,6 +18,7 @@ const queueHandlers = new StoryQueueHandlers();
 
 storyQueue.process(async (job) => {
   console.log(`🚀 QUEUE ENTRY: Processing job ${job.id} with jobId: ${job.data.jobId}`);
+  console.log(`📊 Job data:`, JSON.stringify(job.data, null, 2));
   
   try {
     return await storyProcessor.processStory(job, job.data);

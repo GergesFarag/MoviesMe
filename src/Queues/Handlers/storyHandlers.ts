@@ -3,6 +3,7 @@ import { getIO } from "../../Sockets/socket";
 import { NotificationService } from "../../Services/notification.service";
 import JobModel from "../../Models/job.model";
 import Story from "../../Models/story.model";
+import storyQueue from "../story.queue";
 
 export class StoryQueueHandlers {
   private notificationService = new NotificationService();
@@ -10,7 +11,7 @@ export class StoryQueueHandlers {
   async onCompleted(job: Job, result: any) {
     console.log(`✅ Story job with ID ${job.id} has been completed.`);
     console.log("Result:", result);
-
+    await storyQueue.removeJobs(job.data.jobId);
     try {
       if (job.data.userId && result?.story) {
         await this.notificationService.sendStoryCompletionNotification(
@@ -35,13 +36,11 @@ export class StoryQueueHandlers {
     }
   }
 
-  /**
-   * Handle job failure
-   */
+ 
   async onFailed(job: Job, err: Error) {
     console.log(`❌ Story job with ID ${job?.id} has failed.`);
     console.log("Error:", err);
-
+    await storyQueue.removeJobs(job.data.jobId);
     try {
       await this.updateFailedJobStatus(job);
       
@@ -61,9 +60,7 @@ export class StoryQueueHandlers {
     }
   }
   
-  /**
-   * Update job and story status to failed in database
-   */
+
   private async updateFailedJobStatus(job: Job): Promise<void> {
     if (!job?.opts?.jobId) {
       console.log("⚠️ No jobId found, skipping database status update");
@@ -102,9 +99,6 @@ export class StoryQueueHandlers {
     }
   }
 
-  /**
-   * Get queue statistics for monitoring
-   */
   async getQueueStats(queue: any): Promise<void> {
     try {
       const [waiting, active, completed, failed] = await Promise.all([
@@ -122,43 +116,4 @@ export class StoryQueueHandlers {
     }
   }
 
-  /**
-   * Clean up old completed/failed jobs
-   */
-  async cleanupOldJobs(
-    queue: any,
-    maxAge: number = 24 * 60 * 60 * 1000
-  ): Promise<void> {
-    try {
-      const now = Date.now();
-
-      const [completed, failed] = await Promise.all([
-        queue.getCompleted(),
-        queue.getFailed(),
-      ]);
-
-      // Remove old completed jobs
-      const oldCompleted = completed.filter(
-        (job: any) => now - job.timestamp > maxAge
-      );
-
-      // Remove old failed jobs
-      const oldFailed = failed.filter(
-        (job: any) => now - job.timestamp > maxAge
-      );
-
-      await Promise.all([
-        ...oldCompleted.map((job: any) => job.remove()),
-        ...oldFailed.map((job: any) => job.remove()),
-      ]);
-
-      if (oldCompleted.length > 0 || oldFailed.length > 0) {
-        console.log(
-          `🧹 Cleaned up ${oldCompleted.length} old completed jobs and ${oldFailed.length} old failed jobs`
-        );
-      }
-    } catch (error) {
-      console.error("❌ Failed to cleanup old jobs:", error);
-    }
-  }
 }
