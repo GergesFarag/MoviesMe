@@ -5,6 +5,7 @@ import { StoryDTO } from "../DTOs/story.dto";
 import { TNotificationCategory } from "../types";
 import { translationService } from "./translation.service";
 import { getUserLangFromDB } from "../Utils/Format/languageUtils";
+import AppError from "../Utils/Errors/AppError";
 
 export interface NotificationData {
   title: string;
@@ -131,7 +132,7 @@ export class NotificationService {
   async sendStoryFailureNotification(
     userId: string,
     jobId: string,
-    error: Error,
+    error: Error | AppError,
     storyId?: string
   ): Promise<void> {
     // Get user's preferred language

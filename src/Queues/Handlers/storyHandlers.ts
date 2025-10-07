@@ -4,6 +4,7 @@ import { NotificationService } from "../../Services/notification.service";
 import JobModel from "../../Models/job.model";
 import Story from "../../Models/story.model";
 import storyQueue from "../story.queue";
+import AppError from "../../Utils/Errors/AppError";
 
 export class StoryQueueHandlers {
   private notificationService = new NotificationService();
@@ -37,7 +38,7 @@ export class StoryQueueHandlers {
   }
 
  
-  async onFailed(job: Job, err: Error) {
+  async onFailed(job: Job, err: Error | AppError) {
     console.log(`❌ Story job with ID ${job?.id} has failed.`);
     console.log("Error:", err);
     await storyQueue.removeJobs(job.data.jobId);
