@@ -8,6 +8,7 @@ import { generationLibQueue } from "../Queues/generationLib.queue";
 import generationLibSchema from "../Models/generationLib.model";
 import { Types, model } from "mongoose";
 import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
+import { translationService } from "../Services/translation.service";
 
 const generationLibService = new GenerationLibService();
 
@@ -84,10 +85,14 @@ const generationLibController = {
 
   getGenerationInfo: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-
-      const generationInfo = await generationLibService.getGenerationInfo();    
+      const generationInfo = await generationLibService.getGenerationInfo();
+      if (!generationInfo) {
+        throw new AppError("No generation info found", 404);
+      }
+      generationInfo["imageModels"] = translationService.translateGenerationModels(generationInfo["imageModels"], req.headers['accept-language'] as string || 'en');
+      generationInfo["videoModels"] = translationService.translateGenerationModels(generationInfo["videoModels"], req.headers['accept-language'] as string || 'en');
       res.status(200).json({
-        message: "Generation info retrieved successfully", 
+        message: "Generation info retrieved successfully",
         data: generationInfo,
       });
     }
