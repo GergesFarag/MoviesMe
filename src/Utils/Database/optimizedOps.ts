@@ -270,6 +270,7 @@ export const updateCompletedStory = async (
       sound: string | null;
       text: string | null;
     } | null;
+    refImage?: string | null;
   }
 ): Promise<IStory | null> => {
   try {
@@ -356,6 +357,10 @@ export const updateCompletedStory = async (
       updateData.voiceOver.text
     ) {
       updateFields.voiceOver = updateData.voiceOver;
+    }
+
+    if (updateData.refImage) {
+      updateFields.refImage = updateData.refImage;
     }
 
     const updatedStory = await Story.findOneAndUpdate({ jobId }, updateFields, {

@@ -455,6 +455,7 @@ export class StoryProcessorService {
               voiceOverLyrics: voiceOver.data.voiceOverLyrics || null,
             }
           : null,
+          refImage : jobData.image || null,
       };
 
       const updatedStory = await updateCompletedStory(
