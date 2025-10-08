@@ -44,6 +44,13 @@ const effectItemSchema = new mongoose.Schema(
       required: [true, "Model thumbnail is required"],
       trim: true,
     },
+    data: {
+      type: {
+        modelId: { type: String, required: true },
+        images: { type: [String], required: true },
+      },
+      required: true,
+    },
     effectThumbnail: {
       type: String,
       trim: true,

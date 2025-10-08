@@ -16,6 +16,7 @@ import GenerationInfo from "../Models/generation.model";
 export class GenerationLibService {
   async createGeneration(
     userId: string,
+    jobId: string,
     requestData: IGenerationLibRequestDTO
   ): Promise<IGenerationLibResponseDTO> {
     try {
@@ -23,8 +24,6 @@ export class GenerationLibService {
       if (!user) {
         throw new AppError("User not found", 404);
       }
-
-      const jobId = new Types.ObjectId().toString();
 
       const jobRecord = new JobModel({
         jobId,
@@ -44,7 +43,8 @@ export class GenerationLibService {
         URL: null,
         status: "pending",
         thumbnail: null,
-        duration: requestData.isVideo ? 10 : 0,
+        duration: requestData.isVideo ? 5 : 0,
+        data:requestData,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVideo: requestData.isVideo || false,
@@ -91,7 +91,7 @@ export class GenerationLibService {
         500
       );
     }
-  }
+  } 
 
   async getUserGenerations(
     userId: string,

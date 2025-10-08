@@ -97,7 +97,7 @@ const userController = {
     }
   }),
 
-  getUserLibrary: catchError(async (req, res) => {
+  getUserEffectsLib: catchError(async (req, res) => {
     const userId = req.user!.id;
     const query: TUserLibraryQuery = req.query;
     const modelType = query.types;
@@ -172,7 +172,7 @@ const userController = {
     });
   }),
 
-  getUserStoriesLibrary: catchError(async (req, res) => {
+  getUserStoriesLib: catchError(async (req, res) => {
     const {
       page = 1,
       limit = 10,
@@ -442,7 +442,7 @@ const userController = {
     });
   }),
 
-  getUserGenerations: catchError(async (req, res) => {
+  getUserGenerationsLib: catchError(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new AppError(

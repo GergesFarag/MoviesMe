@@ -7,6 +7,7 @@ export interface IGenerationLibDTO {
   thumbnail: string|null;
   status: string;
   isFavorite: boolean;
+  data: IGenerationLibRequestDTO;
   jobId: string;
   duration: number;
   createdAt: string;
@@ -49,6 +50,7 @@ export class GenerationLibDTO implements IGenerationLibMapper {
       status: item.status,
       isFavorite: item.isFav,
       jobId: item.jobId.toString(),
+      data: item.data,
       duration: item.duration,
       createdAt: item.createdAt?.toISOString() || "",
       updatedAt: item.updatedAt?.toISOString() || "",

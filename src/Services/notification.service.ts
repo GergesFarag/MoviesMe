@@ -235,10 +235,6 @@ export class NotificationService {
           `⚠️ No FCM token found for user ${userId}, skipping push notification`
         );
       }
-
-      // Save notification to user's database regardless of push notification success
-      await this.saveNotificationToUser(user, notificationData);
-
       return pushNotificationSent;
     } catch (error) {
       console.error(

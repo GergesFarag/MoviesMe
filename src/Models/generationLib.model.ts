@@ -8,6 +8,16 @@ const generationLibSchema = new Schema<IGenerationLib>({
   jobId: { type: Schema.Types.Mixed, required: true },
   thumbnail: { type: String, required: false },
   status: { type: String, required: true, default: "pending" },
+  data: {
+    type: {
+      prompt: { type: String, required: true },
+      modelId: { type: String, required: true },
+      refImages: { type: [String], required: false },
+      isVideo: { type: Boolean, required: false, default: false },
+      size: { type: String, required: false },
+    },
+    required: true,
+  },
   isFav: { type: Boolean, default: false },
   duration: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },

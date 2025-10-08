@@ -25,12 +25,6 @@ import {
   MODEL_TYPE,
 } from "../Constants/modelConstants";
 
-/**
- * Upload a single or multiple images to Cloudinary
- * @param images - Array of image files to upload
- * @param userId - User ID for organizing uploads
- * @returns Array of secure URLs for uploaded images
- */
 const uploadImages = async (
   images: Express.Multer.File[],
   userId: string
@@ -59,7 +53,7 @@ const uploadImages = async (
   return imageUrls;
 };
 
-const createQueueJobData = (
+export const createQueueJobData = (
   model: IAiModel,
   userId: string,
   data: Record<string, any>,
@@ -106,6 +100,10 @@ export const processModelJobAsync = async (
       status: JOB_STATUS.PENDING,
       previewURL: imageUrl,
       isFav: false,
+      data: {
+        modelId: modelId,
+        images: [imageUrl],
+      },
       modelName: model.name,
       isVideo: model.isVideo,
       modelThumbnail: model.thumbnail,
@@ -122,9 +120,6 @@ export const processModelJobAsync = async (
       },
       itemData
     );
-
-    console.log("Data set successfully!!", createdJob);
-
     return {
       success: true,
       jobId: job.id.toString(),
@@ -141,7 +136,7 @@ export const processModelJobAsync = async (
 export const processMultiImageJobAsync = async (
   data: ProcessMultiImageJobData
 ): Promise<JobResult> => {
-  const { user, model, images, payload, jobId } = data;
+  const { user, model, modelId, images, payload, jobId } = data;
   const { ...rest } = payload;
   const userId = user._id.toString();
 
@@ -164,7 +159,33 @@ export const processMultiImageJobAsync = async (
     if (!job || !job.id) {
       throw new AppError("Job creation failed", 500);
     }
+    const itemData: EffectItemData = {
+      URL: imageUrls[0],
+      modelType: "image-effects",
+      jobId: job.id.toString(),
+      status: JOB_STATUS.PENDING,
+      previewURL: imageUrls[0],
+      isFav: false,
+      data: {
+        modelId: modelId,
+        images: imageUrls,
+      },
+      modelName: model.name,
+      isVideo: model.isVideo,
+      modelThumbnail: model.thumbnail,
+      duration: 0,
+    };
 
+    const createdJob = await createJobAndUpdateUser(
+      userId,
+      {
+        jobId,
+        userId,
+        modelId,
+        status: JOB_STATUS.PENDING,
+      },
+      itemData
+    );
     return {
       success: true,
       jobId: job.id.toString(),

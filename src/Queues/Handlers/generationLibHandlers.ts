@@ -14,16 +14,17 @@ import { translationService } from "../../Services/translation.service";
 import { Types } from "mongoose";
 import { VideoGenerationService } from "../../Services/videoGeneration.service";
 import GenerationInfo from "../../Models/generation.model";
+import { IGenerationImageLibModel } from "../../Interfaces/aiModel.interface";
 
 export interface IGenerationLibJobData {
   userId: string;
   prompt: string;
+  jobId: string;
   refImages?: string[];
   isVideo?: boolean;
   modelId?: string;
   size?: string;
   duration?: number;
-  jobId: string;
 }
 
 export class GenerationLibQueueHandler {
@@ -53,7 +54,7 @@ export class GenerationLibQueueHandler {
       console.log(
         `🎨 Processing GenerationLib job ${jobId} for user ${userId}`
       );
-
+      
       await JobModel.findOneAndUpdate(
         { jobId: jobId },
         { status: "processing" }

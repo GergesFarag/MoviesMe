@@ -1,11 +1,8 @@
-/**
- * Enhanced type definitions for model processing and queries
- */
-
 import { Types } from "mongoose";
 import { IUser } from "../Interfaces/user.interface";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { JobStatus, ModelFilterType } from "../Constants/modelConstants";
+import { IEffectItemRequest } from "../Interfaces/effectItem.interface";
 
 /**
  * User interface with properly typed MongoDB _id
@@ -127,10 +124,11 @@ export interface EffectItemData {
   modelType: string;
   jobId: string;
   status: JobStatus;
-  previewURL?: string;
   isFav: boolean;
   modelName: string;
   isVideo: boolean;
   modelThumbnail: string;
+  data: IEffectItemRequest;
   duration: number;
+  previewURL?: string;
 }

@@ -21,6 +21,8 @@ import "./Queues/generationLib.queue";
 import "./Queues/story.queue";
 import "./Queues/model.queue";
 import { TModelCategory } from "./Interfaces/aiModel.interface";
+import Story from "./Models/story.model";
+import mongoose from "mongoose";
 
 const app = express();
 app.use(express.json());
@@ -49,7 +51,7 @@ app.get(`/`, (req, res) => {
 //*HERE IS CUSTOM SCRIPTS TO RUN ON DB
 app.post(`${basePath}/dbScript`, async (req, res) => {
   try {
-    // Your database script logic here
+    await Story.deleteMany({ userId: new mongoose.Types.ObjectId("68dc6b7e0dfbb81d538692ab") });
     res.status(200).json({ message: "DB script executed successfully" });
   } catch (error) {
     console.error("Error executing DB script:", error);

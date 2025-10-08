@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 import { JobId } from "bull";
+import { IGenerationLibRequestDTO } from "../DTOs/generationLib.dto";
 
 export interface IGenerationLib {
   _id: Types.ObjectId;
@@ -10,6 +11,7 @@ export interface IGenerationLib {
   status: string;
   isFav: boolean;
   duration: number;
+  data:IGenerationLibRequestDTO;
   modelId?:string;
   createdAt?: Date;
   updatedAt?: Date;

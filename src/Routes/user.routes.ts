@@ -21,14 +21,14 @@ userRouter
   .route("/notifications")
   .get(authMiddle, userController.getNotifications);
 
-userRouter.route("/lib/effects").get(authMiddle, userController.getUserLibrary);
+userRouter.route("/lib/effects").get(authMiddle, userController.getUserEffectsLib);
 userRouter
   .route("/lib/effects/:itemId")
   .delete(authMiddle, userController.deleteItem);
 
 userRouter
   .route("/lib/stories")
-  .get(authMiddle, userController.getUserStoriesLibrary);
+  .get(authMiddle, userController.getUserStoriesLib);
 
 userRouter
   .route("/lib/stories/:storyId")
@@ -37,7 +37,7 @@ userRouter
 
 userRouter
   .route("/lib/generations")
-  .get(authMiddle, userController.getUserGenerations);
+  .get(authMiddle, userController.getUserGenerationsLib);
 
 userRouter
   .route("/lib/generations/:id")

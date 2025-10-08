@@ -9,51 +9,59 @@ import generationLibSchema from "../Models/generationLib.model";
 import { Types, model } from "mongoose";
 import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
 import { translationService } from "../Services/translation.service";
+import User from "../Models/user.model";
+import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers";
 
 const generationLibService = new GenerationLibService();
 
 const generationLibController = {
-
   createGeneration: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-
       const userId = req.user?.id;
       if (!userId) {
         throw new AppError("User not authenticated", 401);
       }
-      if(req.body.isVideo && (req.body.isVideo == "false" || !req.body.isVideo)){
+      if (
+        req.body.isVideo &&
+        (req.body.isVideo == "false" || !req.body.isVideo)
+      ) {
         req.body.isVideo = false;
-      }else{
+      } else {
         req.body.isVideo = true;
       }
       const requestData: IGenerationLibRequestDTO = req.body;
-      
+      const jobId = new Types.ObjectId().toString();
+
       let uploadedImageUrls: string[] = [];
 
       const files = req.files as Express.Multer.File[] | undefined;
-      
+
       if (files && files.length > 0) {
         try {
-          const uploadPromises = files.map(async (file: Express.Multer.File) => {
-            const fileHash = generateHashFromBuffer(file.buffer);
-            const publicId = `generation_${userId}_${fileHash}_${Date.now()}`;
-            
-            const uploadResult = await cloudUpload(
-              file.buffer,
-              `user_${userId}/generations/input_images`,
-              publicId,
-              {
-                resource_type: "image",
-                format: "jpg",
-                quality: "auto:good"
-              }
-            );
-            
-            return uploadResult.secure_url;
-          });
+          const uploadPromises = files.map(
+            async (file: Express.Multer.File) => {
+              const fileHash = generateHashFromBuffer(file.buffer);
+              const publicId = `generation_${userId}_${fileHash}_${Date.now()}`;
+
+              const uploadResult = await cloudUpload(
+                file.buffer,
+                `user_${userId}/generations/input_images`,
+                publicId,
+                {
+                  resource_type: "image",
+                  format: "jpg",
+                  quality: "auto:good",
+                }
+              );
+
+              return uploadResult.secure_url;
+            }
+          );
 
           uploadedImageUrls = await Promise.all(uploadPromises);
-          console.log(`Successfully uploaded ${uploadedImageUrls.length} images`);
+          console.log(
+            `Successfully uploaded ${uploadedImageUrls.length} images`
+          );
         } catch (uploadError) {
           console.error("Error uploading images to Cloudinary:", uploadError);
           throw new AppError("Failed to upload images", 500);
@@ -62,17 +70,18 @@ const generationLibController = {
 
       const requestDataWithImages = {
         ...requestData,
-        refImages: [...(requestData.refImages || []), ...uploadedImageUrls]
+        refImages: [...(requestData.refImages || []), ...uploadedImageUrls],
       };
-
       res.status(201).json({
         success: true,
         message: "Generation task is being processed",
-        uploadedImages: uploadedImageUrls.length
+        uploadedImages: uploadedImageUrls.length,
+        jobId: jobId,
       });
 
       const result = await generationLibService.createGeneration(
         userId,
+        jobId,
         requestDataWithImages
       );
       if (result.success) {
@@ -89,8 +98,16 @@ const generationLibController = {
       if (!generationInfo) {
         throw new AppError("No generation info found", 404);
       }
-      generationInfo["imageModels"] = translationService.translateGenerationModels(generationInfo["imageModels"], req.headers['accept-language'] as string || 'en');
-      generationInfo["videoModels"] = translationService.translateGenerationModels(generationInfo["videoModels"], req.headers['accept-language'] as string || 'en');
+      generationInfo["imageModels"] =
+        translationService.translateGenerationModels(
+          generationInfo["imageModels"],
+          (req.headers["accept-language"] as string) || "en"
+        );
+      generationInfo["videoModels"] =
+        translationService.translateGenerationModels(
+          generationInfo["videoModels"],
+          (req.headers["accept-language"] as string) || "en"
+        );
       res.status(200).json({
         message: "Generation info retrieved successfully",
         data: generationInfo,
@@ -101,7 +118,9 @@ const generationLibController = {
   updateGenerationInfo: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const updateData = req.body;
-      const updatedInfo = await generationLibService.updateGenerationInfo(updateData);
+      const updatedInfo = await generationLibService.updateGenerationInfo(
+        updateData
+      );
       res.status(200).json({
         message: "Generation info updated successfully",
         data: updatedInfo,
@@ -121,63 +140,68 @@ const generationLibController = {
       throw new AppError("User authentication required", 401);
     }
 
-    // Find the generation library job
-    const generationLibModel = model("GenerationLib", generationLibSchema);
-    const jobData = await generationLibModel.findOne({
-      _id: jobId,
-      status: { $in: ["failed", "error", "cancelled"] },
-    });
-
-    if (!jobData) {
-      throw new AppError("No failed generation library job found with the provided ID", 404);
+    const user = await User.findById(userId).lean();
+    const generationLibItem = user?.generationLib?.find(
+      (item) => item.jobId === jobId
+    );
+    if (!generationLibItem) {
+      throw new AppError(
+        "No failed generation library job found with the provided ID",
+        404
+      );
     }
 
-    const existingJobId = (jobData._id as Types.ObjectId).toString();
-
-    // Check if a job with this ID is already active in the generation lib queue
-    const existingGenJob = await generationLibQueue.getJob(`generation_lib_${existingJobId}`);
-    
-    if (existingGenJob && !["completed", "failed"].includes(existingGenJob.finishedOn ? "completed" : "failed")) {
-      throw new AppError(`Generation library job ${existingJobId} is already being processed`, 409);
+    const existingGenJob = await generationLibQueue.getJob(
+      `${generationLibItem.jobId}`
+    );
+    if (
+      existingGenJob &&
+      !["completed", "failed"].includes(
+        existingGenJob.finishedOn ? "completed" : "failed"
+      )
+    ) {
+      throw new AppError(
+        `Generation library job ${generationLibItem.jobId} is already being processed`,
+        409
+      );
     }
 
-    // Create queue job data for generation lib job
-    const genLibQueueJobData = {
-      generationLibId: existingJobId,
-      userId: userId.toString(),
-      jobData: jobData,
+    const genLibQueueJobData: IGenerationLibJobData = {
+      jobId: generationLibItem.jobId.toString(),
+      userId: userId,
+      prompt: generationLibItem.data.prompt,
+      refImages: generationLibItem.data.refImages,
+      isVideo: generationLibItem.isVideo,
+      modelId: generationLibItem.data.modelId,
+      size: generationLibItem.data.size,
+      duration: generationLibItem.duration,
     };
 
     try {
-      // Add job to generation library queue
-      const job = await generationLibQueue.add(QUEUE_NAMES.GENERATION_LIB, genLibQueueJobData, {
-        jobId: `generation_lib_${existingJobId}`,
+      const job = await generationLibQueue.add(genLibQueueJobData, {
+        jobId: generationLibItem.jobId,
+        removeOnComplete: true,
+        removeOnFail: true,
         backoff: {
           type: "exponential",
-          delay: 5000,
+          delay: 2000,
         },
-        removeOnComplete: 10,
-        removeOnFail: 10,
-      });
-
-      // Update generation lib status to pending
-      await generationLibModel.findByIdAndUpdate(existingJobId, {
-        status: "pending",
-        updatedAt: new Date(),
       });
 
       res.status(200).json({
         message: "Generation library job successfully added back to queue",
         data: {
           jobId: job.id,
-          generationLibId: existingJobId,
           status: "pending",
           queueType: "generationLib",
         },
       });
     } catch (queueError) {
       console.error("Error adding generation lib job to queue:", queueError);
-      throw new AppError("Failed to add generation library job to processing queue", 500);
+      throw new AppError(
+        "Failed to add generation library job to processing queue",
+        500
+      );
     }
   }),
 };

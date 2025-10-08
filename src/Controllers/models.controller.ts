@@ -5,14 +5,21 @@ import User from "../Models/user.model";
 import Job from "../Models/job.model";
 import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
 import {
+  createQueueJobData,
   processModelJobAsync,
   processMultiImageJobAsync,
 } from "../Services/applyModel.service";
-import { getModelsByType, getTrendingModels } from "../Services/modelFetch.service";
+import {
+  getModelsByType,
+  getTrendingModels,
+} from "../Services/modelFetch.service";
 import { TModelFetchQuery } from "../types";
 import IAiModel from "../Interfaces/aiModel.interface";
 import { translationService } from "../Services/translation.service";
-import { MODEL_FILTER_TYPE, QUERY_TYPE_TO_FILTER } from "../Constants/modelConstants";
+import {
+  MODEL_FILTER_TYPE,
+  QUERY_TYPE_TO_FILTER,
+} from "../Constants/modelConstants";
 import { UserWithId } from "../types/modelProcessing.types";
 import { taskQueue } from "../Queues/model.queue";
 import { Types } from "mongoose";
@@ -20,12 +27,7 @@ import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
-    const {
-      limit,
-      page,
-      sortBy,
-      category,
-    }: TModelFetchQuery = req.query;
+    const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
 
@@ -45,12 +47,7 @@ const modelsController = {
   }),
 
   getImageModels: catchError(async (req, res) => {
-    const {
-      limit,
-      page,
-      sortBy,
-      category,
-    }: TModelFetchQuery = req.query;
+    const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
 
@@ -97,12 +94,7 @@ const modelsController = {
   }),
 
   getCharacterEffects: catchError(async (req, res) => {
-    const {
-      limit,
-      page,
-      sortBy,
-      category,
-    }: TModelFetchQuery = req.query;
+    const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
 
@@ -122,12 +114,7 @@ const modelsController = {
   }),
 
   getAITools: catchError(async (req, res) => {
-    const {
-      limit,
-      page,
-      sortBy,
-      category,
-    }: TModelFetchQuery = req.query;
+    const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
 
@@ -147,12 +134,7 @@ const modelsController = {
   }),
 
   getAI3DTools: catchError(async (req, res) => {
-    const {
-      limit,
-      page,
-      sortBy,
-      category,
-    }: TModelFetchQuery = req.query;
+    const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
 
@@ -172,12 +154,7 @@ const modelsController = {
   }),
 
   getMarketingTools: catchError(async (req, res) => {
-    const {
-      limit,
-      page,
-      sortBy,
-      category,
-    }: TModelFetchQuery = req.query;
+    const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
     const locale = req.headers["accept-language"] || "en";
 
@@ -200,17 +177,19 @@ const modelsController = {
     const { types, isTrending } = req.query;
 
     let query: Record<string, boolean | string> = {};
-    
+
     if (types && QUERY_TYPE_TO_FILTER[types as string]) {
       query[QUERY_TYPE_TO_FILTER[types as string]] = true;
     }
-    
+
     if (isTrending !== undefined) {
       query[MODEL_FILTER_TYPE.TRENDING] = isTrending === "true";
     }
-    
+
     console.log("Query:", query);
-    const categories = (await Model.distinct("category").where(query)) as string[];
+    const categories = (await Model.distinct("category").where(
+      query
+    )) as string[];
     const locale = req.headers["accept-language"] || "en";
     const translatedCategories = translationService.translateCategories(
       categories,
@@ -277,9 +256,7 @@ const modelsController = {
       throw new AppError("Model data not found", 404);
     }
 
-    const jobId = `${modelId}_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 9)}`;
+    const jobId = new Types.ObjectId().toString();
 
     res.status(202).json({
       message: "Model processing request accepted",
@@ -341,48 +318,54 @@ const modelsController = {
       throw new AppError("User authentication required", 401);
     }
 
-    // Find the model/effects job
-    const jobData = await Job.findOne({
-      _id: jobId,
-      userId: userId,
-      status: { $in: ["failed", "error", "cancelled"] },
-    });
-
-    if (!jobData) {
-      throw new AppError("No failed effect job found with the provided ID for this user", 404);
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      throw new AppError("User not found", 404);
     }
-
-    const existingJobId = (jobData._id as Types.ObjectId).toString();
-
-    // Check if a job with this ID is already active in the model queue
-    const existingModelJob = await taskQueue.getJob(`job_${existingJobId}`);
-    
-    if (existingModelJob && !["completed", "failed"].includes(existingModelJob.finishedOn ? "completed" : "failed")) {
-      throw new AppError(`Job ${existingJobId} is already being processed`, 409);
+    const effectItem = user.effectsLib?.find((item) => item.jobId === jobId);
+    if (!effectItem) {
+      throw new AppError("Effect item not found for the given Job ID", 404);
     }
+    const existingModelJob = await taskQueue.getJob(effectItem.jobId);
 
-    // Create queue job data for model job
-    const modelQueueJobData = {
-      jobId: existingJobId,
-      userId: userId.toString(),
-      jobData: jobData,
-    };
-
+    if (
+      existingModelJob &&
+      !["completed", "failed"].includes(
+        existingModelJob.finishedOn ? "completed" : "failed"
+      )
+    ) {
+      throw new AppError(
+        `Job ${effectItem.jobId} is already being processed`,
+        409
+      );
+    }
+    const model = (await Model.findById(
+      effectItem.data.modelId
+    ).lean()) as IAiModel;
+    const key =
+      effectItem.data.images && effectItem.data.images.length > 1
+        ? "images"
+        : "image";
     try {
-      // Add job to model queue
-      const job = await taskQueue.add(QUEUE_NAMES.MODEL_PROCESSING, modelQueueJobData, {
-        jobId: `job_${existingJobId}`,
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 5000,
+      const queueJobData = createQueueJobData(
+        model,
+        user._id.toString(),
+        {
+          [key]:
+            effectItem.data.images.length > 1
+              ? effectItem.data.images
+              : effectItem.data.images[0],
         },
-        removeOnComplete: 10,
-        removeOnFail: 10,
+        user.FCMToken || undefined
+      );
+
+      const job = await taskQueue.add(queueJobData, {
+        jobId,
+        removeOnComplete: true,
+        removeOnFail: true,
       });
 
-      // Update job status to pending
-      await Job.findByIdAndUpdate(existingJobId, {
+      await Job.findByIdAndUpdate(effectItem.jobId, {
         status: "pending",
         updatedAt: new Date(),
       });
@@ -391,7 +374,6 @@ const modelsController = {
         message: "Effect job successfully added back to queue",
         data: {
           jobId: job.id,
-          originalJobId: existingJobId,
           status: "pending",
           queueType: "model",
         },
