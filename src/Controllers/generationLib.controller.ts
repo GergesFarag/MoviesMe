@@ -6,11 +6,13 @@ import catchError from "../Utils/Errors/catchError";
 import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
 import { generationLibQueue } from "../Queues/generationLib.queue";
 import generationLibSchema from "../Models/generationLib.model";
-import { Types, model } from "mongoose";
+import mongoose, { Schema, Types, model } from "mongoose";
 import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
 import { translationService } from "../Services/translation.service";
 import User from "../Models/user.model";
 import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers";
+import { CreditService } from "../Services/credits.service";
+import { string } from "@elevenlabs/elevenlabs-js/core/schemas";
 
 const generationLibService = new GenerationLibService();
 

@@ -9,7 +9,7 @@ import AppError, { HTTP_STATUS_CODE } from "../Errors/AppError";
 import { ObjectId } from "mongoose";
 import mongoose from "mongoose";
 import AudioModel from "../../Models/audio.model";
-import Model from "../../Models/ai.model.ts";
+import Model from "../../Models/ai.model";
 import { IVoiceOver } from "../../Interfaces/storyRequest.interface";
 
 export interface JobCreationData {

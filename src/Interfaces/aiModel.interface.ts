@@ -16,7 +16,6 @@ interface IGeneralModel extends Document {
   name: string;
   thumbnail: string;
   isVideo: boolean;
-  credits: number;
   wavespeedCall: string;
   category: TModelCategory;
 }
@@ -26,6 +25,7 @@ export default interface IAiModel extends IGeneralModel {
   isTrending: boolean;
   minImages: number;
   maxImages: number;
+  credits: number;
   isVideoEffect?: boolean;
   isImageEffect?: boolean;
   isCharacterEffect?: boolean;
@@ -38,6 +38,7 @@ export interface IGenerationImageLibModel extends IGeneralModel {
   minImages: number;
   maxImages: number;
   requirePrompt: boolean;
+  credits: number;
 }
 export interface IGenerationVideoLibModel extends IGeneralModel {
   minImages: number;
@@ -45,4 +46,5 @@ export interface IGenerationVideoLibModel extends IGeneralModel {
   requirePrompt: boolean;
   defaultVideoDuration: number;
   maxVideoDuration: number;
+  credits: Map<string, number>[];
 }

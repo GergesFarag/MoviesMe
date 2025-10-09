@@ -15,12 +15,9 @@ import modelsRouter from "./Routes/models.routes";
 import generationLibRouter from "./Routes/generationLib.routes";
 import { cleanupRedisJobs } from "./Utils/Cache/redisCleanup";
 import { translationService } from "./Services/translation.service";
-import Model from "./Models/ai.model.ts";
-// Import queues to ensure they are initialized
 import "./Queues/generationLib.queue";
 import "./Queues/story.queue";
 import "./Queues/model.queue";
-import { TModelCategory } from "./Interfaces/aiModel.interface";
 import Story from "./Models/story.model";
 import mongoose from "mongoose";
 

@@ -3,7 +3,7 @@
  * Provides reusable functions to eliminate duplication in controllers
  */
 
-import Model from "../Models/ai.model.ts";
+import Model from "../Models/ai.model";
 import AppError from "../Utils/Errors/AppError";
 import { Sorting } from "../Utils/Sorting/sorting";
 import paginator from "../Utils/Pagination/paginator";

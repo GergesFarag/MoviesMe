@@ -195,18 +195,18 @@ export const constructImageGenerationPayload = (
   return { url, payload };
 };
 export const constructVideoGenerationPayload = (
-  model: IGenerationVideoLibModel,
+  model: IGenerationVideoLibModel | IGenerationImageLibModel,
   prompt?: string,
   refImages?: string[],
   videoDuration?: number
 ): { url: string; payload: any } => {
   let { url, payload } = constructImageGenerationPayload(
-    model,
+    model as IGenerationImageLibModel,
     prompt,
     refImages
   );
   Object.assign(payload, {
-    duration: videoDuration || model.defaultVideoDuration,
+    duration: videoDuration || (model as IGenerationVideoLibModel).defaultVideoDuration,
   });
 
   return { url, payload };

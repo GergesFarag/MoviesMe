@@ -8,6 +8,7 @@ export interface IUser {
   isAdmin: boolean;
   isActive: boolean;
   firebaseUid: string;
+  credits: number;
   phoneNumber?: string | null;
   email?: string | null;
   dob?: Date | null;
@@ -22,7 +23,6 @@ export interface IUser {
   userLocation?: string | null;
   isMale?: boolean | null;
   profilePicture?: string | null;
-  credits?: number | null;
   FCMToken?: string | null;
   preferredLanguage?: string;
 }

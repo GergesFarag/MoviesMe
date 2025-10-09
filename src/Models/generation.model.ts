@@ -8,13 +8,13 @@ import {
 const baseGenerationSchema = {
   name: { type: String, required: true },
   thumbnail: { type: String, required: true },
-  credits: { type: Number, required: true },
   wavespeedCall: { type: String, required: true },
 };
 
 const generationImageModelSchema: Schema = new Schema<IGenerationImageLibModel>(
   {
     ...baseGenerationSchema,
+    credits: { type: Number, required: true },
     isVideo: { type: Boolean, default: false, required: true },
     minImages: { type: Number, required: true },
     maxImages: { type: Number, required: true },
@@ -25,6 +25,15 @@ const generationImageModelSchema: Schema = new Schema<IGenerationImageLibModel>(
 const generationVideoModelSchema: Schema = new Schema<IGenerationVideoLibModel>(
   {
     ...baseGenerationSchema,
+    credits: {
+      type: [
+        {
+          type: Map,
+          of: Number,
+        },
+      ],
+      required: true,
+    },
     isVideo: { type: Boolean, default: true, required: true },
     minImages: { type: Number, required: true },
     maxImages: { type: Number, required: true },
