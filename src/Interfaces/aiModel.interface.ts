@@ -44,7 +44,5 @@ export interface IGenerationVideoLibModel extends IGeneralModel {
   minImages: number;
   maxImages: number;
   requirePrompt: boolean;
-  defaultVideoDuration: number;
-  maxVideoDuration: number;
   credits: Map<string, number>[];
 }

@@ -1,5 +1,5 @@
 import Model from "../Models/ai.model";
-import AppError from "../Utils/Errors/AppError";
+import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import User from "../Models/user.model";
 import Job from "../Models/job.model";
@@ -24,6 +24,7 @@ import { UserWithId } from "../types/modelProcessing.types";
 import { taskQueue } from "../Queues/model.queue";
 import { Types } from "mongoose";
 import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
+import { CreditService } from "../Services/credits.service";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -255,7 +256,16 @@ const modelsController = {
     if (!model) {
       throw new AppError("Model data not found", 404);
     }
-
+    const creditService = new CreditService();
+    const hasSufficientCredits = await creditService.hasSufficientCredits(req.user!.id, model.credits);
+    if(!hasSufficientCredits){
+      throw new AppError("Insufficient credits to apply this model", HTTP_STATUS_CODE.PAYMENT_REQUIRED);
+    }else{
+      const deductedOp = await creditService.deductCredits(req.user!.id, model.credits);
+      if(!deductedOp){
+        throw new AppError("Failed to deduct credits", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
+      }
+    }
     const jobId = new Types.ObjectId().toString();
 
     res.status(202).json({

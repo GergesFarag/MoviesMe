@@ -38,8 +38,6 @@ const generationVideoModelSchema: Schema = new Schema<IGenerationVideoLibModel>(
     minImages: { type: Number, required: true },
     maxImages: { type: Number, required: true },
     requirePrompt: { type: Boolean, default: false },
-    defaultVideoDuration: { type: Number, required: true },
-    maxVideoDuration: { type: Number, required: true },
   }
 );
 

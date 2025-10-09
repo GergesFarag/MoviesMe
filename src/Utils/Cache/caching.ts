@@ -2,6 +2,7 @@ import NodeCache from 'node-cache';
 import Model from '../../Models/ai.model';
 import IAiModel from '../../Interfaces/aiModel.interface';
 import { IUser } from '../../Interfaces/user.interface';
+import { UserWithId } from '../../types/modelProcessing.types';
 
 const modelCache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
@@ -28,10 +29,10 @@ const userCache = new NodeCache({ stdTTL: 180, checkperiod: 60 });
 export const getCachedUser = async (userId: string, userModel: any): Promise<IUser | null> => {
   const cacheKey = `user_${userId}`;
   
-  let user = userCache.get<IUser>(cacheKey);
+  let user = userCache.get<UserWithId>(cacheKey);
   
   if (!user) {
-    user = await userModel.findById(userId).select("+FCMToken").lean() as IUser;
+    user = await userModel.findById(userId).select("+FCMToken +_id").lean() as UserWithId;
     
     if (user) {
       userCache.set(cacheKey, user);
