@@ -15,21 +15,35 @@ export const generationLibQueue = new Queue(QUEUE_NAMES.GENERATION_LIB, {
   settings: QUEUE_SETTINGS,
 });
 
-const generationLibQueueHandlers = new GenerationLibQueueHandler();
+let generationLibQueueHandlers: GenerationLibQueueHandler | null = null;
+
+function getGenerationLibQueueHandlers(): GenerationLibQueueHandler {
+  if (!generationLibQueueHandlers) {
+    generationLibQueueHandlers = new GenerationLibQueueHandler();
+  }
+  return generationLibQueueHandlers;
+}
 
 generationLibQueue.process(async (job) => {
-  const data = await generationLibQueueHandlers.processGenerationLib(job);
+  const handlers = getGenerationLibQueueHandlers();
+  const data = await handlers.processGenerationLib(job);
   return data;
 });
 
 generationLibQueue.on(
   "completed",
-  generationLibQueueHandlers.onCompleted.bind(generationLibQueueHandlers)
+  (job, result) => {
+    const handlers = getGenerationLibQueueHandlers();
+    handlers.onCompleted(job, result);
+  }
 );
 
 generationLibQueue.on(
   "failed",
-  generationLibQueueHandlers.onFailed.bind(generationLibQueueHandlers)
+  (job, error) => {
+    const handlers = getGenerationLibQueueHandlers();
+    handlers.onFailed(job, error);
+  }
 );
 
 export default generationLibQueue;

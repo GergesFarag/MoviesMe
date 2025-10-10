@@ -1,10 +1,7 @@
 import { DefaultEventsMap, Server } from "socket.io";
 import type http from "http";
 import AppError from "../Utils/Errors/AppError";
-import WebSocketMonitor from "../Utils/Monitoring/websocketMonitor";
-
 let io: Server | null = null;
-const monitor = new WebSocketMonitor();
 export function initSocket(server: http.Server) {
   io = new Server(server, {
     cors: { 
@@ -33,11 +30,7 @@ export function initSocket(server: http.Server) {
   io.on("connection", (socket) => {
     console.log(`✅ New socket connection established: ${socket.id}`);
     console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
-    
-    // Track connection in monitor
-    const initialTransport = socket.conn?.transport?.name || "unknown";
-    monitor.trackConnection(socket.id, initialTransport);
-    
+
     // Log initial connection details
     console.log(`🔍 Connection details:`, {
       transport: socket.conn?.transport?.name,
@@ -55,9 +48,7 @@ export function initSocket(server: http.Server) {
       }
     });
     
-    // Set socket timeout for long-running operations
-    socket.timeout(300000); // 5 minutes for story generation
-    
+
     socket.on("join:user", (userId: string) => {
       socket.join(`user:${userId}`);
       console.log(`🔗 Socket ${socket.id} joined user room: user:${userId}`);
@@ -74,11 +65,7 @@ export function initSocket(server: http.Server) {
       console.log(`❌ Socket ${socket.id} disconnected. Reason: ${reason}`);
       console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
       
-      // Track disconnection in monitor
-      const transportAtDisconnect = socket.conn?.transport?.name;
-      monitor.trackDisconnection(socket.id, reason, transportAtDisconnect);
-      
-      // Enhanced logging for transport close debugging
+
       if (reason === "transport close") {
         console.warn(`⚠️ Transport closed for socket ${socket.id}`);
         
@@ -163,29 +150,7 @@ export function initSocket(server: http.Server) {
         timestamp: Date.now()
       });
     });
-    
-    // Add stats endpoint for debugging
-    socket.on("stats:request", () => {
-      socket.emit("stats:response", monitor.getStats());
-    });
-    
-    // Add debug command to print summary
-    socket.on("debug:summary", () => {
-      monitor.printSummary();
-      socket.emit("debug:summary:response", "Stats printed to server console");
-    });
-    
-    // Enhanced reconnection handling
-    socket.on("reconnect:attempt", (data) => {
-      console.log(`🔄 Reconnection attempt from socket ${socket.id}:`, data);
-      socket.emit("reconnect:success", {
-        socketId: socket.id,
-        previousSocketId: data?.previousSocketId,
-        timestamp: Date.now()
-      });
-    });
-    
-    // Add periodic connection check
+
     const connectionCheck = setInterval(() => {
       if (socket.connected) {
         socket.emit("connection:alive", {
@@ -214,7 +179,6 @@ export function initSocket(server: http.Server) {
     });
   });
   
-  // Additional engine-level debugging for transport close issues
   io.engine.on("initial_headers", (headers, request) => {
     console.log("📡 Initial headers for connection:", {
       userAgent: request.headers['user-agent'],
@@ -223,13 +187,8 @@ export function initSocket(server: http.Server) {
       upgrade: request.headers.upgrade
     });
   });
-  
-  io.engine.on("headers", (headers, request) => {
-    // Add custom headers for debugging
-    headers["X-Socket-Debug"] = "enabled";
-  });
-  
-  // Monitor transport upgrades
+
+
   io.engine.on("connection", (socket) => {
     console.log(`🔌 Engine connection established: ${socket.id}`);
     

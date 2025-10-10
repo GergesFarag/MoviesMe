@@ -30,13 +30,7 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount),
         projectId: process.env.FIREBASE_PROJECT_ID
       });
-      
-      console.log('Firebase Admin initialized successfully');
-      
-      // admin.auth().getUserByEmail(process.env.FIREBASE_CLIENT_EMAIL).catch(() => {
-      //   console.log('Firebase connection test completed');
-      // });
-      
+
     } else {
       throw new Error('Missing required Firebase environment variables');
     }

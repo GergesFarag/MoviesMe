@@ -224,17 +224,9 @@ export class GenerationLibQueueHandler {
       if (!deducting) {
         console.error("Failed to deduct credits for userId:", result.userId);
       } else {
-        const transactionNotificationData: NotificationData = {
-          title: "Transaction Completed",
-          message: `transaction for generation ${job.id} has been completed.`,
-          data: {
-            jobId: job.opts.jobId,
-            userId: job.data.userId,
-            userCredits: await this.creditService.getCredits(job.data.userId),
-            refundedCredits: job.data.credits,
-          },
-          redirectTo: "/transactions",
-          category: "transactions",
+        const transactionNotificationData = {
+          userCredits: await this.creditService.getCredits(job.data.userId),
+          refundedCredits: job.data.credits,
         };
         await this.notificationService.sendTransactionalSocketNotification(
           job.data.userId,
@@ -396,17 +388,9 @@ export class GenerationLibQueueHandler {
       if (!refund) {
         console.error("Failed to refund credits for userId:", userId);
       } else {
-        const transactionNotificationData: NotificationData = {
-          title: "Transaction Refunded",
-          message: `transaction for generation ${job.id} has been refunded.`,
-          data: {
-            jobId: job.id,
-            userId: job.data.userId,
-            userCredits: await this.creditService.getCredits(job.data.userId),
-            refundedCredits: job.data.credits,
-          },
-          redirectTo: "/transactions",
-          category: "transactions",
+        const transactionNotificationData = {
+          userCredits: await this.creditService.getCredits(job.data.userId),
+          refundedCredits: job.data.credits,
         };
         await this.notificationService.sendTransactionalSocketNotification(
           job.data.userId,

@@ -25,7 +25,7 @@ interface SocketNotificationPayload {
   timestamp?: string;
   [key: string]: any;
 }
-
+type keyType = 'refundedCredits' | 'consumedCredits';
 export class NotificationService {
   private creditService: CreditService;
   constructor() {
@@ -270,17 +270,16 @@ export class NotificationService {
     const type = NotificationService.getNotificationType(notification);
     return { status, type };
   }
-
   async sendTransactionalSocketNotification(
     userId: string,
-    notificationData: NotificationData){
+    notificationData: {userCredits: number} & {[key in keyType]?: number}){
     const user = await User.findById(userId).lean();
     if (!user) {
       console.error(`❌ User not found for notification: ${userId}`);
       return;
     }
     await this.sendSocketNotification(userId, "user:transactions", {
-      message: notificationData.message,
+      message: `Transaction for effect has been completed.`,
       data: notificationData
     });
   }

@@ -41,17 +41,9 @@ export class EffectsQueueHandler {
       if (!deducting) {
         console.error(`❌ Failed to deduct credits for user ${result.userId}`);
       } else {
-        const transactionNotificationData: NotificationData = {
-          title: "Transaction Completed",
-          message: `transaction for effect ${job.data} has been completed.`,
-          data: {
-            jobId: job.opts.jobId,
-            userId: job.data.userId,
+        const transactionNotificationData = {
             userCredits: await this.creditService.getCredits(job.data.userId),
             refundedCredits: job.data.credits,
-          },
-          redirectTo: "/transactions",
-          category: "transactions",
         };
         await this.notificationService.sendTransactionalSocketNotification(
           job.data.userId,
@@ -174,17 +166,10 @@ export class EffectsQueueHandler {
           `❌ Failed to refund credits for user ${job.data.userId}`
         );
       } else {
-        const transactionNotificationData: NotificationData = {
-          title: "Transaction Refunded",
-          message: `transaction for effect ${job.data.storyId} has been refunded.`,
-          data: {
-            storyId: job.data.storyId,
-            userId: job.data.userId,
+        const transactionNotificationData = {
             userCredits: await this.creditService.getCredits(job.data.userId),
             refundedCredits: job.data.credits,
-          },
-          redirectTo: "/transactions",
-          category: "transactions",
+
         };
         await this.notificationService.sendTransactionalSocketNotification(
           job.data.userId,

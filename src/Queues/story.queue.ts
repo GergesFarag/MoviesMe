@@ -13,15 +13,30 @@ export const storyQueue = new Queue(QUEUE_NAMES.STORY_PROCESSING, {
   settings: QUEUE_SETTINGS,
 });
 
-const storyProcessor = new StoryProcessorService();
-const queueHandlers = new StoryQueueHandlers();
+let storyProcessor: StoryProcessorService | null = null;
+let queueHandlers: StoryQueueHandlers | null = null;
+
+function getStoryProcessor(): StoryProcessorService {
+  if (!storyProcessor) {
+    storyProcessor = new StoryProcessorService();
+  }
+  return storyProcessor;
+}
+
+function getQueueHandlers(): StoryQueueHandlers {
+  if (!queueHandlers) {
+    queueHandlers = new StoryQueueHandlers();
+  }
+  return queueHandlers;
+}
 
 storyQueue.process(async (job) => {
   console.log(`🚀 QUEUE ENTRY: Processing job ${job.id} with jobId: ${job.data.jobId}`);
   console.log(`📊 Job data:`, JSON.stringify(job.data, null, 2));
   
   try {
-    return await storyProcessor.processStory(job, job.data);
+    const processor = getStoryProcessor();
+    return await processor.processStory(job, job.data);
   } catch (error) {
     console.error("Error in story processing:", error);
     throw error;
@@ -29,15 +44,22 @@ storyQueue.process(async (job) => {
 });
 
 // Event handlers
-storyQueue.on("completed", queueHandlers.onCompleted.bind(queueHandlers));
-storyQueue.on("failed", queueHandlers.onFailed.bind(queueHandlers));
+storyQueue.on("completed", (job, result) => {
+  const handlers = getQueueHandlers();
+  handlers.onCompleted(job, result);
+});
+storyQueue.on("failed", (job, error) => {
+  const handlers = getQueueHandlers();
+  handlers.onFailed(job, error);
+});
 storyQueue.on("stalled", (job) => console.warn(`⚠️ Job ${job.id} stalled`));
 storyQueue.on("error", (error) => console.error("❌ Queue error:", error));
 
 
 // Queue monitoring
 setInterval(async () => {
-  await queueHandlers.getQueueStats(storyQueue);
+  const handlers = getQueueHandlers();
+  await handlers.getQueueStats(storyQueue);
 }, 45000);
 
 export default storyQueue;

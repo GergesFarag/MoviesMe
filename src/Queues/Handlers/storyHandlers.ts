@@ -29,17 +29,9 @@ export class StoryQueueHandlers {
       console.error(`❌ Failed to deduct credits for user ${job.data.userId}`);
       return;
     }
-    const transactionNotificationData: NotificationData = {
-      title: "Transaction Completed",
-      message: `Your transaction for story ${job.data.storyId} has been completed.`,
-      data: {
-        storyId: job.data.storyId,
-        userId: job.data.userId,
-        userCredits: await this.creditService.getCredits(job.data.userId),
-        consumedCredits: job.data.credits,
-      },
-      redirectTo: "/transactions",
-      category: "transactions",
+    const transactionNotificationData = {
+      userCredits: await this.creditService.getCredits(job.data.userId),
+      consumedCredits: job.data.credits,
     };
     await this.notificationService.sendTransactionalSocketNotification(
       job.data.userId,
@@ -82,17 +74,9 @@ export class StoryQueueHandlers {
     if (!refund) {
       console.error(`❌ Failed to refund credits for user ${job.data.userId}`);
     }
-    const transactionNotificationData: NotificationData = {
-      title: "Transaction Refunded",
-      message: `transaction for story ${job.data.storyId} has been refunded.`,
-      data: {
-        storyId: job.data.storyId,
-        userId: job.data.userId,
-        userCredits: await this.creditService.getCredits(job.data.userId),
-        refundedCredits: job.data.credits,
-      },
-      redirectTo: "/transactions",
-      category: "transactions",
+    const transactionNotificationData = {
+      userCredits: await this.creditService.getCredits(job.data.userId),
+      refundedCredits: job.data.credits,
     };
     await this.notificationService.sendTransactionalSocketNotification(
       job.data.userId,

@@ -110,4 +110,5 @@ export class CreditService implements ICreditService {
       return imageModel.credits;
     }
   }
+  async getStoryCredits(storyId: string): Promise<void> {}
 }

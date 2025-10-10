@@ -12,6 +12,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerDoc from "./swagger";
 import storyRouter from "./Routes/story.routes";
 import modelsRouter from "./Routes/models.routes";
+import purchasingRouter from "./Routes/purchasing.routes";
 import generationLibRouter from "./Routes/generationLib.routes";
 import { cleanupRedisJobs } from "./Utils/Cache/redisCleanup";
 import { translationService } from "./Services/translation.service";
@@ -61,6 +62,7 @@ app.use(`${basePath}/user`, userRouter);
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`${basePath}/generation`, generationLibRouter);
+app.use(`${basePath}/purchasing`, purchasingRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use(ErrorHandler);
