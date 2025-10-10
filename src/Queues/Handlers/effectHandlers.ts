@@ -1,6 +1,7 @@
 import { NotificationItemDTO } from "../../DTOs/item.dto";
 import Job from "../../Models/job.model";
 import User from "../../Models/user.model";
+import { CreditService } from "../../Services/credits.service";
 import {
   NotificationData,
   NotificationService,
@@ -13,21 +14,23 @@ import { modelTypeMapper } from "../../Utils/Format/filterModelType";
 import { getUserLangFromDB } from "../../Utils/Format/languageUtils";
 
 export class EffectsQueueHandler {
-  private notificationService;
+  private notificationService: NotificationService;
+  private creditService: CreditService;
   constructor() {
     this.notificationService = new NotificationService();
+    this.creditService = new CreditService();
   }
 
   async onCompleted(job: any, result: any) {
     try {
       const locale = await getUserLangFromDB(result.userId);
-
       await Job.findOneAndUpdate(
         { jobId: result.jobId },
         { status: "completed" }
       );
       await this.jobRemoval(job);
       const user = await User.findById(result.userId);
+      await this.creditService.deductCredits(result.userId, result.model.credits);
       if (!user) {
         console.error("User not found for userId:", result.userId);
         return;
@@ -114,6 +117,7 @@ export class EffectsQueueHandler {
           data: notificationDTO,
           redirectTo: "/effectDetails",
           category: "activities",
+          userCredits: user.credits,
         };
         const res = await this.notificationService.sendPushNotificationToUser(
           job.data.userId,
@@ -138,6 +142,7 @@ export class EffectsQueueHandler {
 
   async onFailed(job: any, err: Error) {
     try {
+       await this.creditService.addCredits(job.data.userId, job.data.model.credits);
       console.error(`Job ${job.id} failed with error: ${err.message}`);
 
       const jobId = job.opts.jobId || job.id;
@@ -188,6 +193,7 @@ export class EffectsQueueHandler {
           data: notificationDTO,
           redirectTo: null,
           category: "activities",
+          userCredits: user.credits,
         };
         this.notificationService.saveNotificationToUser(user, notificationData);
         if (user?.FCMToken) {

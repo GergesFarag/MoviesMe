@@ -8,10 +8,12 @@ import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 import AppError from "../Utils/Errors/AppError";
 import { INotificationItemDTO } from "../DTOs/item.dto";
 import { INotification } from "../Interfaces/notification.interface";
+import { CreditService } from "./credits.service";
 
 export interface NotificationData {
   title: string;
   message: string;
+  userCredits: number;
   data?: Record<string, any>;
   redirectTo?: string | null;
   category?: TNotificationCategory;
@@ -32,6 +34,10 @@ interface SocketNotificationPayload {
 }
 
 export class NotificationService {
+  private creditService: CreditService;
+  constructor() {
+    this.creditService = new CreditService();
+  }
   /**
    * Send story completion notification (both push and socket)
    */
@@ -67,9 +73,6 @@ export class NotificationService {
     }
 
     try {
-      // Get user's preferred language
-
-      // Convert story to DTO format
       const storyDTO = StoryDTO.toDTO(storyData);
 
       const notificationDTO = {
@@ -93,6 +96,7 @@ export class NotificationService {
         data: notificationDTO,
         redirectTo: "/storyDetails",
         category: "activities",
+        userCredits: await this.creditService.getCredits(userId),
       };
 
       // Send socket notification with formatted story
@@ -132,11 +136,10 @@ export class NotificationService {
     userId: string,
     jobId: string,
     error: Error | AppError,
-    storyId?: string
+    consumedCredits: number,
+    storyId?: string,
   ): Promise<void> {
-    // Get user's preferred language
     const locale = await getUserLangFromDB(userId);
-
     const notificationDTO = {
       storyId: String(storyId || null),
       jobId: String(jobId),
@@ -159,6 +162,7 @@ export class NotificationService {
       data: notificationDTO,
       redirectTo: null,
       category: "activities",
+      userCredits: await this.creditService.getCredits(userId),
     };
 
     // Send socket notification

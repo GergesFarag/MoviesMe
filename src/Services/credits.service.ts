@@ -7,7 +7,7 @@ import Model from "../Models/ai.model";
 import GenerationInfo from "../Models/generation.model";
 
 export class CreditService implements ICreditService {
-  async addCredits(userId: ObjectId, credits: number): Promise<boolean> {
+  async addCredits(userId: string, credits: number): Promise<boolean> {
     try {
       if (credits < MIN_CREDITS_AMT || credits > MAX_CREDITS_AMT) {
         throw new AppError(
@@ -31,7 +31,7 @@ export class CreditService implements ICreditService {
     }
   }
 
-  async deductCredits(userId: ObjectId, credits: number): Promise<boolean> {
+  async deductCredits(userId: string, credits: number): Promise<boolean> {
     try {
       if (credits < MIN_CREDITS_AMT || credits > MAX_CREDITS_AMT) {
         throw new AppError("Invalid credit amount");
@@ -52,7 +52,7 @@ export class CreditService implements ICreditService {
     }
   }
 
-  async getCredits(userId: ObjectId): Promise<number> {
+  async getCredits(userId: string): Promise<number> {
     const user = await User.findById(userId);
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
@@ -61,7 +61,7 @@ export class CreditService implements ICreditService {
   }
 
   async hasSufficientCredits(
-    userId: ObjectId,
+    userId: string,
     credits: number
   ): Promise<boolean> {
     const currentCredits = await this.getCredits(userId);
