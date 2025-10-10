@@ -1,4 +1,3 @@
-import { ObjectId } from "mongoose";
 import { ICreditService } from "../Interfaces/credits.model";
 import User from "../Models/user.model";
 import { MAX_CREDITS_AMT, MIN_CREDITS_AMT } from "../Constants/credits";
@@ -65,7 +64,7 @@ export class CreditService implements ICreditService {
     credits: number
   ): Promise<boolean> {
     const currentCredits = await this.getCredits(userId);
-    return currentCredits < credits;
+    return currentCredits > credits;
   }
 
   async getModelCredits(modelId: string): Promise<number> {
