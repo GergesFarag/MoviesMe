@@ -21,13 +21,10 @@ const purchasingController = {
       }
 
       try {
-        // Note: This gets users from the database, not actual subscription data from RevenueCat
-        // To get actual subscription data, you would need to call RevenueCat for each user individually
         const subscribers = await purchasingService.getAllSubscribers();
 
         res.status(200).json({
           message: "Users retrieved successfully",
-          note: "This endpoint returns users from the database. For actual subscription data, use the individual user subscription endpoint.",
           data: subscribers,
         });
       } catch (error) {
