@@ -30,7 +30,7 @@ export class EffectsQueueHandler {
       );
       await this.jobRemoval(job);
       const user = await User.findById(result.userId);
-      await this.creditService.deductCredits(result.userId, result.model.credits);
+      await this.creditService.deductCredits(result.userId, job.data.modelData.credits);
       if (!user) {
         console.error("User not found for userId:", result.userId);
         return;

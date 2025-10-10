@@ -31,6 +31,7 @@ export class CreditService implements ICreditService {
   }
 
   async deductCredits(userId: string, credits: number): Promise<boolean> {
+    console.log("Triggered");
     try {
       if (credits < MIN_CREDITS_AMT || credits > MAX_CREDITS_AMT) {
         throw new AppError("Invalid credit amount");

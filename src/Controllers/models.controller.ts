@@ -262,11 +262,6 @@ const modelsController = {
     const hasSufficientCredits = await creditService.hasSufficientCredits(req.user!.id, model.credits);
     if(!hasSufficientCredits){
       throw new AppError("Insufficient credits to apply this model", HTTP_STATUS_CODE.PAYMENT_REQUIRED);
-    }else{
-      const deductedOp = await creditService.deductCredits(req.user!.id, model.credits);
-      if(!deductedOp){
-        throw new AppError("Failed to deduct credits", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
-      }
     }
     const jobId = new Types.ObjectId().toString();
 
