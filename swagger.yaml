@@ -499,17 +499,53 @@ paths:
                   error:
                     type: object
 
-  /user/lib:
+  /api/v1/user/lib/effects:
     get:
       tags:
         - User
-      summary: Get user library
-      description: Retrieve the current user's library/collection
+      summary: Get user effects library
+      description: Retrieve the current user's effects library with filtering options
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: types
+          required: true
+          schema:
+            type: string
+          description: Comma-separated list of model types
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Number of items per page
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Filter by status
+        - in: query
+          name: isFav
+          schema:
+            type: boolean
+          description: Filter by favorite status
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+          description: Sort order
       responses:
         "200":
-          description: User library retrieved successfully
+          description: User effects library retrieved successfully
           content:
             application/json:
               schema:
@@ -519,6 +555,575 @@ paths:
                     type: boolean
                   data:
                     type: object
+                    properties:
+                      userLib:
+                        type: array
+                        items:
+                          type: object
+                      pagination:
+                        type: object
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/lib/effects/{itemId}:
+    delete:
+      tags:
+        - User
+      summary: Delete effect item from library
+      description: Remove an effect item from the user's library
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+          description: ID of the effect item to delete
+      responses:
+        "200":
+          description: Effect item deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "404":
+          description: Effect item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/lib/stories:
+    get:
+      tags:
+        - User
+      summary: Get user stories library
+      description: Retrieve the current user's stories library
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User stories library retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/lib/stories/{storyId}:
+    get:
+      tags:
+        - User
+      summary: Get specific user story
+      description: Retrieve a specific story from the user's library
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: storyId
+          required: true
+          schema:
+            type: string
+          description: ID of the story to retrieve
+      responses:
+        "200":
+          description: User story retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "404":
+          description: Story not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+    delete:
+      tags:
+        - User
+      summary: Delete user story
+      description: Remove a story from the user's library
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: storyId
+          required: true
+          schema:
+            type: string
+          description: ID of the story to delete
+      responses:
+        "200":
+          description: User story deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "404":
+          description: Story not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/lib/generations:
+    get:
+      tags:
+        - User
+      summary: Get user generations library
+      description: Retrieve the current user's generated content library
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User generations library retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/lib/generations/{id}:
+    get:
+      tags:
+        - User
+      summary: Get specific generation
+      description: Retrieve a specific generation by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the generation to retrieve
+      responses:
+        "200":
+          description: Generation retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+    patch:
+      tags:
+        - User
+      summary: Update generation favorite status
+      description: Update the favorite status of a generation
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the generation to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isFavorite:
+                  type: boolean
+                  description: Favorite status
+      responses:
+        "200":
+          description: Generation favorite status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+    delete:
+      tags:
+        - User
+      summary: Delete generation
+      description: Remove a generation from the user's library
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the generation to delete
+      responses:
+        "200":
+          description: Generation deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "404":
+          description: Generation not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/effect/fav:
+    post:
+      tags:
+        - User
+      summary: Toggle effect favorite
+      description: Add or remove an effect from user's favorites
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                effectId:
+                  type: string
+                  description: ID of the effect to toggle favorite status
+              required:
+                - effectId
+      responses:
+        "200":
+          description: Effect favorite status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/story/fav:
+    post:
+      tags:
+        - User
+      summary: Toggle story favorite
+      description: Add or remove a story from user's favorites
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                storyId:
+                  type: string
+                  description: ID of the story to toggle favorite status
+              required:
+                - storyId
+      responses:
+        "200":
+          description: Story favorite status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/notifications:
+    get:
+      tags:
+        - User
+      summary: Get user notifications
+      description: Retrieve user's notifications
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
         "401":
           description: Unauthorized
           content:
@@ -1736,6 +2341,820 @@ paths:
                   error:
                     type: object
 
+  /api/v1/admin/audioModels:
+    get:
+      tags:
+        - Admin
+      summary: Get all audio models (Admin only)
+      description: Retrieve all audio models (admin access required)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Audio models retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Audio models retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                        gender:
+                          type: string
+                        language:
+                          type: string
+                        elevenLabsId:
+                          type: string
+                        accent:
+                          type: string
+                        thumbnail:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+    post:
+      tags:
+        - Admin
+      summary: Add new audio model (Admin only)
+      description: Create a new audio model (admin access required)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the audio model
+                gender:
+                  type: string
+                  description: Gender of the voice
+                language:
+                  type: string
+                  description: Language of the voice
+                elevenLabsId:
+                  type: string
+                  description: ElevenLabs voice ID
+                accent:
+                  type: string
+                  description: Accent of the voice
+                thumbnail:
+                  type: string
+                  description: Thumbnail image URL
+              required:
+                - name
+                - gender
+                - language
+                - elevenLabsId
+      responses:
+        "201":
+          description: Audio model added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Audio model added successfully"
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      name:
+                        type: string
+                      gender:
+                        type: string
+                      language:
+                        type: string
+                      elevenLabsId:
+                        type: string
+                      accent:
+                        type: string
+                      thumbnail:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+        "400":
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  # Generation Library endpoints
+  /api/v1/generation:
+    post:
+      tags:
+        - Generation Library
+      summary: Create a new generation task
+      description: Create a new content generation task (image or video)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                modelId:
+                  type: string
+                  description: ID of the AI model to use
+                prompt:
+                  type: string
+                  description: Text prompt for generation
+                isVideo:
+                  type: boolean
+                  description: Whether to generate video or image
+                duration:
+                  type: number
+                  description: Duration for video generation (in seconds)
+                refImages:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of reference image URLs
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Upload reference images
+              required:
+                - modelId
+                - isVideo
+      responses:
+        "201":
+          description: Generation task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Generation task is being processed"
+                  uploadedImages:
+                    type: number
+                    description: Number of images uploaded
+                  jobId:
+                    type: string
+                    description: ID of the generation job
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User not authenticated"
+                  error:
+                    type: object
+        "402":
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Insufficient credits for this generation"
+                  error:
+                    type: object
+        "404":
+          description: Model or generation data not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+    get:
+      tags:
+        - Generation Library
+      summary: Get generation info
+      description: Retrieve available models and generation configuration
+      responses:
+        "200":
+          description: Generation info retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Generation info retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      imageModels:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            name:
+                              type: string
+                            description:
+                              type: string
+                            credits:
+                              type: number
+                            category:
+                              type: string
+                      videoModels:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            name:
+                              type: string
+                            description:
+                              type: string
+                            credits:
+                              type: array
+                              items:
+                                type: object
+                            category:
+                              type: string
+        "404":
+          description: No generation info found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "No generation info found"
+                  error:
+                    type: object
+
+    patch:
+      tags:
+        - Generation Library
+      summary: Update generation info
+      description: Update generation models and configuration
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageModels:
+                  type: array
+                  items:
+                    type: object
+                videoModels:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        "200":
+          description: Generation info updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Generation info updated successfully"
+                  data:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/generation/retry/{jobId}:
+    post:
+      tags:
+        - Generation Library
+      summary: Retry a failed generation job
+      description: Retry a failed generation job by job ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+          description: ID of the job to retry
+      responses:
+        "200":
+          description: Generation job successfully added back to queue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Generation library job successfully added back to queue"
+                  data:
+                    type: object
+                    properties:
+                      jobId:
+                        type: string
+                      status:
+                        type: string
+                        example: "pending"
+                      queueType:
+                        type: string
+                        example: "generationLib"
+        "400":
+          description: Job ID is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Job ID is required"
+                  error:
+                    type: object
+        "401":
+          description: User authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User authentication required"
+                  error:
+                    type: object
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "No failed generation library job found with the provided ID"
+                  error:
+                    type: object
+        "409":
+          description: Job already being processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "500":
+          description: Failed to add job to queue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Failed to add generation library job to processing queue"
+                  error:
+                    type: object
+
+  # Purchasing endpoints
+  /api/v1/purchasing/subscribers:
+    get:
+      tags:
+        - Purchasing
+      summary: Get all subscribers
+      description: Retrieve a list of all subscribers (requires authentication)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Subscribers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Subscriptions retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        userId:
+                          type: string
+                        subscriptionType:
+                          type: string
+                        status:
+                          type: string
+                        startDate:
+                          type: string
+                          format: date-time
+                        endDate:
+                          type: string
+                          format: date-time
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/purchasing/subscribers/{userId}:
+    get:
+      tags:
+        - Purchasing
+      summary: Get user subscriptions
+      description: Retrieve subscriptions for a specific user
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: The user ID to get subscriptions for
+      responses:
+        "200":
+          description: User subscriptions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User subscriptions retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        subscriptionType:
+                          type: string
+                        status:
+                          type: string
+                        startDate:
+                          type: string
+                          format: date-time
+                        endDate:
+                          type: string
+                          format: date-time
+                        features:
+                          type: array
+                          items:
+                            type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "500":
+          description: Failed to retrieve user subscriptions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Failed to retrieve user subscriptions"
+                  error:
+                    type: object
+
+  /api/v1/purchasing/validate/{userId}/{transactionId}:
+    get:
+      tags:
+        - Purchasing
+      summary: Validate specific purchase
+      description: Validate a specific purchase transaction for a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: The user ID
+        - in: path
+          name: transactionId
+          required: true
+          schema:
+            type: string
+          description: The transaction ID to validate
+      responses:
+        "200":
+          description: Purchase validated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Purchase validated successfully"
+                  data:
+                    type: object
+                    properties:
+                      purchase:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          transactionId:
+                            type: string
+                          userId:
+                            type: string
+                          productId:
+                            type: string
+                          purchaseDate:
+                            type: string
+                            format: date-time
+                          amount:
+                            type: number
+                          currency:
+                            type: string
+                          status:
+                            type: string
+                      isValid:
+                        type: boolean
+                        example: true
+        "400":
+          description: User ID and transaction ID are required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "User ID and transaction ID are required"
+                  error:
+                    type: object
+        "404":
+          description: Purchase not found or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Purchase not found or invalid"
+                  error:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+        "500":
+          description: Failed to validate purchase
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Failed to validate purchase"
+                  error:
+                    type: object
+
 tags:
   - name: General
     description: General API endpoints
@@ -1749,3 +3168,7 @@ tags:
     description: AI model management endpoints
   - name: Admin
     description: Admin-only endpoints for user management
+  - name: Purchasing
+    description: Subscription and purchase management endpoints
+  - name: Generation Library
+    description: Content generation and library management endpoints

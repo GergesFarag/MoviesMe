@@ -3,8 +3,6 @@ import catchError from "../Utils/Errors/catchError";
 import { PurchasingService } from "../Services/purchasing.service";
 import { RevenueCatConfig } from "../Interfaces/revenueCat.interface";
 import AppError from "../Utils/Errors/AppError";
-import { get } from "http";
-import { unknown } from "@elevenlabs/elevenlabs-js/core/schemas";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,

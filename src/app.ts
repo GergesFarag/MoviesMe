@@ -74,6 +74,6 @@ app.use(/\/(.*)/, (req, res, next) => {
 setInterval(async () => {
   console.log("Running periodic Redis cleanup...");
   await cleanupRedisJobs();
-}, 30 * 60 * 1000);
+}, 2 * 60 * 60 * 1000); // Every 2 hours
 
 export default app;

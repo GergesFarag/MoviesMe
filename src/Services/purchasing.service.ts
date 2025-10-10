@@ -3,8 +3,6 @@ import AppError from "../Utils/Errors/AppError";
 import {
   RevenueCatConfig,
   SubscriberResponse,
-  PurchaseValidationResult,
-  CreditPackage,
   NonSubscriptionPurchase,
 } from "../Interfaces/revenueCat.interface";
 

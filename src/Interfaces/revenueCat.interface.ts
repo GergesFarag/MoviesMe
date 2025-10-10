@@ -17,7 +17,7 @@ export interface NonSubscriptionPurchase {
   store_transaction_id: string;
 }
 
-export interface Entitlement {
+interface Entitlement {
   expires_date: string | null;
   grace_period_expires_date: string | null;
   product_identifier: string;
@@ -35,21 +35,6 @@ export interface Subscriber {
   original_purchase_date: string | null;
   other_purchases: Record<string, any>;
   subscriptions: Record<string, any>;
-}
-
-export interface PurchaseValidationResult {
-  isValid: boolean;
-  totalCredits: number;
-  validPurchases: NonSubscriptionPurchase[];
-  lastPurchaseDate: string | null;
-  activeEntitlements: string[];
-}
-
-export interface CreditPackage {
-  productId: string;
-  credits: number;
-  price: number;
-  currency: string;
 }
 
 export interface SubscriberResponse {
