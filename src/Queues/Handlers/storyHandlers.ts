@@ -5,14 +5,24 @@ import JobModel from "../../Models/job.model";
 import Story from "../../Models/story.model";
 import storyQueue from "../story.queue";
 import AppError from "../../Utils/Errors/AppError";
+import { CreditService } from "../../Services/credits.service";
 
 export class StoryQueueHandlers {
-  private notificationService = new NotificationService();
-
+  private notificationService;
+  private creditService;
+  constructor() {
+    this.notificationService = new NotificationService();
+    this.creditService = new CreditService();
+  }
   async onCompleted(job: Job, result: any) {
     console.log(`✅ Story job with ID ${job.id} has been completed.`);
     console.log("Result:", result);
     await storyQueue.removeJobs(job.data.jobId);
+    const deductCredits = await this.creditService.deductCredits(job.data.userId , job.data.credits);
+    if(!deductCredits){
+      console.error(`❌ Failed to deduct credits for user ${job.data.userId}`);
+      return;
+    }
     try {
       if (job.data.userId && result?.story) {
         await this.notificationService.sendStoryCompletionNotification(
@@ -20,6 +30,7 @@ export class StoryQueueHandlers {
           result.story,
           result.finalVideoUrl || "",
           String(job.opts.jobId || "")
+          
         );
         console.log(`📤 All completion notifications sent for job ${job.id}`);
       } else {

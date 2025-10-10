@@ -203,6 +203,7 @@ export const createInitialStoryAndUpdateUser = async (
   storyData: {
     title: string;
     prompt: string;
+    credits:number
     genre?: string | null;
     location?: string | null;
     style?: string | null;
@@ -211,8 +212,6 @@ export const createInitialStoryAndUpdateUser = async (
     refImage?: string | null;
   }
 ): Promise<IStory> => {
-  // Create the story with pending status and basic data
-  // Set all non-completed fields to null until they have actual values
   const createdStory = await Story.create({
     userId,
     jobId,
@@ -220,20 +219,20 @@ export const createInitialStoryAndUpdateUser = async (
     prompt: storyData.prompt,
     status: "pending",
     isFav: false,
-    videoUrl: null, // Will be set when video generation completes
+    videoUrl: null,
     duration: storyData.duration,
     genre: storyData.genre || null,
     location: storyData.location || null,
     style: storyData.style || null,
-    thumbnail: storyData.thumbnail || null, // Will be set when image generation completes
+    thumbnail: storyData.thumbnail || null,
     refImage: storyData.refImage || null,
-    scenes: [], // Will be populated when job completes
-    voiceOver: null, // Will be set only if voice over is requested and completed
+    scenes: [],
+    voiceOver: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    credits: storyData.credits
   });
-  console.log("USER ID", userId);
-  // Update user's storiesLib immediately
+
   const user = await User.findByIdAndUpdate(
     userId,
     {
@@ -248,7 +247,6 @@ export const createInitialStoryAndUpdateUser = async (
   );
 
   if (!user) {
-    // If user update fails, remove the created story
     await Story.findByIdAndDelete(createdStory._id);
     throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
   }

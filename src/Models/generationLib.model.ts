@@ -13,8 +13,7 @@ const generationLibSchema = new Schema<IGenerationLib>({
       prompt: { type: String, required: true },
       modelId: { type: String, required: true },
       refImages: { type: [String], required: false },
-      isVideo: { type: Boolean, required: false, default: false },
-      size: { type: String, required: false },
+      isVideo: { type: Boolean, required: false, default: false }
     },
     required: true,
   },

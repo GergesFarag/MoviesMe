@@ -3,7 +3,7 @@ import catchError from "../Utils/Errors/catchError";
 import Story from "../Models/story.model";
 import User from "../Models/user.model";
 import Job from "../Models/job.model";
-import AppError from "../Utils/Errors/AppError";
+import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import mongoose, { Types } from "mongoose";
 import StoryGenerationInfo from "../Models/storyGenerationInfo.model";
 import {
@@ -27,7 +27,10 @@ import { extractLanguageFromRequest } from "../Utils/Format/languageUtils";
 import path from "path";
 import { getJsonKey } from "../Utils/Format/json";
 import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
-import { IStoryProcessingDTO, StoryProcessingDTO } from "../DTOs/storyRequest.dto";
+import {
+  StoryProcessingDTO,
+} from "../DTOs/storyRequest.dto";
+import { CreditService } from "../Services/credits.service";
 const validKeys: IStoryRequestKeys[] = [
   "prompt",
   "storyDuration",
@@ -37,22 +40,13 @@ const validKeys: IStoryRequestKeys[] = [
   "storyTitle",
   "genere",
   "image",
+  "credits",
 ];
 
 const storyController = {
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { prompt, storyDuration } = req.body;
-      const image =
-        req.files && "image" in req.files
-          ? (req.files["image"] as Express.Multer.File[])[0]
-          : null;
-      const audio =
-        req.files && "audio" in req.files
-          ? (req.files["audio"] as Express.Multer.File[])[0]
-          : null;
-      const userId = req.user!.id;
-      console.log("Request Body: ", req.body, " and image : ", image);
+      const { prompt, storyDuration, credits } = req.body;
       Object.keys(req.body).forEach((key) => {
         if (!validKeys.includes(key as IStoryRequestKeys)) {
           throw new AppError(
@@ -63,6 +57,27 @@ const storyController = {
           );
         }
       });
+      const creditService = new CreditService();
+      const hasSufficientCredits = await creditService.hasSufficientCredits(
+        req.user!.id,
+        credits
+      );
+      if (!hasSufficientCredits) {
+        throw new AppError(
+          "Insufficient credits to create story",
+          HTTP_STATUS_CODE.PAYMENT_REQUIRED
+        );
+      }
+      const image =
+        req.files && "image" in req.files
+          ? (req.files["image"] as Express.Multer.File[])[0]
+          : null;
+      const audio =
+        req.files && "audio" in req.files
+          ? (req.files["audio"] as Express.Multer.File[])[0]
+          : null;
+      const userId = req.user!.id;
+      console.log("Request Body: ", req.body, " and image : ", image);
       if (!prompt || !storyDuration) {
         throw new AppError("Prompt and story duration are required", 400);
       }
@@ -137,9 +152,10 @@ const storyController = {
           genre: storyData.genere || null,
           location: locationName || null,
           style: styleName || null,
-          refImage : storyData.image || null,
+          refImage: storyData.image || null,
           duration: storyData.storyDuration,
           thumbnail: storyData.image,
+          credits: storyData.credits,
         }
       );
 
@@ -262,18 +278,21 @@ const storyController = {
       const storyRequest: IStoryRequest = {
         prompt: story.prompt,
         storyDuration: story.duration,
-        voiceOver: story.voiceOver ? {
-          voiceOverLyrics: story.voiceOver.voiceOverLyrics,
-          voiceLanguage: story.voiceOver.voiceLanguage,
-          voiceGender: story.voiceOver.voiceGender || "male",
-          voiceAccent: story.voiceOver.voiceAccent,
-          sound: story.voiceOver.sound,
-          text: story.voiceOver.text,
-        } : undefined,
+        voiceOver: story.voiceOver
+          ? {
+              voiceOverLyrics: story.voiceOver.voiceOverLyrics,
+              voiceLanguage: story.voiceOver.voiceLanguage,
+              voiceGender: story.voiceOver.voiceGender || "male",
+              voiceAccent: story.voiceOver.voiceAccent,
+              sound: story.voiceOver.sound,
+              text: story.voiceOver.text,
+            }
+          : undefined,
         storyTitle: story.title,
         genere: story.genre,
         image: story.refImage,
         audio: story.voiceOver?.sound || undefined,
+        credits: story.credits,
       };
       const processingStory = new StoryProcessingDTO(storyRequest).toDTO(
         story.style || null,
@@ -283,14 +302,14 @@ const storyController = {
       console.log("📋 Processing story data for retry:", {
         jobId,
         userId,
-        storyData: processingStory
+        storyData: processingStory,
       });
 
       await Job.findOneAndUpdate(
         { jobId },
         {
           status: "pending",
-          updatedAt: new Date()
+          updatedAt: new Date(),
         }
       );
 
@@ -298,7 +317,7 @@ const storyController = {
         { jobId },
         {
           status: "pending",
-          updatedAt: new Date()
+          updatedAt: new Date(),
         }
       );
 
@@ -319,7 +338,7 @@ const storyController = {
           jobId,
           status: "pending",
           retryTimestamp: new Date(),
-          jobData : newJob.data
+          jobData: newJob.data,
         },
       });
     } catch (error: any) {
@@ -338,38 +357,6 @@ const storyController = {
         error?.message || "Failed to retry job. Please try again later.",
         500
       );
-    }
-  }),
-
-  // Debug method to test queue functionality
-  testQueue: catchError(async (req: Request, res: Response) => {
-    const userId = req.user?.id;
-    const testJobId = `test_${Date.now()}`;
-    
-    console.log("🧪 Testing queue with simple job...");
-    
-    try {
-      const testJob = await storyQueue.add({
-        jobId: testJobId,
-        userId: userId,
-        prompt: "Test prompt",
-        duration: 10,
-        numOfScenes: 2,
-        title: "Test Story"
-      }, {
-        jobId: testJobId,
-      });
-      
-      console.log("✅ Test job added:", testJob.id);
-      
-      res.status(200).json({
-        message: "Test job added to queue",
-        testJobId: testJob.id,
-        jobData: testJob.data
-      });
-    } catch (error) {
-      console.error("❌ Test job failed:", error);
-      throw error;
     }
   }),
 

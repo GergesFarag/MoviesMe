@@ -9,6 +9,7 @@ export interface IVoiceOver {
 export interface IStoryRequest {
   prompt: string;
   storyDuration: number;
+  credits: number;
   voiceOver?: IVoiceOver;
   storyLocationId?: string;
   storyStyleId?: string;

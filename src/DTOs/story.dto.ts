@@ -13,6 +13,7 @@ interface IStoryDTO {
   genre: string | null;
   scenes: { description: string | null; image: string | null }[] | null;
   jobId: string | null;
+  credits: number;
   voiceOver?: {
     sound: string | null;
     text: string | null;
@@ -66,7 +67,6 @@ class StoryDTO implements IStoryMapper {
   }
 
   toDTO(): IStoryDTO {
-    // Add safety checks to prevent undefined errors
     if (!this.story) {
       throw new Error("Story object is undefined or null");
     }
@@ -87,6 +87,7 @@ class StoryDTO implements IStoryMapper {
       style: this.story.style || null,
       location: this.story.location || null,
       genre: this.story.genre || null,
+      credits: this.story.credits,
       scenes: this.story.scenes.map((scene) => ({
         description: scene?.sceneDescription || null,
         image: (scene?.image as string) || null,

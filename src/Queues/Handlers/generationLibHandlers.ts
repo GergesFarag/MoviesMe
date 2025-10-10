@@ -15,11 +15,13 @@ import { Types } from "mongoose";
 import { VideoGenerationService } from "../../Services/videoGeneration.service";
 import GenerationInfo from "../../Models/generation.model";
 import { IGenerationImageLibModel } from "../../Interfaces/aiModel.interface";
+import { CreditService } from "../../Services/credits.service";
 
 export interface IGenerationLibJobData {
   userId: string;
   prompt: string;
   jobId: string;
+  credits?:number;
   refImages?: string[];
   isVideo?: boolean;
   modelId?: string;
@@ -31,11 +33,12 @@ export class GenerationLibQueueHandler {
   private notificationService: NotificationService;
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
-
+  private creditService:CreditService;
   constructor() {
     this.notificationService = new NotificationService();
     this.imageGenerationService = new ImageGenerationService();
     this.videoGenerationService = new VideoGenerationService();
+    this.creditService = new CreditService();
   }
 
   async processGenerationLib(job: Job<IGenerationLibJobData>) {
@@ -204,18 +207,20 @@ export class GenerationLibQueueHandler {
   async onCompleted(job: Job<IGenerationLibJobData>, result: any) {
     try {
       const locale = await getUserLangFromDB(result.userId);
-
       await JobModel.findOneAndUpdate(
         { jobId: result.jobId },
         { status: "completed" }
       );
-
+      
       const user = await User.findById(result.userId);
       if (!user) {
         console.error("User not found for userId:", result.userId);
         return;
       }
-
+      const deducting = await this.creditService.deductCredits(String(user._id),result.credits);
+      if(!deducting){
+        console.error("Failed to deduct credits for userId:", result.userId);
+      }
       if (!user.generationLib) {
         console.warn(
           `User generationLib is undefined for userId: ${result.userId}, initializing...`
@@ -355,19 +360,21 @@ export class GenerationLibQueueHandler {
 
   async onFailed(job: Job<IGenerationLibJobData>, err: Error) {
     try {
-      const { userId, jobId } = job.data;
+      const { userId, jobId , credits } = job.data;
       const locale = await getUserLangFromDB(userId);
 
       console.error(`❌ GenerationLib job ${jobId} failed:`, err.message);
 
-      // Update job status to failed
       await JobModel.findOneAndUpdate(
         { jobId: jobId },
         { status: "failed", error: err.message }
       );
 
-      // Update user's generationLib item status
       const user = await User.findById(userId);
+      const refund = await this.creditService.addCredits(String(userId), credits as number);
+      if(!refund){
+        console.error("Failed to refund credits for userId:", userId);
+      }
       if (user && user.generationLib) {
         const itemIndex = user.generationLib.findIndex(
           (item) => item.jobId === jobId

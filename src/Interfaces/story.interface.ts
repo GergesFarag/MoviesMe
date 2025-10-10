@@ -14,6 +14,7 @@ export interface IStory extends Document {
   genre: string;
   scenes: IScene[];
   jobId: string;
+  credits: number;
   userId: mongoose.Schema.Types.ObjectId;
   refImage?: string;
   voiceOver?: {

@@ -51,6 +51,7 @@ const storySchema = new mongoose.Schema<IStory>(
       required: false,
       default: null,
     },
+    credits: { type: Number, required: true, default: 0 },
   },
   {
     timestamps: true,

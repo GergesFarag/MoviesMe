@@ -15,9 +15,6 @@ storyRouter.route("/").post(
 );
 
 storyRouter.route("/retry/:jobId").post(authMiddle, storyController.retryFailedJob);
-
-storyRouter.route("/test-queue").post(authMiddle, storyController.testQueue);
-
 storyRouter.route("/:storyID").delete(authMiddle, storyController.deleteStory);
 storyRouter
   .route("/generationData")

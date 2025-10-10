@@ -38,9 +38,7 @@ export class NotificationService {
   constructor() {
     this.creditService = new CreditService();
   }
-  /**
-   * Send story completion notification (both push and socket)
-   */
+
   async sendStoryCompletionNotification(
     userId: string,
     storyData: any,
@@ -80,6 +78,7 @@ export class NotificationService {
         jobId: String(jobId),
         status: String(storyData.status || "completed"),
         userId: String(userId),
+        credits: storyData.credits
       };
 
       const notificationData: NotificationData = {
@@ -99,7 +98,6 @@ export class NotificationService {
         userCredits: await this.creditService.getCredits(userId),
       };
 
-      // Send socket notification with formatted story
       await this.sendSocketNotification(userId, "story:completed", {
         message: notificationData.message,
         story: storyDTO,
@@ -109,7 +107,6 @@ export class NotificationService {
         timestamp: new Date().toISOString(),
       });
 
-      // Send push notification and save to database
       await this.sendPushNotificationToUser(userId, notificationData);
     } catch (dtoError) {
       console.error("❌ Error converting story to DTO:", dtoError);

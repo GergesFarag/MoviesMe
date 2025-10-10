@@ -7,6 +7,7 @@ export interface IStoryProcessingDTO {
   prompt: string;
   duration: number;
   numOfScenes: number;
+  credits: number;
   voiceOver?: IVoiceOver;
   location?: string;
   style?: string;
@@ -36,6 +37,7 @@ export class StoryProcessingDTO implements IStoryRequestDTOMapper {
       numOfScenes: this.story.storyDuration / 5,
       image: this.story.image,
       audio: this.story.audio,
+      credits: this.story.credits
     };
   }
 }

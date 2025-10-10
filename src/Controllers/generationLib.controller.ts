@@ -5,10 +5,12 @@ import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
 import { generationLibQueue } from "../Queues/generationLib.queue";
-import  { Types } from "mongoose";
+import { Types } from "mongoose";
 import { translationService } from "../Services/translation.service";
 import User from "../Models/user.model";
 import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers";
+import GenerationInfo from "../Models/generation.model";
+import { CreditService } from "../Services/credits.service";
 
 const generationLibService = new GenerationLibService();
 
@@ -28,8 +30,44 @@ const generationLibController = {
         req.body.isVideo = true;
       }
       const requestData: IGenerationLibRequestDTO = req.body;
-      const jobId = new Types.ObjectId().toString();
 
+      const generationInfo = await GenerationInfo.findOne();
+      if (!generationInfo) {
+        throw new AppError("No Generation Data Found", 404);
+      }
+      if (!requestData.isVideo) {
+        const model = generationInfo.imageModels.find(
+          (m: any) => m._id.toString() === requestData.modelId
+        );
+        if (!model) {
+          throw new AppError("Model not found in imageModels", 404);
+        }
+        requestData.credits = model.credits;
+      } else {
+        const model = generationInfo.videoModels.find(
+          (m: any) => m._id.toString() === requestData.modelId
+        );
+        if (!model) {
+          throw new AppError("Model not found in videoModels", 404);
+        }
+        const creditMap = model.credits.find((element: Map<string, number>) => {
+          return +element.get("duration")! === requestData.duration;
+        });
+        if (!creditMap) {
+          throw new AppError("Invalid duration for the selected model", 400);
+        }
+        requestData.credits = creditMap.get("credits")!;
+      }
+      const creditService = new CreditService();
+      const hasSufficientCredits = await creditService.hasSufficientCredits(
+        userId,
+        requestData.credits
+      );
+      if (!hasSufficientCredits) {
+        throw new AppError("Insufficient credits for this generation", 402);
+      }
+
+      const jobId = new Types.ObjectId().toString();
       let uploadedImageUrls: string[] = [];
 
       const files = req.files as Express.Multer.File[] | undefined;
@@ -171,8 +209,8 @@ const generationLibController = {
       refImages: generationLibItem.data.refImages,
       isVideo: generationLibItem.isVideo,
       modelId: generationLibItem.data.modelId,
-      size: generationLibItem.data.size,
       duration: generationLibItem.duration,
+      credits: generationLibItem.data.credits
     };
 
     try {

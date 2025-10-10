@@ -456,6 +456,7 @@ export class StoryProcessorService {
             }
           : null,
           refImage : jobData.image || null,
+          credits: jobData.credits
       };
 
       const updatedStory = await updateCompletedStory(
@@ -467,7 +468,6 @@ export class StoryProcessorService {
         throw new AppError("Failed to update story in database", 500);
       }
 
-      // Update complete voice over object if exists
       if (updatedStory && voiceOver) {
         console.log("🔄 Updating complete voice over object in story...");
         await Story.findByIdAndUpdate(updatedStory._id, {

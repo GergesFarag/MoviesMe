@@ -17,9 +17,10 @@ export interface IGenerationLibDTO {
 export interface IGenerationLibRequestDTO {
   prompt: string;
   modelId: string;
+  credits?:number
   refImages?: string[];
   isVideo?: boolean;
-  size?: string;
+  duration?: number;
 }
 
 export interface IGenerationLibResponseDTO {
@@ -62,7 +63,7 @@ export class GenerationLibDTO implements IGenerationLibMapper {
       prompt: dto.prompt,
       refImages: dto.refImages || null,
       isVideo: dto.isVideo || false,
-      size: dto.size || "2048*2048",
+      duration: dto.duration || 5,
     };
   }
 

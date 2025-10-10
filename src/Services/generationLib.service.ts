@@ -59,8 +59,9 @@ export class GenerationLibService {
         prompt: requestData.prompt,
         refImages: requestData.refImages,
         isVideo: requestData.isVideo,
-        size: requestData.size,
+        duration: requestData.duration || 0,
         modelId: requestData.modelId,
+        credits : requestData.credits || 0,
         jobId,
       };
       await generationLibQueue.add(jobData, {
