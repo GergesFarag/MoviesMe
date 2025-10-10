@@ -305,8 +305,7 @@ export class GenerationLibQueueHandler {
             resultURL: result.resultURL,
           },
           redirectTo: "/generationLib",
-          category: "activities",
-          userCredits: user.credits,
+          category: "activities"
         };
 
         const translatedNotificationData: NotificationData = {
@@ -324,8 +323,7 @@ export class GenerationLibQueueHandler {
             ) || "Your generation has been completed successfully!",
           data: rawNotificationData.data,
           redirectTo: rawNotificationData.redirectTo,
-          category: rawNotificationData.category,
-          userCredits: user.credits,
+          category: rawNotificationData.category
         };
 
         const notificationResult =
@@ -413,7 +411,6 @@ export class GenerationLibQueueHandler {
           },
           redirectTo: null,
           category: "activities",
-          userCredits: user.credits,
         };
 
         const translatedNotificationData: NotificationData = {
@@ -432,7 +429,6 @@ export class GenerationLibQueueHandler {
           data: rawNotificationData.data,
           redirectTo: rawNotificationData.redirectTo,
           category: rawNotificationData.category,
-          userCredits: user.credits,
         };
 
         await this.notificationService.saveNotificationToUser(

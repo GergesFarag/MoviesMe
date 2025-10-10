@@ -13,16 +13,9 @@ import { CreditService } from "./credits.service";
 export interface NotificationData {
   title: string;
   message: string;
-  userCredits: number;
-  data?: Record<string, any>;
+  data: Record<string, any>;
   redirectTo?: string | null;
   category?: TNotificationCategory;
-}
-
-interface PushNotificationPayload {
-  title: string;
-  message: string;
-  data: Record<string, any>;
 }
 
 interface SocketNotificationPayload {
@@ -78,7 +71,7 @@ export class NotificationService {
         jobId: String(jobId),
         status: String(storyData.status || "completed"),
         userId: String(userId),
-        credits: storyData.credits
+        credits: storyData.credits,
       };
 
       const notificationData: NotificationData = {
@@ -95,7 +88,6 @@ export class NotificationService {
         data: notificationDTO,
         redirectTo: "/storyDetails",
         category: "activities",
-        userCredits: await this.creditService.getCredits(userId),
       };
 
       await this.sendSocketNotification(userId, "story:completed", {
@@ -134,7 +126,7 @@ export class NotificationService {
     jobId: string,
     error: Error | AppError,
     consumedCredits: number,
-    storyId?: string,
+    storyId?: string
   ): Promise<void> {
     const locale = await getUserLangFromDB(userId);
     const notificationDTO = {
@@ -159,7 +151,6 @@ export class NotificationService {
       data: notificationDTO,
       redirectTo: null,
       category: "activities",
-      userCredits: await this.creditService.getCredits(userId),
     };
 
     // Send socket notification
@@ -247,30 +238,6 @@ export class NotificationService {
   }
 
   /**
-   * Send socket notification to a specific user
-   */
-  async sendSocketNotification(
-    userId: string,
-    event: string,
-    payload: SocketNotificationPayload
-  ): Promise<void> {
-    try {
-      const io = getIO();
-      const roomName = `user:${userId}`;
-
-      io.to(roomName).emit(event, payload);
-      console.log(
-        `✅ Socket notification '${event}' sent to room: ${roomName}`
-      );
-    } catch (error) {
-      console.error(
-        `❌ Failed to send socket notification to user ${userId}:`,
-        error
-      );
-    }
-  }
-
-  /**
    * Save notification to user's notifications array
    */
   async saveNotificationToUser(
@@ -304,8 +271,41 @@ export class NotificationService {
     return { status, type };
   }
 
+  async sendTransactionalSocketNotification(
+    userId: string,
+    notificationData: NotificationData){
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      console.error(`❌ User not found for notification: ${userId}`);
+      return;
+    }
+    await this.sendSocketNotification(userId, "user:transactions", {
+      message: notificationData.message,
+      data: notificationData
+    });
+  }
+  private async sendSocketNotification(
+    userId: string,
+    event: string,
+    payload: SocketNotificationPayload
+  ): Promise<void> {
+    try {
+      const io = getIO();
+      const roomName = `user:${userId}`;
+
+      io.to(roomName).emit(event, payload);
+      console.log(
+        `✅ Socket notification '${event}' sent to room: ${roomName}`
+      );
+    } catch (error) {
+      console.error(
+        `❌ Failed to send socket notification to user ${userId}:`,
+        error
+      );
+    }
+  }
   private static getNotificationStatus(notification: INotification): string {
-    type validStatuses = "completed"| "pending"| "failed";
+    type validStatuses = "completed" | "pending" | "failed";
     const statusMapper: Record<validStatuses, string> = {
       completed: "completion",
       pending: "pending",

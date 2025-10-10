@@ -1,6 +1,9 @@
 import { Job } from "bull";
 import { getIO } from "../../Sockets/socket";
-import { NotificationService } from "../../Services/notification.service";
+import {
+  NotificationData,
+  NotificationService,
+} from "../../Services/notification.service";
 import JobModel from "../../Models/job.model";
 import Story from "../../Models/story.model";
 import storyQueue from "../story.queue";
@@ -18,11 +21,30 @@ export class StoryQueueHandlers {
     console.log(`✅ Story job with ID ${job.id} has been completed.`);
     console.log("Result:", result);
     await storyQueue.removeJobs(job.data.jobId);
-    const deductCredits = await this.creditService.deductCredits(job.data.userId , job.data.credits);
-    if(!deductCredits){
+    const deductCredits = await this.creditService.deductCredits(
+      job.data.userId,
+      job.data.credits
+    );
+    if (!deductCredits) {
       console.error(`❌ Failed to deduct credits for user ${job.data.userId}`);
       return;
     }
+    const transactionNotificationData: NotificationData = {
+      title: "Transaction Completed",
+      message: `Your transaction for story ${job.data.storyId} has been completed.`,
+      data: {
+        storyId: job.data.storyId,
+        userId: job.data.userId,
+        userCredits: await this.creditService.getCredits(job.data.userId),
+        consumedCredits: job.data.credits,
+      },
+      redirectTo: "/transactions",
+      category: "transactions",
+    };
+    await this.notificationService.sendTransactionalSocketNotification(
+      job.data.userId,
+      transactionNotificationData
+    );
     try {
       if (job.data.userId && result?.story) {
         await this.notificationService.sendStoryCompletionNotification(
@@ -30,11 +52,12 @@ export class StoryQueueHandlers {
           result.story,
           result.finalVideoUrl || "",
           String(job.opts.jobId || "")
-          
         );
         console.log(`📤 All completion notifications sent for job ${job.id}`);
       } else {
-        console.warn("⚠️ Missing userId or story data, skipping completion notifications");
+        console.warn(
+          "⚠️ Missing userId or story data, skipping completion notifications"
+        );
       }
     } catch (error) {
       console.error("❌ Error in completion handler:", error);
@@ -48,14 +71,36 @@ export class StoryQueueHandlers {
     }
   }
 
- 
   async onFailed(job: Job, err: Error | AppError) {
     console.log(`❌ Story job with ID ${job?.id} has failed.`);
     console.log("Error:", err);
     await storyQueue.removeJobs(job.data.jobId);
+    const refund = await this.creditService.addCredits(
+      job.data.userId,
+      job.data.credits
+    );
+    if (!refund) {
+      console.error(`❌ Failed to refund credits for user ${job.data.userId}`);
+    }
+    const transactionNotificationData: NotificationData = {
+      title: "Transaction Refunded",
+      message: `transaction for story ${job.data.storyId} has been refunded.`,
+      data: {
+        storyId: job.data.storyId,
+        userId: job.data.userId,
+        userCredits: await this.creditService.getCredits(job.data.userId),
+        refundedCredits: job.data.credits,
+      },
+      redirectTo: "/transactions",
+      category: "transactions",
+    };
+    await this.notificationService.sendTransactionalSocketNotification(
+      job.data.userId,
+      transactionNotificationData
+    );
     try {
       await this.updateFailedJobStatus(job);
-      
+
       if (job?.data?.userId) {
         await this.notificationService.sendStoryFailureNotification(
           job.data.userId,
@@ -71,7 +116,6 @@ export class StoryQueueHandlers {
       console.error("❌ Error in failure handler:", error);
     }
   }
-  
 
   private async updateFailedJobStatus(job: Job): Promise<void> {
     if (!job?.opts?.jobId) {
@@ -127,5 +171,4 @@ export class StoryQueueHandlers {
       console.error("❌ Failed to get queue statistics:", error);
     }
   }
-
 }
