@@ -27,15 +27,37 @@ export class PurchasingService {
     }
   }
 
-  async getAllSubscribers(): Promise<SubscriberResponse[]> {
+  async getAllSubscribers(): Promise<any[]> {
+    // RevenueCat doesn't provide an endpoint to get all subscribers
+    // We need to get users from our database and optionally check their subscription status
+    // This is a placeholder implementation - you should implement based on your business logic
+    
     try {
-      const response = await this.client.get(`/subscribers`);
-      return response.data.subscribers;
+      // Import User model to get users from database
+      const User = require("../Models/user.model").default;
+      
+      // Get all users (you might want to add pagination here)
+      const users = await User.find({ isActive: true }).select('_id username email credits firebaseUid createdAt').lean();
+      
+      // Transform to a format suitable for subscribers list
+      const subscribers = users.map((user: any) => ({
+        userId: user._id,
+        username: user.username,
+        email: user.email,
+        credits: user.credits,
+        firebaseUid: user.firebaseUid,
+        createdAt: user.createdAt,
+        // Note: To get actual subscription status, you would need to call
+        // getUserSubscriptions for each user, but this would be expensive
+        // Consider implementing local subscription tracking instead
+      }));
+      
+      return subscribers;
     } catch (error) {
       if (error instanceof Error) {
-        throw new AppError(error.message, 500);
+        throw new AppError(`Failed to fetch subscribers: ${error.message}`, 500);
       } else {
-        throw new AppError("Failed to fetch subscribers", 500);
+        throw new AppError("Failed to fetch subscribers from database", 500);
       }
     }
   }

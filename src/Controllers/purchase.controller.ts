@@ -21,18 +21,20 @@ const purchasingController = {
       }
 
       try {
-        const subscriptions = await purchasingService.getAllSubscribers();
+        // Note: This gets users from the database, not actual subscription data from RevenueCat
+        // To get actual subscription data, you would need to call RevenueCat for each user individually
+        const subscribers = await purchasingService.getAllSubscribers();
 
         res.status(200).json({
-          message: "Subscriptions retrieved successfully",
-          data: subscriptions,
+          message: "Users retrieved successfully",
+          note: "This endpoint returns users from the database. For actual subscription data, use the individual user subscription endpoint.",
+          data: subscribers,
         });
       } catch (error) {
         throw error;
       }
     }
   ),
-
   getUserSubscriptions: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const userId = req.params.userId;
@@ -53,8 +55,6 @@ const purchasingController = {
       }
     }
   ),
-
-
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { userId, transactionId } = req.params;
@@ -82,7 +82,5 @@ const purchasingController = {
       }
     }
   ),
-
-
 };
 export default purchasingController;

@@ -2897,8 +2897,8 @@ paths:
     get:
       tags:
         - Purchasing
-      summary: Get all subscribers
-      description: Retrieve a list of all subscribers (requires authentication)
+      summary: Get all users (subscribers)
+      description: Retrieve a list of all users from the database (not actual subscription data from RevenueCat)
       security:
         - BearerAuth: []
       responses:
@@ -2911,24 +2911,26 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Subscriptions retrieved successfully"
+                    example: "Users retrieved successfully"
+                  note:
+                    type: string
+                    example: "This endpoint returns users from the database. For actual subscription data, use the individual user subscription endpoint."
                   data:
                     type: array
                     items:
                       type: object
                       properties:
-                        id:
-                          type: string
                         userId:
                           type: string
-                        subscriptionType:
+                        username:
                           type: string
-                        status:
+                        email:
                           type: string
-                        startDate:
+                        credits:
+                          type: number
+                        firebaseUid:
                           type: string
-                          format: date-time
-                        endDate:
+                        createdAt:
                           type: string
                           format: date-time
         "401":
