@@ -257,6 +257,8 @@ const modelsController = {
       throw new AppError("Model data not found", 404);
     }
     const creditService = new CreditService();
+    console.log("User Credits:", user.credits, "Model Credits:", model.credits);
+    console.log("MODEL:", model);
     const hasSufficientCredits = await creditService.hasSufficientCredits(req.user!.id, model.credits);
     if(!hasSufficientCredits){
       throw new AppError("Insufficient credits to apply this model", HTTP_STATUS_CODE.PAYMENT_REQUIRED);
