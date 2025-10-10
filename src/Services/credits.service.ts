@@ -65,7 +65,7 @@ export class CreditService implements ICreditService {
     credits: number
   ): Promise<boolean> {
     const currentCredits = await this.getCredits(userId);
-    return currentCredits >= credits;
+    return currentCredits < credits;
   }
 
   async getModelCredits(modelId: string): Promise<number> {
