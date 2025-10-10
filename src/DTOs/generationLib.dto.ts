@@ -15,8 +15,8 @@ export interface IGenerationLibDTO {
 }
 
 export interface IGenerationLibRequestDTO {
-  prompt: string;
   modelId: string;
+  prompt?: string;
   credits?:number
   refImages?: string[];
   isVideo?: boolean;
@@ -60,7 +60,7 @@ export class GenerationLibDTO implements IGenerationLibMapper {
 
   fromRequestDTO(dto: IGenerationLibRequestDTO): any {
     return {
-      prompt: dto.prompt,
+      prompt: dto.prompt || null,
       refImages: dto.refImages || null,
       isVideo: dto.isVideo || false,
       duration: dto.duration || 5,

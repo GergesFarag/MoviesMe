@@ -47,6 +47,7 @@ const storyController = {
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { prompt, storyDuration, credits } = req.body;
+      console.log("BODY" , req.body);
       Object.keys(req.body).forEach((key) => {
         if (!validKeys.includes(key as IStoryRequestKeys)) {
           throw new AppError(
@@ -57,10 +58,13 @@ const storyController = {
           );
         }
       });
+      if(!credits){
+        throw new AppError("Credits field is required", 400);
+      }
       const creditService = new CreditService();
       const hasSufficientCredits = await creditService.hasSufficientCredits(
         req.user!.id,
-        credits
+        +credits
       );
       if (!hasSufficientCredits) {
         throw new AppError(

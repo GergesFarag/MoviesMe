@@ -29,6 +29,8 @@ const generationLibController = {
       } else {
         req.body.isVideo = true;
       }
+      if(!req.body.prompt){
+        req.body.prompt = "";      }
       const requestData: IGenerationLibRequestDTO = req.body;
 
       const generationInfo = await GenerationInfo.findOne();
@@ -51,12 +53,12 @@ const generationLibController = {
           throw new AppError("Model not found in videoModels", 404);
         }
         const creditMap = model.credits.find((element: Map<string, number>) => {
-          return +element.get("duration")! === requestData.duration;
+          return +element.get("duration")! === +requestData.duration!;
         });
         if (!creditMap) {
           throw new AppError("Invalid duration for the selected model", 400);
         }
-        requestData.credits = creditMap.get("credits")!;
+        requestData.credits = +creditMap.get("credits")!;
       }
       const creditService = new CreditService();
       const hasSufficientCredits = await creditService.hasSufficientCredits(
@@ -205,13 +207,15 @@ const generationLibController = {
     const genLibQueueJobData: IGenerationLibJobData = {
       jobId: generationLibItem.jobId.toString(),
       userId: userId,
-      prompt: generationLibItem.data.prompt,
       refImages: generationLibItem.data.refImages,
       isVideo: generationLibItem.isVideo,
       modelId: generationLibItem.data.modelId,
       duration: generationLibItem.duration,
       credits: generationLibItem.data.credits
     };
+    if(generationLibItem.data.prompt){
+      genLibQueueJobData.prompt = generationLibItem.data.prompt;
+    }
 
     try {
       const job = await generationLibQueue.add(genLibQueueJobData, {

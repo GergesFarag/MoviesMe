@@ -19,8 +19,8 @@ import { CreditService } from "../../Services/credits.service";
 
 export interface IGenerationLibJobData {
   userId: string;
-  prompt: string;
   jobId: string;
+  prompt?: string;
   credits?: number;
   refImages?: string[];
   isVideo?: boolean;
@@ -144,8 +144,8 @@ export class GenerationLibQueueHandler {
           await this.videoGenerationService.generateVideoForGenerationLib(
             refImages,
             duration,
-            prompt,
-            model
+            model,
+            prompt
           );
         if (!resultURL) {
           throw new AppError("Video generation failed", 500);
@@ -219,7 +219,7 @@ export class GenerationLibQueueHandler {
       }
       const deducting = await this.creditService.deductCredits(
         String(user._id),
-        result.credits
+        job.data.credits as number
       );
       if (!deducting) {
         console.error("Failed to deduct credits for userId:", result.userId);

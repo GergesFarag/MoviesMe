@@ -517,8 +517,8 @@ export class VideoGenerationService {
   async generateVideoForGenerationLib(
     refImages: string[] | undefined,
     duration: number,
-    prompt: string,
-    model: IGenerationVideoLibModel
+    model: IGenerationVideoLibModel,
+    prompt?: string,
   ): Promise<string> {
     const headers = {
       "Content-Type": "application/json",

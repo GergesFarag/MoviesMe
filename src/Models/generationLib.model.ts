@@ -10,7 +10,7 @@ const generationLibSchema = new Schema<IGenerationLib>({
   status: { type: String, required: true, default: "pending" },
   data: {
     type: {
-      prompt: { type: String, required: true },
+      prompt: { type: String, required: false },
       modelId: { type: String, required: true },
       refImages: { type: [String], required: false },
       isVideo: { type: Boolean, required: false, default: false }
