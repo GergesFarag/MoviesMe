@@ -21,7 +21,7 @@ export interface IGenerationLibJobData {
   userId: string;
   prompt: string;
   jobId: string;
-  credits?:number;
+  credits?: number;
   refImages?: string[];
   isVideo?: boolean;
   modelId?: string;
@@ -33,7 +33,7 @@ export class GenerationLibQueueHandler {
   private notificationService: NotificationService;
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
-  private creditService:CreditService;
+  private creditService: CreditService;
   constructor() {
     this.notificationService = new NotificationService();
     this.imageGenerationService = new ImageGenerationService();
@@ -57,7 +57,7 @@ export class GenerationLibQueueHandler {
       console.log(
         `🎨 Processing GenerationLib job ${jobId} for user ${userId}`
       );
-      
+
       await JobModel.findOneAndUpdate(
         { jobId: jobId },
         { status: "processing" }
@@ -211,15 +211,35 @@ export class GenerationLibQueueHandler {
         { jobId: result.jobId },
         { status: "completed" }
       );
-      
+
       const user = await User.findById(result.userId);
       if (!user) {
         console.error("User not found for userId:", result.userId);
         return;
       }
-      const deducting = await this.creditService.deductCredits(String(user._id),result.credits);
-      if(!deducting){
+      const deducting = await this.creditService.deductCredits(
+        String(user._id),
+        result.credits
+      );
+      if (!deducting) {
         console.error("Failed to deduct credits for userId:", result.userId);
+      } else {
+        const transactionNotificationData: NotificationData = {
+          title: "Transaction Completed",
+          message: `transaction for generation ${job.id} has been completed.`,
+          data: {
+            jobId: job.opts.jobId,
+            userId: job.data.userId,
+            userCredits: await this.creditService.getCredits(job.data.userId),
+            refundedCredits: job.data.credits,
+          },
+          redirectTo: "/transactions",
+          category: "transactions",
+        };
+        await this.notificationService.sendTransactionalSocketNotification(
+          job.data.userId,
+          transactionNotificationData
+        );
       }
       if (!user.generationLib) {
         console.warn(
@@ -305,7 +325,7 @@ export class GenerationLibQueueHandler {
             resultURL: result.resultURL,
           },
           redirectTo: "/generationLib",
-          category: "activities"
+          category: "activities",
         };
 
         const translatedNotificationData: NotificationData = {
@@ -323,7 +343,7 @@ export class GenerationLibQueueHandler {
             ) || "Your generation has been completed successfully!",
           data: rawNotificationData.data,
           redirectTo: rawNotificationData.redirectTo,
-          category: rawNotificationData.category
+          category: rawNotificationData.category,
         };
 
         const notificationResult =
@@ -358,7 +378,7 @@ export class GenerationLibQueueHandler {
 
   async onFailed(job: Job<IGenerationLibJobData>, err: Error) {
     try {
-      const { userId, jobId , credits } = job.data;
+      const { userId, jobId, credits } = job.data;
       const locale = await getUserLangFromDB(userId);
 
       console.error(`❌ GenerationLib job ${jobId} failed:`, err.message);
@@ -369,9 +389,29 @@ export class GenerationLibQueueHandler {
       );
 
       const user = await User.findById(userId);
-      const refund = await this.creditService.addCredits(String(userId), credits as number);
-      if(!refund){
+      const refund = await this.creditService.addCredits(
+        String(userId),
+        credits as number
+      );
+      if (!refund) {
         console.error("Failed to refund credits for userId:", userId);
+      } else {
+        const transactionNotificationData: NotificationData = {
+          title: "Transaction Refunded",
+          message: `transaction for generation ${job.id} has been refunded.`,
+          data: {
+            jobId: job.id,
+            userId: job.data.userId,
+            userCredits: await this.creditService.getCredits(job.data.userId),
+            refundedCredits: job.data.credits,
+          },
+          redirectTo: "/transactions",
+          category: "transactions",
+        };
+        await this.notificationService.sendTransactionalSocketNotification(
+          job.data.userId,
+          transactionNotificationData
+        );
       }
       if (user && user.generationLib) {
         const itemIndex = user.generationLib.findIndex(

@@ -30,12 +30,34 @@ export class EffectsQueueHandler {
       );
       await this.jobRemoval(job);
       const user = await User.findById(result.userId);
-      await this.creditService.deductCredits(result.userId, job.data.modelData.credits);
       if (!user) {
         console.error("User not found for userId:", result.userId);
         return;
       }
-
+      const deducting = await this.creditService.deductCredits(
+        result.userId,
+        job.data.modelData.credits
+      );
+      if (!deducting) {
+        console.error(`❌ Failed to deduct credits for user ${result.userId}`);
+      } else {
+        const transactionNotificationData: NotificationData = {
+          title: "Transaction Completed",
+          message: `transaction for effect ${job.data} has been completed.`,
+          data: {
+            jobId: job.opts.jobId,
+            userId: job.data.userId,
+            userCredits: await this.creditService.getCredits(job.data.userId),
+            refundedCredits: job.data.credits,
+          },
+          redirectTo: "/transactions",
+          category: "transactions",
+        };
+        await this.notificationService.sendTransactionalSocketNotification(
+          job.data.userId,
+          transactionNotificationData
+        );
+      }
       // Initialize effectsLib if it doesn't exist (but don't overwrite existing data)
       if (!user.effectsLib) {
         console.warn(
@@ -62,7 +84,8 @@ export class EffectsQueueHandler {
         const existingEffect = user.effectsLib[existingEffectIndex];
         existingEffect.URL = result.resultURL;
         existingEffect.status = "completed";
-        existingEffect.effectThumbnail = result.effectThumbnail || result.resultURL;
+        existingEffect.effectThumbnail =
+          result.effectThumbnail || result.resultURL;
         existingEffect.modelType = modelType;
         existingEffect.duration = result.duration || 0;
         existingEffect.updatedAt = new Date();
@@ -117,7 +140,6 @@ export class EffectsQueueHandler {
           data: notificationDTO,
           redirectTo: "/effectDetails",
           category: "activities",
-          userCredits: user.credits,
         };
         const res = await this.notificationService.sendPushNotificationToUser(
           job.data.userId,
@@ -142,9 +164,33 @@ export class EffectsQueueHandler {
 
   async onFailed(job: any, err: Error) {
     try {
-       await this.creditService.addCredits(job.data.userId, job.data.model.credits);
       console.error(`Job ${job.id} failed with error: ${err.message}`);
-
+      const refund = await this.creditService.addCredits(
+        job.data.userId,
+        job.data.model.credits
+      );
+      if (!refund) {
+        console.error(
+          `❌ Failed to refund credits for user ${job.data.userId}`
+        );
+      } else {
+        const transactionNotificationData: NotificationData = {
+          title: "Transaction Refunded",
+          message: `transaction for effect ${job.data.storyId} has been refunded.`,
+          data: {
+            storyId: job.data.storyId,
+            userId: job.data.userId,
+            userCredits: await this.creditService.getCredits(job.data.userId),
+            refundedCredits: job.data.credits,
+          },
+          redirectTo: "/transactions",
+          category: "transactions",
+        };
+        await this.notificationService.sendTransactionalSocketNotification(
+          job.data.userId,
+          transactionNotificationData
+        );
+      }
       const jobId = job.opts.jobId || job.id;
       const jobUpdated = await Job.findOneAndUpdate(
         { jobId: jobId },
@@ -193,7 +239,6 @@ export class EffectsQueueHandler {
           data: notificationDTO,
           redirectTo: null,
           category: "activities",
-          userCredits: user.credits,
         };
         this.notificationService.saveNotificationToUser(user, notificationData);
         if (user?.FCMToken) {
