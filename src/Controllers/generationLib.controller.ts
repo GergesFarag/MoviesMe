@@ -11,6 +11,7 @@ import User from "../Models/user.model";
 import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers";
 import GenerationInfo from "../Models/generation.model";
 import { CreditService } from "../Services/credits.service";
+import { NotificationService } from "../Services/notification.service";
 
 const generationLibService = new GenerationLibService();
 
@@ -61,12 +62,32 @@ const generationLibController = {
         requestData.credits = +creditMap.get("credits")!;
       }
       const creditService = new CreditService();
+      const notificationService = new NotificationService();
       const hasSufficientCredits = await creditService.hasSufficientCredits(
         userId,
         requestData.credits
       );
       if (!hasSufficientCredits) {
         throw new AppError("Insufficient credits for this generation", 402);
+      }else{
+        const deductCredits = await creditService.deductCredits(
+          userId,
+          requestData.credits
+        );
+        if (!deductCredits) {
+          console.error(
+            `❌ Failed to deduct credits for user ${userId}`
+          );
+          return;
+        }
+        const transactionNotificationData = {
+          userCredits: await creditService.getCredits(userId),
+          consumedCredits: requestData.credits,
+        };
+        await notificationService.sendTransactionalSocketNotification(
+          userId,
+          transactionNotificationData
+        );
       }
 
       const jobId = new Types.ObjectId().toString();

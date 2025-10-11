@@ -21,22 +21,6 @@ export class StoryQueueHandlers {
     console.log(`✅ Story job with ID ${job.id} has been completed.`);
     console.log("Result:", result);
     await storyQueue.removeJobs(job.data.jobId);
-    const deductCredits = await this.creditService.deductCredits(
-      job.data.userId,
-      job.data.credits
-    );
-    if (!deductCredits) {
-      console.error(`❌ Failed to deduct credits for user ${job.data.userId}`);
-      return;
-    }
-    const transactionNotificationData = {
-      userCredits: await this.creditService.getCredits(job.data.userId),
-      consumedCredits: job.data.credits,
-    };
-    await this.notificationService.sendTransactionalSocketNotification(
-      job.data.userId,
-      transactionNotificationData
-    );
     try {
       if (job.data.userId && result?.story) {
         await this.notificationService.sendStoryCompletionNotification(

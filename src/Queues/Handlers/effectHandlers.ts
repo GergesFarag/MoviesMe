@@ -34,22 +34,6 @@ export class EffectsQueueHandler {
         console.error("User not found for userId:", result.userId);
         return;
       }
-      const deducting = await this.creditService.deductCredits(
-        result.userId,
-        job.data.modelData.credits
-      );
-      if (!deducting) {
-        console.error(`❌ Failed to deduct credits for user ${result.userId}`);
-      } else {
-        const transactionNotificationData = {
-            userCredits: await this.creditService.getCredits(job.data.userId),
-            refundedCredits: job.data.credits,
-        };
-        await this.notificationService.sendTransactionalSocketNotification(
-          job.data.userId,
-          transactionNotificationData
-        );
-      }
       // Initialize effectsLib if it doesn't exist (but don't overwrite existing data)
       if (!user.effectsLib) {
         console.warn(

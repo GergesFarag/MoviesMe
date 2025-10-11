@@ -1,7 +1,7 @@
 import { IEffectItem } from "../Interfaces/effectItem.interface";
 import {
+  UserProfileNonSelectableFields,
   userProfileResponse,
-  UserProfileResponseDataKeys,
 } from "../Interfaces/response.interface";
 import User from "../Models/user.model";
 import Story from "../Models/story.model";
@@ -22,30 +22,27 @@ import { GenerationLibService } from "../Services/generationLib.service";
 import { translationService } from "../Services/translation.service";
 import { NotificationService } from "../Services/notification.service";
 
-const fieldsToSelect: UserProfileResponseDataKeys[] = [
-  "username",
-  "email",
-  "phoneNumber",
-  "credits",
-  "userLocation",
-  "dob",
-  "isMale",
-  "profilePicture",
-];
-
 const generationLibService = new GenerationLibService();
-
+const NON_SELECTABLE_FIELDS: UserProfileNonSelectableFields[] = [
+  "-FCMToken",
+  "-__v",
+  "-effectsLib",
+  "-storiesLib",
+  "-generationLib",
+  "-jobs",
+  "-notifications",
+  "-isActive",
+  "-isAdmin",
+  "-firebaseUid",
+  "-preferredLanguage",
+];
 const userController = {
   getProfile: catchError(async (req, res) => {
-    const projection = fieldsToSelect.reduce((acc, key) => {
-      acc[key] = 1;
-      return acc;
-    }, {} as Record<string, 1>);
     console.log("UserId", req.user!.id);
     if (!req.user?.id) {
       throw new AppError("Unauthorized", HTTP_STATUS_CODE.UNAUTHORIZED);
     }
-    const user = await User.findById(req.user!.id).select(projection);
+    const user = await User.findById(req.user!.id).select(NON_SELECTABLE_FIELDS.join(" ")).lean();
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
@@ -73,7 +70,7 @@ const userController = {
         )) as UploadApiResponse;
         req.body.profilePicture = result.secure_url;
       }
-      const user = await User.findById(id).select(fieldsToSelect);
+      const user = await User.findById(id).select(NON_SELECTABLE_FIELDS.join(" "));
 
       if (!user) {
         throw new AppError("User not found", 404);
@@ -533,7 +530,7 @@ const userController = {
     });
   }),
 
-  updateGenerationFavoriteStatus: catchError(async (req, res) => {
+  toggleGenerationFav: catchError(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new AppError(
@@ -542,21 +539,15 @@ const userController = {
       );
     }
 
-    const { id } = req.params;
-    const { isFav } = req.body;
+    const { generationId } = req.body;
 
-    if (!id) {
+    if (!generationId) {
       throw new AppError("Generation ID is required", 400);
-    }
-
-    if (typeof isFav !== "boolean") {
-      throw new AppError("isFav must be a boolean value", 400);
     }
 
     const updatedGeneration = await generationLibService.updateFavoriteStatus(
       userId,
-      id,
-      isFav
+      generationId
     );
 
     res.status(200).json({

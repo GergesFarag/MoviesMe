@@ -217,22 +217,6 @@ export class GenerationLibQueueHandler {
         console.error("User not found for userId:", result.userId);
         return;
       }
-      const deducting = await this.creditService.deductCredits(
-        String(user._id),
-        job.data.credits as number
-      );
-      if (!deducting) {
-        console.error("Failed to deduct credits for userId:", result.userId);
-      } else {
-        const transactionNotificationData = {
-          userCredits: await this.creditService.getCredits(job.data.userId),
-          refundedCredits: job.data.credits,
-        };
-        await this.notificationService.sendTransactionalSocketNotification(
-          job.data.userId,
-          transactionNotificationData
-        );
-      }
       if (!user.generationLib) {
         console.warn(
           `User generationLib is undefined for userId: ${result.userId}, initializing...`

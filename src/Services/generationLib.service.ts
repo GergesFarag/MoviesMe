@@ -169,8 +169,7 @@ export class GenerationLibService {
 
   async updateFavoriteStatus(
     userId: string,
-    generationId: string,
-    isFavorite: boolean
+    generationId: string
   ): Promise<any> {
     try {
       const user = await User.findById(userId);
@@ -190,7 +189,7 @@ export class GenerationLibService {
         throw new AppError("Generation not found", 404);
       }
 
-      user.generationLib[generationIndex].isFav = isFavorite;
+      user.generationLib[generationIndex].isFav = !user.generationLib[generationIndex].isFav;
       user.generationLib[generationIndex].updatedAt = new Date();
       await user.save();
 

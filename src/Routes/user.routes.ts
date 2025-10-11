@@ -16,7 +16,7 @@ userRouter
   .route("/effect/fav")
   .post(authMiddle, userController.toggleEffectFav);
 userRouter.route("/story/fav").post(authMiddle, userController.toggleStoryFav);
-
+userRouter.route("/generation/fav").post(authMiddle, userController.toggleGenerationFav);
 userRouter
   .route("/notifications")
   .get(authMiddle, userController.getNotifications);
@@ -42,7 +42,6 @@ userRouter
 userRouter
   .route("/lib/generations/:id")
   .get(authMiddle, userController.getGenerationById)
-  .patch(authMiddle, userController.updateGenerationFavoriteStatus)
   .delete(authMiddle, userController.deleteGeneration);
 
 export default userRouter;

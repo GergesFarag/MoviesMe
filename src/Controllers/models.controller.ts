@@ -25,6 +25,7 @@ import { taskQueue } from "../Queues/model.queue";
 import { Types } from "mongoose";
 import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
 import { CreditService } from "../Services/credits.service";
+import { NotificationService } from "../Services/notification.service";
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
@@ -257,11 +258,30 @@ const modelsController = {
       throw new AppError("Model data not found", 404);
     }
     const creditService = new CreditService();
-    console.log("User Credits:", user.credits, "Model Credits:", model.credits);
-    console.log("MODEL:", model);
-    const hasSufficientCredits = await creditService.hasSufficientCredits(req.user!.id, model.credits);
-    if(!hasSufficientCredits){
-      throw new AppError("Insufficient credits to apply this model", HTTP_STATUS_CODE.PAYMENT_REQUIRED);
+    const notificationService = new NotificationService();
+    const hasSufficientCredits = await creditService.hasSufficientCredits(
+      req.user!.id,
+      model.credits
+    );
+    if (!hasSufficientCredits) {
+      throw new AppError(
+        "Insufficient credits to apply this model",
+        HTTP_STATUS_CODE.PAYMENT_REQUIRED
+      );
+    } else {
+      const deductCredits = await creditService.deductCredits(req.user?.id, model.credits);
+      if (!deductCredits) {
+        console.error(`❌ Failed to deduct credits for user ${req.user?.id}`);
+        return;
+      }
+      const transactionNotificationData = {
+        userCredits: await creditService.getCredits(req.user?.id),
+        consumedCredits: model.credits,
+      };
+      await notificationService.sendTransactionalSocketNotification(
+        req.user?.id,
+        transactionNotificationData
+      );
     }
     const jobId = new Types.ObjectId().toString();
 

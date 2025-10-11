@@ -27,10 +27,9 @@ import { extractLanguageFromRequest } from "../Utils/Format/languageUtils";
 import path from "path";
 import { getJsonKey } from "../Utils/Format/json";
 import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
-import {
-  StoryProcessingDTO,
-} from "../DTOs/storyRequest.dto";
+import { StoryProcessingDTO } from "../DTOs/storyRequest.dto";
 import { CreditService } from "../Services/credits.service";
+import { NotificationService } from "../Services/notification.service";
 const validKeys: IStoryRequestKeys[] = [
   "prompt",
   "storyDuration",
@@ -47,7 +46,8 @@ const storyController = {
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { prompt, storyDuration, credits } = req.body;
-      console.log("BODY" , req.body);
+      console.log("BODY", req.body);
+      const userId = req.user!.id;
       Object.keys(req.body).forEach((key) => {
         if (!validKeys.includes(key as IStoryRequestKeys)) {
           throw new AppError(
@@ -58,10 +58,11 @@ const storyController = {
           );
         }
       });
-      if(!credits){
+      if (!credits) {
         throw new AppError("Credits field is required", 400);
       }
       const creditService = new CreditService();
+      const notificationService = new NotificationService();
       const hasSufficientCredits = await creditService.hasSufficientCredits(
         req.user!.id,
         +credits
@@ -70,6 +71,25 @@ const storyController = {
         throw new AppError(
           "Insufficient credits to create story",
           HTTP_STATUS_CODE.PAYMENT_REQUIRED
+        );
+      } else {
+        const deductCredits = await creditService.deductCredits(
+          userId,
+          credits
+        );
+        if (!deductCredits) {
+          console.error(
+            `❌ Failed to deduct credits for user ${userId}`
+          );
+          return;
+        }
+        const transactionNotificationData = {
+          userCredits: await creditService.getCredits(userId),
+          consumedCredits: credits,
+        };
+        await notificationService.sendTransactionalSocketNotification(
+          userId,
+          transactionNotificationData
         );
       }
       const image =
@@ -80,7 +100,6 @@ const storyController = {
         req.files && "audio" in req.files
           ? (req.files["audio"] as Express.Multer.File[])[0]
           : null;
-      const userId = req.user!.id;
       console.log("Request Body: ", req.body, " and image : ", image);
       if (!prompt || !storyDuration) {
         throw new AppError("Prompt and story duration are required", 400);

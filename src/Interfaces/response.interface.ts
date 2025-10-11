@@ -14,16 +14,19 @@ export interface loginResponse {
   };
 }
 
-export type UserProfileResponseDataKeys = 
-  | "username"
-  | "email"
-  | "phoneNumber"
-  | "credits"
-  | "userLocation"
-  | "dob"
-  | "isMale"
-  | "profilePicture"
+export type UserProfileNonSelectableFields = 
+  "-isActive"|
+  "-isAdmin"|
+  "-firebaseUid"|
+  "-FCMToken"|
+  "-preferredLanguage"|
+  "-__v"|
+  "-effectsLib"|
+  "-storiesLib"|
+  "-generationLib"|
+  "-jobs"|
+  "-notifications"
 export interface userProfileResponse {
   message: string;
-  data: Record<UserProfileResponseDataKeys, any>;
+  data: Record<any, any>;
 }
