@@ -45,7 +45,7 @@ const validKeys: IStoryRequestKeys[] = [
 const storyController = {
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { prompt, storyDuration, credits } = req.body;
+      const { prompt, storyDuration } = req.body;
       console.log("BODY", req.body);
       const userId = req.user!.id;
       Object.keys(req.body).forEach((key) => {
@@ -58,11 +58,26 @@ const storyController = {
           );
         }
       });
+      const credits = Number(req.body.credits);
       if (!credits) {
         throw new AppError("Credits field is required", 400);
       }
       const creditService = new CreditService();
       const notificationService = new NotificationService();
+      const hasVoiceOver: boolean = req.body.voiceOver || req.body.audio;
+      const calculatedCredits = await creditService.getStoryCredits(
+        storyDuration / 5,
+        hasVoiceOver
+      );
+      const verifyCorrectCredits = creditService.isValidCredits(credits,calculatedCredits);
+      console.log(verifyCorrectCredits);
+      if (!verifyCorrectCredits) {
+        console.log("GONE IN ERROR");
+        throw new AppError(
+          `Incorrect credits provided. Required credits for the story is ${calculatedCredits}`,
+          400
+        );
+      }
       const hasSufficientCredits = await creditService.hasSufficientCredits(
         req.user!.id,
         +credits
@@ -78,9 +93,7 @@ const storyController = {
           credits
         );
         if (!deductCredits) {
-          console.error(
-            `❌ Failed to deduct credits for user ${userId}`
-          );
+          console.error(`❌ Failed to deduct credits for user ${userId}`);
           return;
         }
         const transactionNotificationData = {

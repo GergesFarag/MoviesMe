@@ -17,10 +17,12 @@ export const JOB_OPTIONS = {
   timeout: 1800000,
   removeOnComplete: 10,
   removeOnFail: 5,
+  attempts: 1, 
 } as const;
 
 export const QUEUE_SETTINGS = {
-  stalledInterval: 30000,
+  stalledInterval: 30 * 60 * 1000, // Check for stalled jobs every 5 minutes (300000ms)
+  maxStalledCount: 0, // Don't retry stalled jobs - mark them as failed immediately
 } as const;
 
 export const PROGRESS_STEPS = {

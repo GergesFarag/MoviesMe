@@ -2,14 +2,17 @@ import app from "./app";
 import connectDB from "./Config/db";
 import { getIO, initSocket } from "./Sockets/socket";
 import http from "http";
-// Initialize queues
 import "./Queues/model.queue";
 import "./Queues/generationLib.queue";
+import "./Queues/story.queue";
+import { serverStartupCleanup } from "./Utils/Queue/serverStartupCleanup";
 
 const PORT = process.env.PORT_NUMBER || 3000;
 
 (async () => {
   await connectDB();
+  
+  await serverStartupCleanup.cleanupActiveJobs();
   
   // Create HTTP server
   const server = http.createServer(app);
