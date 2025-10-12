@@ -62,7 +62,7 @@ export const updateJobProgress = async (
 
     if (io && event) {
       try {
-        const jobId = job.opts.jobId || job.id;
+        const jobId = job.data.jobId || job.id;
         const payload = {
           jobId: jobId,
           status,
