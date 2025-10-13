@@ -29,7 +29,6 @@ function verifyWebhookSignature(
       .json({ 
         message: "Unauthorized", 
         error: "Invalid signature",
-        // Only include in development
         ...(process.env.NODE_ENV === 'development' && {
           debug: {
             expected: webhookSecret,

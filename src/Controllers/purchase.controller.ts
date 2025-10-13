@@ -55,14 +55,14 @@ const purchasingController = {
   ),
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      console.log("REQ BODY" , req.body);
+      console.log("REQ BODY", req.body);
       const event = req.body;
 
       if (!event) {
         throw new AppError("Invalid request body", 400);
       }
       const updatedCredits = await creditService.addCredits(
-        req.user?.id,
+        event.app_user_id,
         event.price_in_purchased_currency
       );
       if (!updatedCredits) {
@@ -71,7 +71,7 @@ const purchasingController = {
       res.status(200).json({
         message: `Purchase validated successfully , ${event.price_in_purchased_currency} credits added`,
         data: {
-          totalUserCredits: await creditService.getCredits(req.user?.id),
+          totalUserCredits: await creditService.getCredits(event.app_user_id),
           isValid: true,
         },
       });
