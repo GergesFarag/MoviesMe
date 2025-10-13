@@ -5,8 +5,8 @@ import verifyWebhookSignature from "../Middlewares/revenueCat.middleware";
 
 const router = Router();
 
+router.post("/validate", verifyWebhookSignature, purchasingController.validateSpecificPurchase);
 router.get("/subscribers", authMiddle, purchasingController.getSubscribers);
-router.post("/validate", authMiddle , verifyWebhookSignature, purchasingController.validateSpecificPurchase);
 router.get("/subscribers/:userId", authMiddle, purchasingController.getUserSubscriptions);
 
 export default router;

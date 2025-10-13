@@ -1,6 +1,5 @@
-import e, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { createHmac } from "crypto";
-import { error } from "console";
 function verifyWebhookSignature(
   req: Request,
   res: Response,
