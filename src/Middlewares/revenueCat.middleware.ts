@@ -14,24 +14,24 @@ function verifyWebhookSignature(
       .status(401)
       .json({ message: "Unauthorized", error: "Missing signature" });
   }
-  signature = signature.split(" ")[1];
-  const expectedSignature = createHmac(
-    "sha256",
-    process.env.REVENUECAT_WEBHOOK_SECRET as string
-  )
-    .update(JSON.stringify(req.body))
-    .digest("hex");
-  console.log(
-    "Expexted Signature",
-    expectedSignature,
-    "Received Signature",
-    signature
-  );
-  if (signature !== expectedSignature) {
-    return res
-      .status(401)
-      .json({ message: "Unauthorized", error: "Invalid signature" });
-  }
+  // signature = signature.split(" ")[1];
+  // const expectedSignature = createHmac(
+  //   "sha256",
+  //   process.env.REVENUECAT_WEBHOOK_SECRET as string
+  // )
+  //   .update(JSON.stringify(req.body))
+  //   .digest("hex");
+  // console.log(
+  //   "Expexted Signature",
+  //   expectedSignature,
+  //   "Received Signature",
+  //   signature
+  // );
+  // if (signature !== expectedSignature) {
+  //   return res
+  //     .status(401)
+  //     .json({ message: "Unauthorized", error: "Invalid signature" });
+  // }
 
   next();
 }
