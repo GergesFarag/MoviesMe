@@ -3,6 +3,7 @@ import catchError from "../Utils/Errors/catchError";
 import { PurchasingService } from "../Services/purchasing.service";
 import { RevenueCatConfig } from "../Interfaces/revenueCat.interface";
 import AppError from "../Utils/Errors/AppError";
+import { CreditService } from "../Services/credits.service";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -10,7 +11,7 @@ const revenueCatConfig: RevenueCatConfig = {
 };
 
 const purchasingService = new PurchasingService(revenueCatConfig);
-
+const creditService = new CreditService();
 const purchasingController = {
   getSubscribers: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
@@ -59,23 +60,28 @@ const purchasingController = {
       if (!userId || !transactionId) {
         throw new AppError("User ID and transaction ID are required", 400);
       }
+      const purchase = await purchasingService.validateSpecificPurchase(
+        userId,
+        transactionId
+      );
 
-      try {
-        const purchase = await purchasingService.validateSpecificPurchase(userId, transactionId);
-        
-        if (!purchase) {
-          throw new AppError("Purchase not found or invalid", 404);
-        }
-        res.status(200).json({
-          message: "Purchase validated successfully",
-          data: {
-            purchase,
-            isValid: true
-          }
-        });
-      } catch (error) {
-        throw error;
+      if (!purchase) {
+        throw new AppError("Purchase not found or invalid", 404);
       }
+      const updatedCredits = await creditService.addCredits(
+        req.user?.id,
+        purchase.price.amount
+      );
+      if (!updatedCredits) {
+        throw new AppError("Failed While Updating User Credits", 400);
+      }
+      res.status(200).json({
+        message: `Purchase validated successfully - User redits updated with ${purchase.price.amount}`,
+        data: {
+          purchase,
+          isValid: true,
+        },
+      });
     }
   ),
 };
