@@ -19,7 +19,12 @@ function verifyWebhookSignature(
   )
     .update(JSON.stringify(req.body))
     .digest("hex");
-
+  console.log(
+    "Expexted Signature",
+    expectedSignature,
+    "Received Signature",
+    signature
+  );
   if (signature !== expectedSignature) {
     return res
       .status(401)
