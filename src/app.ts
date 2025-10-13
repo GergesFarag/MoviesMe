@@ -23,7 +23,18 @@ import Story from "./Models/story.model";
 import mongoose from "mongoose";
 
 const app = express();
-app.use(express.json());
+
+// Capture raw body for RevenueCat webhook signature verification
+app.use(
+  express.json({
+    verify: (req: any, res, buf, encoding) => {
+      if (req.originalUrl.includes('/purchasing/validate')) {
+        req.rawBody = buf.toString(encoding as BufferEncoding || 'utf8' as BufferEncoding);
+      }
+    },
+  })
+);
+
 dotenv.config({ quiet: true });
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());

@@ -8,5 +8,6 @@ declare namespace Express {
       phone_number?: string;
     };
     t: (key: string, options?: any) => string;
+    rawBody?: string; // For webhook signature verification
   }
 }
