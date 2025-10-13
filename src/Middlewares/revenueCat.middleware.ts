@@ -5,7 +5,7 @@ function verifyWebhookSignature(
   res: Response,
   next: NextFunction
 ) {
-  let signature = req.headers["x-revenuecat-signature"] as string;
+  let signature = req.headers["Authorization"] as string;
   console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
   console.log("Received Signature:", signature);
   console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
