@@ -55,17 +55,18 @@ const purchasingController = {
   ),
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const event = req.body;
+      console.log("REQ BODY" , req.body);
+      // const event = req.body;
 
-      if (!event) {
-        throw new AppError("Invalid request body", 400);
-      }
-      console.log("📥 RevenueCat Event Received:", {
-        type: event.type,
-        userId: event.app_user_id,
-        productId: event.product_id,
-        timestamp: new Date(event.event_timestamp_ms).toISOString(),
-      });
+      // if (!event) {
+      //   throw new AppError("Invalid request body", 400);
+      // }
+      // console.log("📥 RevenueCat Event Received:", {
+      //   type: event.type,
+      //   userId: event.app_user_id,
+      //   productId: event.product_id,
+      //   timestamp: new Date(event.event_timestamp_ms).toISOString(),
+      // });
       
       // const purchase = await purchasingService.validateSpecificPurchase(
       //   userId,
@@ -85,7 +86,6 @@ const purchasingController = {
       res.status(200).json({
         message: `Purchase validated successfully`,
         data: {
-          event,
           isValid: true,
         },
       });
