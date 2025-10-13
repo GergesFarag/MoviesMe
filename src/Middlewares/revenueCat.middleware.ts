@@ -5,33 +5,30 @@ function verifyWebhookSignature(
   res: Response,
   next: NextFunction
 ) {
-  let signature = req.headers;
-  console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-  console.log("Received Signature:", signature);
-  console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+  let signature = req.headers.authorization as string;
   if (!signature) {
     return res
       .status(401)
       .json({ message: "Unauthorized", error: "Missing signature" });
   }
-  // signature = signature.split(" ")[1];
-  // const expectedSignature = createHmac(
-  //   "sha256",
-  //   process.env.REVENUECAT_WEBHOOK_SECRET as string
-  // )
-  //   .update(JSON.stringify(req.body))
-  //   .digest("hex");
-  // console.log(
-  //   "Expexted Signature",
-  //   expectedSignature,
-  //   "Received Signature",
-  //   signature
-  // );
-  // if (signature !== expectedSignature) {
-  //   return res
-  //     .status(401)
-  //     .json({ message: "Unauthorized", error: "Invalid signature" });
-  // }
+  signature = signature.split(" ")[1];
+  const expectedSignature = createHmac(
+    "sha256",
+    process.env.REVENUECAT_WEBHOOK_SECRET as string
+  )
+    .update(JSON.stringify(req.body))
+    .digest("hex");
+  console.log(
+    "Expexted Signature",
+    expectedSignature,
+    "Received Signature",
+    signature
+  );
+  if (signature !== expectedSignature) {
+    return res
+      .status(401)
+      .json({ message: "Unauthorized", error: "Invalid signature" });
+  }
 
   next();
 }
