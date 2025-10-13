@@ -62,30 +62,27 @@ const purchasingController = {
         throw new AppError("Invalid request body", 400);
       }
       console.log("Received event:", event);
-      const userId = event.app_user_id
+      const userId = event.app_user_id;
       const credits =
         event.price_in_purchased_currency || event.adjustments[0].amount;
       if (!userId || !credits) {
         throw new AppError("Missing required event data", 400);
       }
       const updatedCredits = await creditService.addCredits(
-        event.app_user_id,
-        event.price_in_purchased_currency || event.adjustments[0].amount
+        userId,
+        credits
       );
       if (!updatedCredits) {
         throw new AppError("Failed While Updating User Credits", 400);
       }
       const notificationService = new NotificationService();
-        await notificationService.sendTransactionalSocketNotification(
-          userId,
-          {
-            userCredits: await creditService.getCredits(userId),
-          }
-        );
+      await notificationService.sendTransactionalSocketNotification(userId, {
+        userCredits: await creditService.getCredits(userId),
+      });
       res.status(200).json({
-        message: `Purchase validated successfully , ${event.price_in_purchased_currency} credits added`,
+        message: `Purchase validated successfully , ${credits} credits added`,
         data: {
-          totalUserCredits: await creditService.getCredits(event.app_user_id),
+          totalUserCredits: await creditService.getCredits(userId),
           isValid: true,
         },
       });
