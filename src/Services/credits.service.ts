@@ -5,6 +5,7 @@ import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import Model from "../Models/ai.model";
 import GenerationInfo from "../Models/generation.model";
 import StoryGenerationInfo from "../Models/storyGenerationInfo.model";
+import { Types } from "mongoose";
 
 export class CreditService implements ICreditService {
   async addCredits(userId: string, credits: number): Promise<boolean> {
@@ -15,7 +16,8 @@ export class CreditService implements ICreditService {
           HTTP_STATUS_CODE.BAD_REQUEST
         );
       }
-      const user = await User.findById(userId);
+      console.log("Adding Credits ", credits, "To User ", userId);
+      const user = await User.findById(new Types.ObjectId(userId));
       if (!user) {
         throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
       }
@@ -112,24 +114,33 @@ export class CreditService implements ICreditService {
     }
   }
 
-  async getStoryCredits(numOfScenes: number , hasVoiceOver: boolean = false): Promise<number> {
+  async getStoryCredits(
+    numOfScenes: number,
+    hasVoiceOver: boolean = false
+  ): Promise<number> {
     const storyGenerationInfo = await StoryGenerationInfo.findOne().lean();
     if (!storyGenerationInfo) {
-      throw new AppError("Story Generation info not found", HTTP_STATUS_CODE.NOT_FOUND);
+      throw new AppError(
+        "Story Generation info not found",
+        HTTP_STATUS_CODE.NOT_FOUND
+      );
     }
-    if(numOfScenes <= 0) {
-      throw new AppError("Number of scenes must be greater than zero", HTTP_STATUS_CODE.BAD_REQUEST);
+    if (numOfScenes <= 0) {
+      throw new AppError(
+        "Number of scenes must be greater than zero",
+        HTTP_STATUS_CODE.BAD_REQUEST
+      );
     }
     let totalCredits = 0;
     totalCredits += storyGenerationInfo.generationCredits * numOfScenes;
-    if(hasVoiceOver) {
+    if (hasVoiceOver) {
       totalCredits += storyGenerationInfo.voiceOverCredits * numOfScenes;
     }
     return totalCredits;
   }
 
-  isValidCredits(credits: number , calculatedCredits: number): boolean {
-    console.log("Credits" , credits , "Calculated Credits" , calculatedCredits);
+  isValidCredits(credits: number, calculatedCredits: number): boolean {
+    console.log("Credits", credits, "Calculated Credits", calculatedCredits);
     return credits === calculatedCredits;
   }
 }

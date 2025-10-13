@@ -55,7 +55,6 @@ const purchasingController = {
   ),
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      console.log("REQ BODY", req.body);
       const event = req.body;
 
       if (!event) {
