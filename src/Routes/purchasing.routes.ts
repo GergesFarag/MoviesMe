@@ -8,7 +8,6 @@ const router = Router();
 router.post(
   "/validate",
   verifyWebhookSignature,
-  authMiddle,
   purchasingController.validateSpecificPurchase
 );
 router.get("/subscribers", authMiddle, purchasingController.getSubscribers);
