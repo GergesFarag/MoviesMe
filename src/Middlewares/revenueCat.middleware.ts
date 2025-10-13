@@ -12,14 +12,25 @@ function verifyWebhookSignature(
       .json({ message: "Unauthorized", error: "Missing signature" });
   }
   signature = signature.split(" ")[1];
+  
+  const webhookSecret = String(process.env.REVENUECAT_WEBHOOK_SECRET);
+  if (!webhookSecret) {
+    console.error("REVENUECAT_WEBHOOK_SECRET is not configured in environment variables");
+    return res
+      .status(500)
+      .json({ message: "Server configuration error", error: "Webhook secret not configured" });
+  }
+  console.log("Webhook Secret" , webhookSecret);
+  console.log("Signature" , signature);
   const expectedSignature = createHmac(
     "sha256",
-    process.env.REVENUECAT_WEBHOOK_SECRET as string
+    webhookSecret
   )
     .update(JSON.stringify(req.body))
     .digest("hex");
+
   console.log(
-    "Expexted Signature",
+    "Expected Signature",
     expectedSignature,
     "Received Signature",
     signature
