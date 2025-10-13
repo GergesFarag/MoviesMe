@@ -55,30 +55,37 @@ const purchasingController = {
   ),
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { userId, transactionId } = req.body;
+      const event = req.body;
 
-      if (!userId || !transactionId) {
-        throw new AppError("User ID and transaction ID are required", 400);
+      if (!event) {
+        throw new AppError("Invalid request body", 400);
       }
-      const purchase = await purchasingService.validateSpecificPurchase(
-        userId,
-        transactionId
-      );
+      console.log("📥 RevenueCat Event Received:", {
+        type: event.type,
+        userId: event.app_user_id,
+        productId: event.product_id,
+        timestamp: new Date(event.event_timestamp_ms).toISOString(),
+      });
+      
+      // const purchase = await purchasingService.validateSpecificPurchase(
+      //   userId,
+      //   transactionId
+      // );
 
-      if (!purchase) {
-        throw new AppError("Purchase not found or invalid", 404);
-      }
-      const updatedCredits = await creditService.addCredits(
-        req.user?.id,
-        purchase.price.amount
-      );
-      if (!updatedCredits) {
-        throw new AppError("Failed While Updating User Credits", 400);
-      }
+      // if (!purchase) {
+      //   throw new AppError("Purchase not found or invalid", 404);
+      // }
+      // const updatedCredits = await creditService.addCredits(
+      //   req.user?.id,
+      //   purchase.price.amount
+      // );
+      // if (!updatedCredits) {
+      //   throw new AppError("Failed While Updating User Credits", 400);
+      // }
       res.status(200).json({
-        message: `Purchase validated successfully - User redits updated with ${purchase.price.amount}`,
+        message: `Purchase validated successfully`,
         data: {
-          purchase,
+          event,
           isValid: true,
         },
       });
