@@ -29,7 +29,7 @@ function verifyWebhookSignature(
       .status(401)
       .json({ message: "Unauthorized", error: "Invalid signature" });
   }
-
+  console.log("PASSED!!!");
   next();
 }
 export default verifyWebhookSignature;
