@@ -60,6 +60,7 @@ const purchasingController = {
       if (!event) {
         throw new AppError("Invalid request body", 400);
       }
+      console.log("EVENT" , event);
       const updatedCredits = await creditService.addCredits(
         event.app_user_id,
         event.price_in_purchased_currency
