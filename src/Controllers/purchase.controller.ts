@@ -55,7 +55,7 @@ const purchasingController = {
   ),
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const event = req.body;
+      const { event } = req.body;
 
       if (!event) {
         throw new AppError("Invalid request body", 400);
