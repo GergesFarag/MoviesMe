@@ -6,13 +6,13 @@ function verifyWebhookSignature(
   res: Response,
   next: NextFunction
 ) {
-  let signature = req.headers.authorization as string;
+  let signature = req.headers['X-RevenueCat-Signature'] as string;
   if (!signature) {
     return res
       .status(401)
       .json({ message: "Unauthorized", error: "Missing signature" });
   }
-  
+  console.log("Signature" , signature);
   // Extract signature - RevenueCat sends it as "Bearer <signature>"
   signature = signature.replace(/^Bearer\s+/i, '').trim();
   
