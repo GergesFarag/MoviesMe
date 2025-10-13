@@ -54,7 +54,7 @@ const purchasingController = {
   ),
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const { userId, transactionId } = req.params;
+      const { userId, transactionId } = req.body;
 
       if (!userId || !transactionId) {
         throw new AppError("User ID and transaction ID are required", 400);
@@ -74,8 +74,7 @@ const purchasingController = {
           }
         });
       } catch (error) {
-        console.error("Error validating specific purchase:", error);
-        throw new AppError("Failed to validate purchase", 500);
+        throw error;
       }
     }
   ),

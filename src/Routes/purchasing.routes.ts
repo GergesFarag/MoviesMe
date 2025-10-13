@@ -5,7 +5,7 @@ import purchasingController from "../Controllers/purchase.controller";
 const router = Router();
 
 router.get("/subscribers", authMiddle, purchasingController.getSubscribers);
+router.post("/validate", authMiddle, purchasingController.validateSpecificPurchase);
 router.get("/subscribers/:userId", authMiddle, purchasingController.getUserSubscriptions);
-router.get("/validate/:userId/:transactionId", authMiddle, purchasingController.validateSpecificPurchase);
 
 export default router;
