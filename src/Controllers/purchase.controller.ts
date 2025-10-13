@@ -4,6 +4,7 @@ import { PurchasingService } from "../Services/purchasing.service";
 import { RevenueCatConfig } from "../Interfaces/revenueCat.interface";
 import AppError from "../Utils/Errors/AppError";
 import { CreditService } from "../Services/credits.service";
+import { NotificationService } from "../Services/notification.service";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -60,14 +61,26 @@ const purchasingController = {
       if (!event) {
         throw new AppError("Invalid request body", 400);
       }
-      console.log("EVENT" , event);
+      const { app_user_id } = event;
+      const credits =
+        event.price_in_purchased_currency || event.adjustments[0].amount;
+      if (!app_user_id || !credits) {
+        throw new AppError("Missing required event data", 400);
+      }
       const updatedCredits = await creditService.addCredits(
         event.app_user_id,
-        event.price_in_purchased_currency
+        event.price_in_purchased_currency || event.adjustments[0].amount
       );
       if (!updatedCredits) {
         throw new AppError("Failed While Updating User Credits", 400);
       }
+      const notificationService = new NotificationService();
+        await notificationService.sendTransactionalSocketNotification(
+          app_user_id,
+          {
+            userCredits: await creditService.getCredits(app_user_id),
+          }
+        );
       res.status(200).json({
         message: `Purchase validated successfully , ${event.price_in_purchased_currency} credits added`,
         data: {
