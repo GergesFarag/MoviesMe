@@ -268,6 +268,7 @@ export class NotificationService {
   ): INotificationItemDTO {
     const status = NotificationService.getNotificationStatus(notification);
     const type = NotificationService.getNotificationType(notification);
+    console.log("Notification status and type:", { status, type });
     return { status, type };
   }
   async sendTransactionalSocketNotification(

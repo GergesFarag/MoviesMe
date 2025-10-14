@@ -379,13 +379,13 @@ const userController = {
 
   getNotifications: catchError(async (req, res) => {
     const userId = req.user!.id;
+    if (!req.query.category) {
+      throw new AppError("Category filter is required", 400);
+    }
     const filter: string[] = (req.query.category as string)
       .trim()
       .toLowerCase()
       .split(",");
-    if (!filter) {
-      throw new AppError("Category filter is required", 400);
-    }
     const user = await User.findById(userId).lean();
 
     if (!user) {

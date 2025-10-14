@@ -98,6 +98,7 @@ const purchasingController = {
         ),
         data: {
           userCredits: await creditService.getCredits(userId),
+          status: "completed",
         },
         category: "transactions",
         redirectTo: "/transactions",
@@ -123,7 +124,7 @@ const purchasingController = {
         userId,
         translatedNotification
       );
-      
+
       res.status(200).json({
         message: `Purchase validated successfully , ${credits} credits added`,
         data: {

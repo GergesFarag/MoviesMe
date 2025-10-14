@@ -21,6 +21,8 @@ import "./Queues/story.queue";
 import "./Queues/model.queue";
 import Story from "./Models/story.model";
 import mongoose from "mongoose";
+import User from "./Models/user.model";
+import { NotificationService } from "./Services/notification.service";
 
 const app = express();
 
@@ -46,26 +48,20 @@ const prefix = process.env.API_PREFIX || "/api";
 const basePath = `${prefix}${API_VERSION}`;
 
 app.get(`/`, (req, res) => {
-  console.log("Request Headers:", req.headers["accept-language"]);
-  res.send(
-    translationService.translateText(
-      "admin",
-      "greeting",
-      req.headers["accept-language"] || "en",
-      { name: "Gerges" }
-    )
-  );
+  console.log("Health check OK");
+  res.status(200).json({ message: "API is running" });
 });
   
 //*HERE IS CUSTOM SCRIPTS TO RUN ON DB
 app.post(`${basePath}/dbScript`, async (req, res) => {
-  try {
-    await Story.deleteMany({ userId: new mongoose.Types.ObjectId("68dc6b7e0dfbb81d538692ab") });
-    res.status(200).json({ message: "DB script executed successfully" });
-  } catch (error) {
-    console.error("Error executing DB script:", error);
-    res.status(500).json({ message: "Error executing DB script" });
+  const user = await User.findById(new mongoose.Types.ObjectId("68ee80e8d911b17b29200955")).lean();
+  console.log("USER" , user);
+  const userNotifications = user?.notifications;
+  if(!userNotifications || userNotifications.length === 0) {
+    return res.status(200).json({ message: "No notifications found for user" });
   }
+  let { status , type } = NotificationService.getNotificationStatusAndType(userNotifications[0]);
+  return res.status(200).json({ message: "Script executed successfully", status, type });
 });
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
