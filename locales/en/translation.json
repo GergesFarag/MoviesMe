@@ -151,14 +151,14 @@
         "message": "Something went wrong while generating your image. Please check your prompt and try again!"
       }
     },
-    "purchase": {
-      "success": {
-        "title": "✅ Purchase Successful! 🎉",
-        "message": "Thank you for your support! {{credits}} has been added to your balance. Enjoy creating more amazing stories!"
+    "transaction": {
+      "completion": {
+        "title": "✅ Transaction Successful! 🎉",
+        "message": "Thank you for your transaction! {{credits}} has been added to your balance. Enjoy creating more amazing stories!"
       },
       "failure": {
-        "title": "❌ Purchase Failed",
-        "message": "An error occurred while processing your purchase. Please try again or contact support if the issue persists."
+        "title": "❌ Transaction Failed",
+        "message": "An error occurred while processing your transaction. Please try again or contact support if the issue persists."
       }
     }
   },

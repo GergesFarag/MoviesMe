@@ -339,7 +339,7 @@ export class NotificationService {
         return "effect";
       } else if (notification.title.toLowerCase().includes("promotion")) {
         return "promotion";
-      } else if (notification.title.toLowerCase().includes("generation")) {
+      } else if (notification.title.toLowerCase().includes("generation") || notification.title.toLowerCase().includes("generated")) {
         return "generation";
       } else if (notification.title.toLowerCase().includes("transaction")) {
         return "transaction";
