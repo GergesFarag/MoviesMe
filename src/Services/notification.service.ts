@@ -327,6 +327,8 @@ export class NotificationService {
         return "promotion";
       } else if (notification.redirectTo === "/generationLib") {
         return "generation";
+      } else if (notification.redirectTo === "/transactions") {
+        return "transaction";
       } else {
         return "system";
       }
@@ -339,6 +341,8 @@ export class NotificationService {
         return "promotion";
       } else if (notification.title.toLowerCase().includes("generation")) {
         return "generation";
+      } else if (notification.title.toLowerCase().includes("transaction")) {
+        return "transaction";
       } else {
         return "system";
       }

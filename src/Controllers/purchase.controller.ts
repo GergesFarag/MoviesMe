@@ -102,7 +102,7 @@ const purchasingController = {
         category: "transactions",
         redirectTo: "/transactions",
       };
-      await notificationService.saveNotificationToUser(userId, notification);
+      await notificationService.saveNotificationToUser(user, notification);
 
       const translatedNotification: NotificationData = {
         ...notification,
