@@ -4,7 +4,12 @@ import { PurchasingService } from "../Services/purchasing.service";
 import { RevenueCatConfig } from "../Interfaces/revenueCat.interface";
 import AppError from "../Utils/Errors/AppError";
 import { CreditService } from "../Services/credits.service";
-import { NotificationService } from "../Services/notification.service";
+import {
+  NotificationData,
+  NotificationService,
+} from "../Services/notification.service";
+import { TranslationService } from "../Services/translation.service";
+import User from "../Models/user.model";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -13,6 +18,9 @@ const revenueCatConfig: RevenueCatConfig = {
 
 const purchasingService = new PurchasingService(revenueCatConfig);
 const creditService = new CreditService();
+const translationService = TranslationService.getInstance();
+const notificationService = new NotificationService();
+
 const purchasingController = {
   getSubscribers: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
@@ -63,22 +71,59 @@ const purchasingController = {
       }
       console.log("Received event:", event);
       const userId = event.app_user_id;
+      const user = await User.findById(userId).lean();
       const credits =
         event.price_in_purchased_currency || event.adjustments[0].amount;
       if (!userId || !credits) {
         throw new AppError("Missing required event data", 400);
       }
-      const updatedCredits = await creditService.addCredits(
-        userId,
-        credits
-      );
+      const updatedCredits = await creditService.addCredits(userId, credits);
       if (!updatedCredits) {
         throw new AppError("Failed While Updating User Credits", 400);
       }
-      const notificationService = new NotificationService();
       await notificationService.sendTransactionalSocketNotification(userId, {
         userCredits: await creditService.getCredits(userId),
       });
+      let notification: NotificationData = {
+        title: translationService.translateText(
+          "notifications.purchase.success",
+          "title",
+          "en"
+        ),
+        message: translationService.translateText(
+          "notifications.purchase.success",
+          "message",
+          "en",
+          { credits }
+        ),
+        data: {
+          userCredits: await creditService.getCredits(userId),
+        },
+        category: "transactions",
+        redirectTo: "/transactions",
+      };
+      await notificationService.saveNotificationToUser(userId, notification);
+
+      const translatedNotification: NotificationData = {
+        ...notification,
+        title: translationService.translateText(
+          "notifications.purchase.success",
+          "title",
+          user?.preferredLanguage || "en"
+        ),
+        message: translationService.translateText(
+          "notifications.purchase.success",
+          "message",
+          user?.preferredLanguage || "en",
+          { credits }
+        ),
+      };
+
+      await notificationService.sendPushNotificationToUser(
+        userId,
+        translatedNotification
+      );
+      
       res.status(200).json({
         message: `Purchase validated successfully , ${credits} credits added`,
         data: {

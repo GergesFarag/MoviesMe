@@ -2,7 +2,7 @@ import { ITranslationService } from "../Interfaces/translation.interface";
 import { I18nService } from "../Config/i18next";
 import { language } from "@elevenlabs/elevenlabs-js/api/resources/dubbing/resources/resource";
 
-class TranslationService implements ITranslationService {
+export class TranslationService implements ITranslationService {
   private static instance: TranslationService;
   private constructor() {}
 

@@ -91,7 +91,7 @@
     "all": "All",
     "fashion": "Fashion",
     "fantasy": "Fantasy",
-    "gaming": "Gaming", 
+    "gaming": "Gaming",
     "romance": "Romance",
     "sports": "Sports",
     "cinematic": "Cinematic",
@@ -150,13 +150,23 @@
         "title": "❌ Image Generation Failed",
         "message": "Something went wrong while generating your image. Please check your prompt and try again!"
       }
+    },
+    "purchase": {
+      "success": {
+        "title": "✅ Purchase Successful! 🎉",
+        "message": "Thank you for your support! {{credits}} has been added to your balance. Enjoy creating more amazing stories!"
+      },
+      "failure": {
+        "title": "❌ Purchase Failed",
+        "message": "An error occurred while processing your purchase. Please try again or contact support if the issue persists."
+      }
     }
   },
-  "generationModels" : {
-    "68dd4fe53afd0524a0a0ee79" : "seedream v4(text to image)",
-    "68dd4fe53afd0524a0a0ee78" : "seedream v4(image to image)",
-    "68dd62a4ee374a8e2e8247f8" : "seedance v1(image to video)",
-    "68dd62a4ee374a8e2e8247f9" : "seedance v1(text to video)"
+  "generationModels": {
+    "68dd4fe53afd0524a0a0ee79": "seedream v4(text to image)",
+    "68dd4fe53afd0524a0a0ee78": "seedream v4(image to image)",
+    "68dd62a4ee374a8e2e8247f8": "seedance v1(image to video)",
+    "68dd62a4ee374a8e2e8247f9": "seedance v1(text to video)"
   },
   "messages": {
     "welcome": "Welcome to Movies Me!",
