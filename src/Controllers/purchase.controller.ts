@@ -86,12 +86,12 @@ const purchasingController = {
       });
       let notification: NotificationData = {
         title: translationService.translateText(
-          "notifications.purchase.success",
+          "notifications.transaction.completion",
           "title",
           "en"
         ),
         message: translationService.translateText(
-          "notifications.purchase.success",
+          "notifications.transaction.completion",
           "message",
           "en",
           { credits }
@@ -108,12 +108,12 @@ const purchasingController = {
       const translatedNotification: NotificationData = {
         ...notification,
         title: translationService.translateText(
-          "notifications.purchase.success",
+          "notifications.transaction.completion",
           "title",
           user?.preferredLanguage || "en"
         ),
         message: translationService.translateText(
-          "notifications.purchase.success",
+          "notifications.transaction.completion",
           "message",
           user?.preferredLanguage || "en",
           { credits }

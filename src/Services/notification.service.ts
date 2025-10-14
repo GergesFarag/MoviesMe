@@ -317,7 +317,7 @@ export class NotificationService {
     const notificationStatus =
       NotificationService.getNotificationStatus(notification);
     if (
-      notificationStatus === "completed" ||
+      notificationStatus === "completion" ||
       notificationStatus === "pending"
     ) {
       if (notification.redirectTo === "/storyDetails") {
