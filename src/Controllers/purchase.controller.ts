@@ -10,6 +10,7 @@ import {
 } from "../Services/notification.service";
 import { TranslationService } from "../Services/translation.service";
 import User from "../Models/user.model";
+import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -64,12 +65,11 @@ const purchasingController = {
   ),
   validateSpecificPurchase: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
+      console.log("Request Body from revenueCat" , req.body);
       const { event } = req.body;
-
       if (!event) {
         throw new AppError("Invalid request body", 400);
       }
-      console.log("Received event:", event);
       const userId = event.app_user_id;
       const user = await User.findById(userId);
       const credits =

@@ -21,6 +21,8 @@ import { IStory } from "../Interfaces/story.interface";
 import { GenerationLibService } from "../Services/generationLib.service";
 import { translationService } from "../Services/translation.service";
 import { NotificationService } from "../Services/notification.service";
+import { changeLanguage } from "i18next";
+import { updateUserLanguagePreference } from "../Middlewares/language.middleware";
 
 const generationLibService = new GenerationLibService();
 const NON_SELECTABLE_FIELDS: UserProfileNonSelectableFields[] = [
@@ -576,6 +578,29 @@ const userController = {
     res.status(200).json({
       success: true,
       message: "Generation deleted successfully",
+    });
+  }),
+
+  changeLanguage: catchError(async (req, res) => {
+    const userId = req.user?.id;
+    const { language } = req.body;
+    if (!userId) {
+      throw new AppError(
+        "User not authenticated",
+        HTTP_STATUS_CODE.UNAUTHORIZED
+      );
+    }
+    if (!language || (language.trim() !== "en" && language.trim() !== "ar")) {
+      throw new AppError("Language is required with values en or ar", 400);
+    }
+    const user = await User.findByIdAndUpdate(req.user?.id, { preferredLanguage: language }, { new: true });
+
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+    res.status(200).json({
+      message: "Language updated successfully",
+      data: user.preferredLanguage,
     });
   }),
 };

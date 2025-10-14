@@ -43,5 +43,5 @@ userRouter
   .route("/lib/generations/:id")
   .get(authMiddle, userController.getGenerationById)
   .delete(authMiddle, userController.deleteGeneration);
-
+userRouter.post("/changeLanguage", authMiddle, userController.changeLanguage);
 export default userRouter;
