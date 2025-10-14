@@ -71,7 +71,7 @@ const purchasingController = {
       }
       console.log("Received event:", event);
       const userId = event.app_user_id;
-      const user = await User.findById(userId).lean();
+      const user = await User.findById(userId);
       const credits =
         event.price_in_purchased_currency || event.adjustments[0].amount;
       if (!userId || !credits) {
