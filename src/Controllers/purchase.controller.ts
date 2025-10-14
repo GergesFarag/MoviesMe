@@ -72,8 +72,7 @@ const purchasingController = {
       if (event.type === "VIRTUAL_CURRENCY_TRANSACTION") {
         const userId = event.app_user_id;
         const user = await User.findById(userId);
-        const credits =
-          event.price_in_purchased_currency || event.adjustments[0].amount;
+        const credits = event.adjustments[0].amount;
         if (!userId || !credits) {
           throw new AppError("Missing required event data", 400);
         }
