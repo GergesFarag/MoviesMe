@@ -83,6 +83,7 @@ const purchasingController = {
         await notificationService.sendTransactionalSocketNotification(userId, {
           userCredits: await creditService.getCredits(userId),
         });
+
         let notification: NotificationData = {
           title: translationService.translateText(
             "notifications.transaction.completion",
@@ -102,8 +103,9 @@ const purchasingController = {
           category: "transactions",
           redirectTo: "/transactions",
         };
+        console.log("Notification Saved in DB" , notification);
         await notificationService.saveNotificationToUser(user, notification);
-
+        
         const translatedNotification: NotificationData = {
           ...notification,
           title: translationService.translateText(
@@ -118,11 +120,12 @@ const purchasingController = {
             { credits }
           ),
         };
-
+        
         await notificationService.sendPushNotificationToUser(
           userId,
           translatedNotification
         );
+        console.log("Push notification data : " , translatedNotification);
 
         res.status(200).json({
           message: `Purchase validated successfully , ${credits} credits added`,
