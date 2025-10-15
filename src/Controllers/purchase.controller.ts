@@ -10,6 +10,7 @@ import {
 } from "../Services/notification.service";
 import { TranslationService } from "../Services/translation.service";
 import User from "../Models/user.model";
+import mongoose from "mongoose";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -70,7 +71,7 @@ const purchasingController = {
       }
       if (event.type === "VIRTUAL_CURRENCY_TRANSACTION") {
         const userId = event.app_user_id;
-        const user = await User.findById(userId);
+        const user = await User.findById(new mongoose.Types.ObjectId(userId));
         const credits = event.adjustments[0].amount;
         if (!userId || !credits) {
           throw new AppError("Missing required event data", 400);
