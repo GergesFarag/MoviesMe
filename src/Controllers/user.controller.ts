@@ -436,7 +436,8 @@ const userController = {
         message: translationService.translateText(
           `notifications.${notificationType}.${notificationStatus}`,
           "message",
-          userLang
+          userLang,
+          { credits: (notification.data as any)?.amount || "" }
         ),
       };
     });
