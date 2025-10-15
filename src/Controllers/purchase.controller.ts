@@ -128,7 +128,8 @@ const purchasingController = {
             .translateText(
               "notifications.transaction.completion",
               "message",
-              user?.preferredLanguage || "en"
+              user?.preferredLanguage || "en",
+              { credits }
             )
             .concat(` ${credits} credits added.`),
         };
