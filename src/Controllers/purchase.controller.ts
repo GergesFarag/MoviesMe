@@ -8,7 +8,10 @@ import { NotificationService } from "../Services/notification.service";
 import { TranslationService } from "../Services/translation.service";
 import User from "../Models/user.model";
 import mongoose from "mongoose";
-import { INotification, TransactionNotificationData } from "../Interfaces/notification.interface";
+import {
+  INotification,
+  TransactionNotificationData,
+} from "../Interfaces/notification.interface";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -69,7 +72,9 @@ const purchasingController = {
       }
       if (event.type === "VIRTUAL_CURRENCY_TRANSACTION") {
         const userId = event.app_user_id;
-        const user = await User.findById(mongoose.Types.ObjectId.createFromHexString(userId));
+        const user = await User.findById(
+          mongoose.Types.ObjectId.createFromHexString(userId)
+        );
         const credits = event.adjustments[0].amount;
         if (!userId || !credits) {
           throw new AppError("Missing required event data", 400);
@@ -79,7 +84,7 @@ const purchasingController = {
           throw new AppError("Failed While Updating User Credits", 400);
         }
         const userCredits = await creditService.getCredits(userId);
-        
+
         await notificationService.sendTransactionalSocketNotification(userId, {
           userCredits,
         });
@@ -99,18 +104,18 @@ const purchasingController = {
             "title",
             "en"
           ),
-          message: translationService.translateText(
+          message: `${credits} credits added to your account.\n${translationService.translateText(
             "notifications.transaction.completion",
             "message",
-            "en",
-          ).concat(` ${credits} credits added.`),
+            "en"
+          )}`,
           data: notificationData,
           category: "transactions",
           redirectTo: "/transactions",
         };
         console.log("Notification Saved in DB", notification);
         await notificationService.saveNotificationToUser(user, notification);
-        
+
         const translatedNotification: INotification = {
           ...notification,
           title: translationService.translateText(
@@ -118,18 +123,20 @@ const purchasingController = {
             "title",
             user?.preferredLanguage || "en"
           ),
-          message: translationService.translateText(
-            "notifications.transaction.completion",
-            "message",
-            user?.preferredLanguage || "en",
-          ).concat(` ${credits} credits added.`),
+          message: translationService
+            .translateText(
+              "notifications.transaction.completion",
+              "message",
+              user?.preferredLanguage || "en"
+            )
+            .concat(` ${credits} credits added.`),
         };
-        
+
         await notificationService.sendPushNotificationToUser(
           userId,
           translatedNotification
         );
-        console.log("Push notification data : " , translatedNotification);
+        console.log("Push notification data : ", translatedNotification);
 
         res.status(200).json({
           message: `Purchase validated successfully , ${credits} credits added`,
@@ -138,7 +145,7 @@ const purchasingController = {
             isValid: true,
           },
         });
-      }else{
+      } else {
         res.status(200).json({
           message: `Event type ${event.type} ignored`,
           data: {
