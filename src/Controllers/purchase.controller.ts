@@ -10,7 +10,6 @@ import {
 } from "../Services/notification.service";
 import { TranslationService } from "../Services/translation.service";
 import User from "../Models/user.model";
-import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -94,8 +93,7 @@ const purchasingController = {
             "notifications.transaction.completion",
             "message",
             "en",
-            { credits }
-          ),
+          ).concat(` ${credits} credits added.`),
           data: {
             userCredits: await creditService.getCredits(userId),
             status: "completed",
@@ -117,8 +115,7 @@ const purchasingController = {
             "notifications.transaction.completion",
             "message",
             user?.preferredLanguage || "en",
-            { credits }
-          ),
+          ).concat(` ${credits} credits added.`),
         };
         
         await notificationService.sendPushNotificationToUser(

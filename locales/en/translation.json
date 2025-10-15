@@ -154,7 +154,7 @@
     "transaction": {
       "completion": {
         "title": "✅ Transaction Successful! 🎉",
-        "message": "Thank you for your transaction! {{credits}} has been added to your balance. Enjoy creating more amazing stories!"
+        "message": "Thank you for your transaction! Enjoy creating more amazing stories!"
       },
       "failure": {
         "title": "❌ Transaction Failed",
