@@ -217,7 +217,7 @@ export class EffectsQueueHandler {
           redirectTo: null,
           category: "activities",
         };
-        this.notificationService.saveNotificationToUser(user, notificationData);
+        await this.notificationService.saveNotificationToUser(user, notificationData);
         if (user?.FCMToken) {
           const notificationResult =
             await this.notificationService.sendPushNotificationToUser(

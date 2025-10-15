@@ -21,8 +21,6 @@ import { IStory } from "../Interfaces/story.interface";
 import { GenerationLibService } from "../Services/generationLib.service";
 import { translationService } from "../Services/translation.service";
 import { NotificationService } from "../Services/notification.service";
-import { changeLanguage } from "i18next";
-import { updateUserLanguagePreference } from "../Middlewares/language.middleware";
 
 const generationLibService = new GenerationLibService();
 const NON_SELECTABLE_FIELDS: UserProfileNonSelectableFields[] = [
@@ -44,7 +42,9 @@ const userController = {
     if (!req.user?.id) {
       throw new AppError("Unauthorized", HTTP_STATUS_CODE.UNAUTHORIZED);
     }
-    const user = await User.findById(req.user!.id).select(NON_SELECTABLE_FIELDS.join(" ")).lean();
+    const user = await User.findById(req.user!.id)
+      .select(NON_SELECTABLE_FIELDS.join(" "))
+      .lean();
     if (!user) {
       throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
     }
@@ -72,7 +72,9 @@ const userController = {
         )) as UploadApiResponse;
         req.body.profilePicture = result.secure_url;
       }
-      const user = await User.findById(id).select(NON_SELECTABLE_FIELDS.join(" "));
+      const user = await User.findById(id).select(
+        NON_SELECTABLE_FIELDS.join(" ")
+      );
 
       if (!user) {
         throw new AppError("User not found", 404);
@@ -269,14 +271,15 @@ const userController = {
       throw new AppError("Story not found", 404);
     }
 
-    await User.findByIdAndUpdate(userId, { $pull: { storiesLib: storyId } });
-
-    await Job.findOneAndDelete({ jobId: story.jobId });
+    await Promise.all([
+      User.findByIdAndUpdate(userId, { $pull: { storiesLib: storyId } }),
+      Job.findOneAndDelete({ jobId: story.jobId }),
+    ]);
 
     await User.findByIdAndUpdate(userId, {
       $pull: { jobs: { jobId: story.jobId } },
     });
-
+    
     res.status(200).json({
       message: "Story Deleted Successfully",
       data: StoryDTO.toDTO(story),
@@ -400,7 +403,10 @@ const userController = {
       });
     }
 
-    const sortedNotifications = filteredNotifications.length > 0 ? Sorting.sortItems(filteredNotifications, "newest") : [];
+    const sortedNotifications =
+      filteredNotifications.length > 0
+        ? Sorting.sortItems(filteredNotifications, "newest")
+        : [];
 
     const validNotifications = sortedNotifications.filter((notification) => {
       if (notification.expiresAt) {
@@ -408,6 +414,7 @@ const userController = {
       }
       return true;
     });
+
     let notificationStatus,
       notificationType = "";
     const userLang = req.headers["accept-language"] || "en";
@@ -593,7 +600,11 @@ const userController = {
     if (!language || (language.trim() !== "en" && language.trim() !== "ar")) {
       throw new AppError("Language is required with values en or ar", 400);
     }
-    const user = await User.findByIdAndUpdate(req.user?.id, { preferredLanguage: language }, { new: true });
+    const user = await User.findByIdAndUpdate(
+      req.user?.id,
+      { preferredLanguage: language },
+      { new: true }
+    );
 
     if (!user) {
       throw new AppError("User not found", 404);
