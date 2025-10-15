@@ -71,7 +71,7 @@ const purchasingController = {
       }
       if (event.type === "VIRTUAL_CURRENCY_TRANSACTION") {
         const userId = event.app_user_id;
-        const user = await User.findById(new mongoose.Types.ObjectId(userId));
+        const user = await User.findById(mongoose.Types.ObjectId.createFromHexString(userId));
         const credits = event.adjustments[0].amount;
         if (!userId || !credits) {
           throw new AppError("Missing required event data", 400);
