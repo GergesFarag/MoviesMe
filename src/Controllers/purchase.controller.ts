@@ -104,7 +104,7 @@ const purchasingController = {
             "title",
             "en"
           ),
-          message: `${credits} credits added to your account.\n${translationService.translateText(
+          message: `${credits} credits added to your account.\n ${translationService.translateText(
             "notifications.transaction.completion",
             "message",
             "en"
