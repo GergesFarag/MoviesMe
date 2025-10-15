@@ -7,16 +7,10 @@ import { translationService } from "./translation.service";
 import { getUserLangFromDB } from "../Utils/Format/languageUtils";
 import AppError from "../Utils/Errors/AppError";
 import { INotificationItemDTO } from "../DTOs/item.dto";
-import { INotification } from "../Interfaces/notification.interface";
+import { 
+  INotification, 
+} from "../Interfaces/notification.interface";
 import { CreditService } from "./credits.service";
-
-export interface NotificationData {
-  title: string;
-  message: string;
-  data: Record<string, any>;
-  redirectTo?: string | null;
-  category?: TNotificationCategory;
-}
 
 interface SocketNotificationPayload {
   message: string;
@@ -66,15 +60,7 @@ export class NotificationService {
     try {
       const storyDTO = StoryDTO.toDTO(storyData);
 
-      const notificationDTO = {
-        storyId: String(storyData._id || null),
-        jobId: String(jobId),
-        status: String(storyData.status || "completed"),
-        userId: String(userId),
-        credits: storyData.credits,
-      };
-
-      const notificationData: NotificationData = {
+      const notificationData: INotification = {
         title: translationService.translateText(
           "notifications.story.completion",
           "title",
@@ -85,7 +71,14 @@ export class NotificationService {
           "message",
           locale
         ),
-        data: notificationDTO,
+        data: {
+          type: "story",
+          status: "completed",
+          storyId: String(storyData._id || null),
+          jobId: String(jobId),
+          userId: String(userId),
+          credits: storyData.credits,
+        },
         redirectTo: "/storyDetails",
         category: "activities",
       };
@@ -129,15 +122,8 @@ export class NotificationService {
     storyId?: string
   ): Promise<void> {
     const locale = await getUserLangFromDB(userId);
-    const notificationDTO = {
-      storyId: String(storyId || null),
-      jobId: String(jobId),
-      status: "failed",
-      userId: String(userId),
-      error: error.message,
-    };
 
-    const notificationData: NotificationData = {
+    const notificationData: INotification = {
       title: translationService.translateText(
         "notifications.story.failure",
         "title",
@@ -148,7 +134,14 @@ export class NotificationService {
         "message",
         locale
       ),
-      data: notificationDTO,
+      data: {
+        type: "story",
+        status: "failed",
+        storyId: String(storyId || null),
+        jobId: String(jobId),
+        userId: String(userId),
+        error: error.message,
+      },
       redirectTo: null,
       category: "activities",
     };
@@ -187,7 +180,7 @@ export class NotificationService {
    */
   async sendPushNotificationToUser(
     userId: string,
-    notificationData: NotificationData
+    notificationData: INotification
   ): Promise<boolean> {
     try {
       const user = await User.findById(userId);
@@ -242,7 +235,7 @@ export class NotificationService {
    */
   async saveNotificationToUser(
     user: any,
-    notificationData: NotificationData
+    notificationData: INotification
   ): Promise<void> {
     try {
       user.notifications = user.notifications || [];
@@ -314,39 +307,6 @@ export class NotificationService {
     return statusMapper[notification.data.status as validStatuses];
   }
   private static getNotificationType(notification: INotification): string {
-    const notificationStatus =
-      NotificationService.getNotificationStatus(notification);
-    if (
-      notificationStatus === "completion" ||
-      notificationStatus === "pending"
-    ) {
-      if (notification.redirectTo === "/storyDetails") {
-        return "story";
-      } else if (notification.redirectTo === "/effectDetails") {
-        return "effect";
-      } else if (notification.redirectTo === "/promotions") {
-        return "promotion";
-      } else if (notification.redirectTo === "/generationLib") {
-        return "generation";
-      } else if (notification.redirectTo === "/transactions") {
-        return "transaction";
-      } else {
-        return "system";
-      }
-    } else {
-      if (notification.title.toLowerCase().includes("story")) {
-        return "story";
-      } else if (notification.title.toLowerCase().includes("effect")) {
-        return "effect";
-      } else if (notification.title.toLowerCase().includes("promotion")) {
-        return "promotion";
-      } else if (notification.title.toLowerCase().includes("generation") || notification.title.toLowerCase().includes("generated")) {
-        return "generation";
-      } else if (notification.title.toLowerCase().includes("transaction")) {
-        return "transaction";
-      } else {
-        return "system";
-      }
-    }
+    return notification.data.type;
   }
 }

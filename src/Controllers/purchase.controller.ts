@@ -4,13 +4,11 @@ import { PurchasingService } from "../Services/purchasing.service";
 import { RevenueCatConfig } from "../Interfaces/revenueCat.interface";
 import AppError from "../Utils/Errors/AppError";
 import { CreditService } from "../Services/credits.service";
-import {
-  NotificationData,
-  NotificationService,
-} from "../Services/notification.service";
+import { NotificationService } from "../Services/notification.service";
 import { TranslationService } from "../Services/translation.service";
 import User from "../Models/user.model";
 import mongoose from "mongoose";
+import { INotification, TransactionNotificationData } from "../Interfaces/notification.interface";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -80,11 +78,22 @@ const purchasingController = {
         if (!updatedCredits) {
           throw new AppError("Failed While Updating User Credits", 400);
         }
+        const userCredits = await creditService.getCredits(userId);
+        
         await notificationService.sendTransactionalSocketNotification(userId, {
-          userCredits: await creditService.getCredits(userId),
+          userCredits,
         });
 
-        let notification: NotificationData = {
+        // Create properly typed transaction notification data
+        const notificationData: TransactionNotificationData = {
+          type: "transaction",
+          status: "completed",
+          userId,
+          userCredits,
+          amount: credits,
+        };
+
+        const notification: INotification = {
           title: translationService.translateText(
             "notifications.transaction.completion",
             "title",
@@ -95,17 +104,14 @@ const purchasingController = {
             "message",
             "en",
           ).concat(` ${credits} credits added.`),
-          data: {
-            userCredits: await creditService.getCredits(userId),
-            status: "completed",
-          },
+          data: notificationData,
           category: "transactions",
           redirectTo: "/transactions",
         };
-        console.log("Notification Saved in DB" , notification);
+        console.log("Notification Saved in DB", notification);
         await notificationService.saveNotificationToUser(user, notification);
         
-        const translatedNotification: NotificationData = {
+        const translatedNotification: INotification = {
           ...notification,
           title: translationService.translateText(
             "notifications.transaction.completion",

@@ -1,9 +1,9 @@
 import { NotificationItemDTO } from "../../DTOs/item.dto";
+import { EffectNotificationData, INotification, NotificationData } from "../../Interfaces/notification.interface";
 import Job from "../../Models/job.model";
 import User from "../../Models/user.model";
 import { CreditService } from "../../Services/credits.service";
 import {
-  NotificationData,
   NotificationService,
 } from "../../Services/notification.service";
 import { translationService } from "../../Services/translation.service";
@@ -100,9 +100,17 @@ export class EffectsQueueHandler {
 
       const item = await getItemFromUser(user.id, result.jobId);
       if (item) {
-        const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
+        // const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
+        const effectData:EffectNotificationData = {
+          type: "effect",
+          status: "completed",
+          effectId: item._id!.toString(),
+          jobId: item.jobId.toString(),
+          userId: user.id,
+        }
+
         console.log("Locale", locale);
-        const notificationData: NotificationData = {
+        const notificationData: INotification = {
           title: translationService.translateText(
             "notifications.effect.completion",
             "title",
@@ -113,7 +121,7 @@ export class EffectsQueueHandler {
             "message",
             locale
           ),
-          data: notificationDTO,
+          data: effectData,
           redirectTo: "/effectDetails",
           category: "activities",
         };
@@ -187,14 +195,14 @@ export class EffectsQueueHandler {
         if (job.data?.userId) {
           io.to(`user:${job.data.userId}`).emit("job:failed", payload);
         }
-        const notificationDTO = {
-          storyId: null,
+        const notificationDTO:EffectNotificationData = {
+          type: "effect",
           jobId: String(jobId),
           userId: String(job.data.userId || null),
           status: "failed",
         };
 
-        const notificationData: NotificationData = {
+        const notificationData: INotification = {
           title: translationService.translateText(
             "notifications.effect.failure",
             "title",

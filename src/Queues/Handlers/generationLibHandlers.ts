@@ -3,8 +3,7 @@ import User from "../../Models/user.model";
 import JobModel from "../../Models/job.model";
 import { ImageGenerationService } from "../../Services/imageGeneration.service";
 import {
-  NotificationService,
-  NotificationData,
+  NotificationService
 } from "../../Services/notification.service";
 import { getIO } from "../../Sockets/socket";
 import { updateJobProgress } from "../../Utils/Model/model.utils";
@@ -16,6 +15,7 @@ import { VideoGenerationService } from "../../Services/videoGeneration.service";
 import GenerationInfo from "../../Models/generation.model";
 import { IGenerationImageLibModel } from "../../Interfaces/aiModel.interface";
 import { CreditService } from "../../Services/credits.service";
+import { INotification } from "../../Interfaces/notification.interface";
 
 export interface IGenerationLibJobData {
   userId: string;
@@ -290,7 +290,7 @@ export class GenerationLibQueueHandler {
       );
 
       if (generationItem) {
-        const rawNotificationData: NotificationData = {
+        const rawNotificationData: INotification = {
           title: "Generation Complete",
           message: "Your generation has been completed successfully!",
           data: {
@@ -299,12 +299,13 @@ export class GenerationLibQueueHandler {
             userId: result.userId,
             status: "completed",
             resultURL: result.resultURL,
+            type: "generation",
           },
           redirectTo: "/generationLib",
           category: "activities",
         };
 
-        const translatedNotificationData: NotificationData = {
+        const translatedNotificationData: INotification = {
           title:
             translationService.translateText(
               "notifications.generation.completion",
@@ -408,7 +409,7 @@ export class GenerationLibQueueHandler {
       // Send failure notification using existing notification service
       if (user) {
         // Raw notification data (not translated) to save in user
-        const rawNotificationData: NotificationData = {
+        const rawNotificationData: INotification = {
           title: "Generation Failed",
           message: "Your generation has failed. Please try again.",
           data: {
@@ -416,12 +417,13 @@ export class GenerationLibQueueHandler {
             userId: userId,
             status: "failed",
             error: err.message,
+            type : "generation"
           },
           redirectTo: null,
           category: "activities",
         };
 
-        const translatedNotificationData: NotificationData = {
+        const translatedNotificationData: INotification = {
           title:
             translationService.translateText(
               "notifications.generation.failure",

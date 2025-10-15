@@ -1,7 +1,6 @@
 import { Job } from "bull";
 import { getIO } from "../../Sockets/socket";
 import {
-  NotificationData,
   NotificationService,
 } from "../../Services/notification.service";
 import JobModel from "../../Models/job.model";
