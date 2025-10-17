@@ -12,6 +12,7 @@ import {
   INotification,
   TransactionNotificationData,
 } from "../Interfaces/notification.interface";
+import logger from "../Config/logger";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -136,7 +137,7 @@ const purchasingController = {
             )
             .concat(` ${credits} credits added.`),
         };
-
+        logger.info({"notification : " : notification} , "this is push notification")
         await notificationService.sendPushNotificationToUser(
           userId,
           translatedNotification
