@@ -10,6 +10,11 @@ router.post(
   verifyWebhookSignature,
   purchasingController.validateSpecificPurchase
 );
+router.post(
+  "/refund",
+  verifyWebhookSignature,
+  purchasingController.refundPurchase
+);
 router.get("/subscribers", authMiddle, purchasingController.getSubscribers);
 router.get(
   "/subscribers/:userId",

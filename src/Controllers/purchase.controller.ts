@@ -81,7 +81,7 @@ const purchasingController = {
           mongoose.Types.ObjectId.createFromHexString(userId)
         );
         const locale = event.subscriber_attributes.locale.value as string;
-        if(!user) throw new AppError("no user found" , 404);
+        if (!user) throw new AppError("no user found", 404);
         user.preferredLanguage = locale;
         await user.save();
         const updatedCredits = await creditService.addCredits(userId, credits);
@@ -128,15 +128,13 @@ const purchasingController = {
             "title",
             user.preferredLanguage || "en"
           ),
-          message: translationService
-            .translateText(
-              "notifications.transaction.completion",
-              "message",
-              user.preferredLanguage || "en",
-              { credits }
-            ),
+          message: translationService.translateText(
+            "notifications.transaction.completion",
+            "message",
+            user.preferredLanguage || "en",
+            { credits }
+          ),
         };
-        logger.info({"notification : " : notification} , "this is push notification")
         await notificationService.sendPushNotificationToUser(
           userId,
           translatedNotification
@@ -156,6 +154,15 @@ const purchasingController = {
           },
         });
       }
+    }
+  ),
+  refundPurchase: catchError(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { event } = req.body;
+      console.log("EVENT FROM REFUNDING : ", event);
+      res.status(200).json({
+        message: `Refund event received and processed`,
+      });
     }
   ),
 };
