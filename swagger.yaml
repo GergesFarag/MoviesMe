@@ -417,6 +417,14 @@ paths:
                     type: number
                     description: OTP expiration time in seconds
                     example: 300
+                  OTP:
+                    type: string
+                    description: Testing Dummy OTP
+                    example: 412503
+                  nextRequestInSeconds:
+                    type: number
+                    description: next cooldown will be this value in seconds
+                    example: 300
         "400":
           description: Cooldown period active
           content:
