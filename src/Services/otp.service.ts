@@ -28,11 +28,11 @@ class OTPService {
     }
     const otp = this.generateOTP();
     await otp_reids.set(this.otpKey, otp, "EX", OTP_EXPIRE_SECONDS);
-    await otp_reids.set(this.cooldownKey, "1", "EX", this.coolDownPeriod);
+    await otp_reids.set(this.cooldownKey, "1", "EX", Math.floor(this.coolDownPeriod));
     console.log(
       `✅ OTP for: ${otp} with coolDownPeriod : ${this.coolDownPeriod}`
     );
-    this.coolDownPeriod *= INCREMENT_VALUE;
+    this.coolDownPeriod = Math.floor(this.coolDownPeriod * INCREMENT_VALUE);
     return {
       message: "OTP sent successfully",
       OTP : otp,
