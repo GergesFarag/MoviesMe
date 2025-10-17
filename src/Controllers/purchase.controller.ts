@@ -70,16 +70,19 @@ const purchasingController = {
       if (!event) {
         throw new AppError("Invalid request body", 400);
       }
-      console.log("Event : " , event);
       if (event.type === "VIRTUAL_CURRENCY_TRANSACTION") {
         const userId = event.app_user_id;
-        const user = await User.findById(
-          mongoose.Types.ObjectId.createFromHexString(userId)
-        );
         const credits = event.adjustments[0].amount;
         if (!userId || !credits) {
           throw new AppError("Missing required event data", 400);
         }
+        const user = await User.findById(
+          mongoose.Types.ObjectId.createFromHexString(userId)
+        );
+        const locale = event.subscriber_attributes.locale.value as string;
+        if(!user) throw new AppError("no user found" , 404);
+        user.preferredLanguage = locale;
+        await user.save();
         const updatedCredits = await creditService.addCredits(userId, credits);
         if (!updatedCredits) {
           throw new AppError("Failed While Updating User Credits", 400);
@@ -122,13 +125,13 @@ const purchasingController = {
           title: translationService.translateText(
             "notifications.transaction.completion",
             "title",
-            user?.preferredLanguage || "en"
+            user.preferredLanguage || "en"
           ),
           message: translationService
             .translateText(
               "notifications.transaction.completion",
               "message",
-              user?.preferredLanguage || "en",
+              user.preferredLanguage || "en",
               { credits }
             )
             .concat(` ${credits} credits added.`),
