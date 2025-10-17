@@ -70,6 +70,7 @@ const purchasingController = {
       if (!event) {
         throw new AppError("Invalid request body", 400);
       }
+      console.log("Event : " , event);
       if (event.type === "VIRTUAL_CURRENCY_TRANSACTION") {
         const userId = event.app_user_id;
         const user = await User.findById(
@@ -89,7 +90,6 @@ const purchasingController = {
           userCredits,
         });
 
-        // Create properly typed transaction notification data
         const notificationData: TransactionNotificationData = {
           type: "transaction",
           status: "completed",
@@ -138,8 +138,6 @@ const purchasingController = {
           userId,
           translatedNotification
         );
-        console.log("Push notification data : ", translatedNotification);
-
         res.status(200).json({
           message: `Purchase validated successfully , ${credits} credits added`,
           data: {
