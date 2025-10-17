@@ -134,8 +134,7 @@ const purchasingController = {
               "message",
               user.preferredLanguage || "en",
               { credits }
-            )
-            .concat(` ${credits} credits added.`),
+            ),
         };
         logger.info({"notification : " : notification} , "this is push notification")
         await notificationService.sendPushNotificationToUser(
