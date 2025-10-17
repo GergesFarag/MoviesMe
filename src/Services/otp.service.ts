@@ -12,9 +12,9 @@ class OTPService {
   private otpKey: string;
   private coolDownPeriod: number;
   private static instance: OTPService;
-  private constructor(userId: string) {
-    this.cooldownKey = `otp_cooldown:${userId}`;
-    this.otpKey = `otp_value:${userId}`;
+  private constructor(phoneNumber: string) {
+    this.cooldownKey = `otp_cooldown:${phoneNumber}`;
+    this.otpKey = `otp_value:${phoneNumber}`;
     this.coolDownPeriod = COOL_DOWN_PERIOD;
   }
 
@@ -42,10 +42,10 @@ class OTPService {
   }
 
   async verifyOTP(
-    userId: string,
+    phoneNumber: string,
     otp: string
   ): Promise<OTPVerificationResponse> {
-    const otp_key = `otp_value:${userId}`;
+    const otp_key = `otp_value:${phoneNumber}`;
     const storedOtp = await otp_reids.get(otp_key);
     if (!storedOtp) {
       throw new AppError("OTP expired or not found");
@@ -57,9 +57,9 @@ class OTPService {
     return { message: "OTP Verified Successfully!", isVerified: true };
   }
 
-  public static getInstance(userId: string): OTPService {
+  public static getInstance(phoneNumber: string): OTPService {
     if (!OTPService.instance) {
-      OTPService.instance = new OTPService(userId);
+      OTPService.instance = new OTPService(phoneNumber);
     }
     return OTPService.instance;
   }
