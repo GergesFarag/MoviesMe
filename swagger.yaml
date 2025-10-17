@@ -394,6 +394,116 @@ paths:
                   error:
                     type: object
 
+  /auth/requestOtp:
+    post:
+      tags:
+        - Authentication
+      summary: Request OTP
+      description: Request a One-Time Password for user verification. Requires authentication.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP sent successfully"
+                  expiresIn:
+                    type: number
+                    description: OTP expiration time in seconds
+                    example: 300
+        "400":
+          description: Cooldown period active
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Please wait X seconds before requesting a new OTP."
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+
+  /auth/verifyOtp:
+    post:
+      tags:
+        - Authentication
+      summary: Verify OTP
+      description: Verify the One-Time Password sent to the user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                otp:
+                  type: string
+                  description: The OTP code to verify
+                  example: "123456"
+              required:
+                - otp
+      responses:
+        "200":
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP Verified Successfully!"
+                  isVerified:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "OTP expired or not found"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+
   # User routes
   /user:
     get:
@@ -1102,6 +1212,113 @@ paths:
                   error:
                     type: object
 
+  /api/v1/user/generation/fav:
+    post:
+      tags:
+        - User
+      summary: Toggle generation favorite
+      description: Add or remove a generation from user's favorites
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                generationId:
+                  type: string
+                  description: ID of the generation to toggle favorite status
+              required:
+                - generationId
+      responses:
+        "200":
+          description: Generation favorite status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
+  /api/v1/user/changeLanguage:
+    post:
+      tags:
+        - User
+      summary: Change user language preference
+      description: Update the user's preferred language
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                language:
+                  type: string
+                  description: Language code (e.g., 'en', 'ar')
+                  example: "en"
+              required:
+                - language
+      responses:
+        "200":
+          description: Language preference updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "400":
+          description: Invalid language code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  error:
+                    type: object
+
   /api/v1/user/notifications:
     get:
       tags:
@@ -1389,6 +1606,60 @@ paths:
                   error:
                     type: object
 
+  /story/retry/{jobId}:
+    post:
+      tags:
+        - Stories
+      summary: Retry a failed story job
+      description: Retry a failed story generation job by job ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+          description: ID of the job to retry
+      responses:
+        "200":
+          description: Story job retry initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+
   /story/generationData:
     get:
       tags:
@@ -1613,6 +1884,34 @@ paths:
                     type: array
                     items:
                       type: object
+
+  /models/categories:
+    get:
+      tags:
+        - AI Models
+      summary: Get model categories
+      description: Retrieve all AI model categories
+      responses:
+        "200":
+          description: Model categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
 
   /models:
     post:
@@ -1914,6 +2213,60 @@ paths:
               schema:
                 type: object
                 properties:
+                  message:
+                    type: string
+
+  /models/retry/{jobId}:
+    post:
+      tags:
+        - AI Models
+      summary: Retry a failed model job
+      description: Retry a failed AI model processing job by job ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+          description: ID of the job to retry
+      responses:
+        "200":
+          description: Model job retry initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
                   message:
                     type: string
 
@@ -3039,27 +3392,19 @@ paths:
                   error:
                     type: object
 
-  /api/v1/purchasing/validate/{userId}/{transactionId}:
-    get:
+  /api/v1/purchasing/validate:
+    post:
       tags:
         - Purchasing
-      summary: Validate specific purchase
-      description: Validate a specific purchase transaction for a user
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: userId
-          required: true
-          schema:
-            type: string
-          description: The user ID
-        - in: path
-          name: transactionId
-          required: true
-          schema:
-            type: string
-          description: The transaction ID to validate
+      summary: Validate specific purchase (Webhook)
+      description: Webhook endpoint to validate a specific purchase transaction. Requires RevenueCat webhook signature verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: RevenueCat webhook event payload
       responses:
         "200":
           description: Purchase validated successfully
@@ -3068,37 +3413,13 @@ paths:
               schema:
                 type: object
                 properties:
+                  success:
+                    type: boolean
                   message:
                     type: string
                     example: "Purchase validated successfully"
-                  data:
-                    type: object
-                    properties:
-                      purchase:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                          transactionId:
-                            type: string
-                          userId:
-                            type: string
-                          productId:
-                            type: string
-                          purchaseDate:
-                            type: string
-                            format: date-time
-                          amount:
-                            type: number
-                          currency:
-                            type: string
-                          status:
-                            type: string
-                      isValid:
-                        type: boolean
-                        example: true
         "400":
-          description: User ID and transaction ID are required
+          description: Invalid webhook data
           content:
             application/json:
               schema:
@@ -3109,26 +3430,8 @@ paths:
                     example: false
                   message:
                     type: string
-                    example: "User ID and transaction ID are required"
-                  error:
-                    type: object
-        "404":
-          description: Purchase not found or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: "Purchase not found or invalid"
-                  error:
-                    type: object
         "401":
-          description: Unauthorized
+          description: Invalid webhook signature
           content:
             application/json:
               schema:
@@ -3139,8 +3442,6 @@ paths:
                     example: false
                   message:
                     type: string
-                  error:
-                    type: object
         "500":
           description: Failed to validate purchase
           content:
@@ -3153,9 +3454,69 @@ paths:
                     example: false
                   message:
                     type: string
-                    example: "Failed to validate purchase"
-                  error:
-                    type: object
+
+  /api/v1/purchasing/refund:
+    post:
+      tags:
+        - Purchasing
+      summary: Process purchase refund (Webhook)
+      description: Webhook endpoint to process a purchase refund. Requires RevenueCat webhook signature verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: RevenueCat webhook refund event payload
+      responses:
+        "200":
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: "Refund processed successfully"
+        "400":
+          description: Invalid webhook data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+        "401":
+          description: Invalid webhook signature
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+        "500":
+          description: Failed to process refund
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
 
 tags:
   - name: General
