@@ -12,6 +12,7 @@ import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers"
 import { Sorting } from "../Utils/Sorting/sorting";
 import { IGenerationInfo } from "../Interfaces/generationInfo.interface";
 import GenerationInfo from "../Models/generation.model";
+import { IGenerationLib } from "../Interfaces/generationLib.interface";
 
 export class GenerationLibService {
   async createGeneration(
@@ -37,7 +38,7 @@ export class GenerationLibService {
         user.generationLib = [];
       }
 
-      const newGenerationItem = {
+      const newGenerationItem: IGenerationLib = {
         _id: new Types.ObjectId(),
         jobId,
         URL: null,
@@ -47,6 +48,7 @@ export class GenerationLibService {
         data:requestData,
         createdAt: new Date(),
         updatedAt: new Date(),
+        credits: requestData.credits || 0,
         isVideo: requestData.isVideo || false,
         isFav: false,
       };
@@ -61,7 +63,7 @@ export class GenerationLibService {
         isVideo: requestData.isVideo,
         duration: requestData.duration || 0,
         modelId: requestData.modelId,
-        credits : requestData.credits || 0,
+        credits: requestData.credits || 0,
         jobId,
       };
       await generationLibQueue.add(jobData, {

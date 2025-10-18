@@ -12,6 +12,7 @@ export interface IGenerationLib {
   isFav: boolean;
   duration: number;
   data:IGenerationLibRequestDTO;
+  credits:number;
   modelId?:string;
   createdAt?: Date;
   updatedAt?: Date;

@@ -49,6 +49,16 @@ export class StoryQueueHandlers {
   async onFailed(job: Job, err: Error | AppError) {
     console.log(`❌ Story job with ID ${job?.id} has failed.`);
     console.log("Error:", err);
+    
+    // Check if this job was already handled by server restart cleanup
+    const isServerRestartCleanup = job.data?._serverRestartCleanup === true;
+    
+    if (isServerRestartCleanup) {
+      console.log(`ℹ️ Story job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`);
+      await storyQueue.removeJobs(job.data.jobId);
+      return; // Exit early - everything already handled
+    }
+    
     await storyQueue.removeJobs(job.data.jobId);
     const refund = await this.creditService.addCredits(
       job.data.userId,

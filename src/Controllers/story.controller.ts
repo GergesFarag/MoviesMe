@@ -314,6 +314,34 @@ const storyController = {
       if (!story) {
         throw new AppError("Story associated with this job not found", 404);
       }
+      
+      // Check if job already exists in queue and remove it if found
+      const existingStoryJob = await storyQueue.getJob(jobId);
+      if (existingStoryJob) {
+        console.log(`📋 Found existing story job ${jobId} in queue. Checking state...`);
+        
+        // Check if job is in a terminal state
+        const isCompleted = await existingStoryJob.isCompleted();
+        const isFailed = await existingStoryJob.isFailed();
+        
+        if (!isCompleted && !isFailed) {
+          // Job is still active/waiting - shouldn't happen but handle it
+          throw new AppError(
+            `Job ${jobId} is currently being processed. Please wait for it to complete.`,
+            409
+          );
+        }
+        
+        // Remove the old failed/completed job to make way for retry
+        try {
+          await existingStoryJob.remove();
+          console.log(`✅ Removed old story job ${jobId} from queue to allow retry`);
+        } catch (removeError) {
+          console.warn(`⚠️ Could not remove old job ${jobId}:`, removeError);
+          // Continue anyway - Bull might allow overwriting
+        }
+      }
+      
       const storyRequest: IStoryRequest = {
         prompt: story.prompt,
         storyDuration: story.duration,

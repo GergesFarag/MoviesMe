@@ -17,6 +17,7 @@ const generationLibSchema = new Schema<IGenerationLib>({
     },
     required: true,
   },
+  credits: { type: Number, required: true },
   isFav: { type: Boolean, default: false },
   duration: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },

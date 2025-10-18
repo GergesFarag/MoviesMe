@@ -5,26 +5,24 @@ import http from "http";
 import "./Queues/model.queue";
 import "./Queues/generationLib.queue";
 import "./Queues/story.queue";
-import { serverStartupCleanup } from "./Utils/Queue/serverStartupCleanup";
+import { QueueMonitor } from "./Utils/Monitoring/queue.motitor";
 
 const PORT = process.env.PORT_NUMBER || 3000;
-
 (async () => {
   await connectDB();
-  
-  await serverStartupCleanup.cleanupActiveJobs();
-  
+
   // Create HTTP server
   const server = http.createServer(app);
-  
+
   // Initialize socket.io
   initSocket(server);
-  
+
   // Start listening
-  server.listen(PORT, () => {
+  server.listen(PORT, async () => {
     console.log(`Server is running on: http://localhost:${PORT}/`);
+    const queueMonitor = new QueueMonitor();
   });
-  
+
   process.on("unhandledRejection", (error) => {
     console.error("Unhandled Rejection:", error);
     server.close(() => {

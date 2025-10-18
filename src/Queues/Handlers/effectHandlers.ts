@@ -1,3 +1,4 @@
+import logger from "../../Config/logger";
 import { NotificationItemDTO } from "../../DTOs/item.dto";
 import { EffectNotificationData, INotification, NotificationData } from "../../Interfaces/notification.interface";
 import Job from "../../Models/job.model";
@@ -149,9 +150,21 @@ export class EffectsQueueHandler {
   async onFailed(job: any, err: Error) {
     try {
       console.error(`Job ${job.id} failed with error: ${err.message}`);
+      logger.info({jobData : job.data});
+      
+      // Check if this job was already handled by server restart cleanup
+      const isServerRestartCleanup = job.data?._serverRestartCleanup === true;
+      
+      if (isServerRestartCleanup) {
+        console.log(`ℹ️ Effect job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`);
+        // Still try to remove the job from queue
+        await this.jobRemoval(job);
+        return; // Exit early - everything already handled
+      }
+      
       const refund = await this.creditService.addCredits(
         job.data.userId,
-        Number(job.data.model.credits)
+        Number(job.data.modelData.credits)
       );
       if (!refund) {
         console.error(
@@ -160,7 +173,7 @@ export class EffectsQueueHandler {
       } else {
         const transactionNotificationData = {
             userCredits: await this.creditService.getCredits(job.data.userId),
-            refundedCredits: +job.data.credits,
+            refundedCredits: Number(job.data.modelData.credits),
 
         };
         await this.notificationService.sendTransactionalSocketNotification(

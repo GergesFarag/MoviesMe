@@ -360,6 +360,15 @@ export class GenerationLibQueueHandler {
 
       console.error(`❌ GenerationLib job ${jobId} failed:`, err.message);
 
+      // Check if this job was already handled by server restart cleanup
+      const isServerRestartCleanup = (job.data as any)?._serverRestartCleanup === true;
+      
+      if (isServerRestartCleanup) {
+        console.log(`ℹ️ GenerationLib job ${jobId} already handled by server restart cleanup. Skipping refund and DB update.`);
+        await this.jobRemoval(job);
+        return; // Exit early - everything already handled
+      }
+
       await JobModel.findOneAndUpdate(
         { jobId: jobId },
         { status: "failed", error: err.message }
