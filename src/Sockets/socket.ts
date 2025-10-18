@@ -12,9 +12,10 @@ export function initSocket(server: http.Server) {
     },
     // Try polling first, then upgrade to websocket for more stability
     transports: ["polling", "websocket"],
-    pingInterval: 60000,   // 60 seconds
-    pingTimeout: 120000,   // 2 minutes
-    connectTimeout: 180000, // 3 minutes
+    pingInterval: 90000,    // 90 seconds (1.5 minutes) - when to check if idle
+    pingTimeout: 90000,     // 90 seconds (1.5 minutes) - how long to wait for pong
+    // Total idle timeout = pingInterval + pingTimeout = 180 seconds (3 minutes)
+    connectTimeout: 45000,  // 45 seconds for initial connection
     upgradeTimeout: 30000,  // 30 seconds for transport upgrade
     maxHttpBufferSize: 1e8, // 100MB for large data transfers
     // Add additional stability options
@@ -151,21 +152,9 @@ export function initSocket(server: http.Server) {
       });
     });
 
-    const connectionCheck = setInterval(() => {
-      if (socket.connected) {
-        socket.emit("connection:alive", {
-          timestamp: Date.now(),
-          connectedTime: Date.now() - new Date(socket.handshake.time).getTime()
-        });
-      } else {
-        clearInterval(connectionCheck);
-      }
-    }, 30000); // Every 30 seconds
-    
-    // Clear interval on disconnect
-    socket.on("disconnect", () => {
-      clearInterval(connectionCheck);
-    });
+    // Note: No periodic keep-alive messages
+    // Connection will timeout after 3 minutes of true inactivity
+    // (90s idle + 90s waiting for pong = 180s total)
   });
   
   io.engine.on("connection_error", (err) => {

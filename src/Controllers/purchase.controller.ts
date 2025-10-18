@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import catchError from "../Utils/Errors/catchError";
-import {PaymentService } from "../Services/payment.service";
+import { PaymentService } from "../Services/payment.service";
 import { RevenueCatConfig } from "../Interfaces/revenueCat.interface";
 import AppError from "../Utils/Errors/AppError";
 import { CreditService } from "../Services/credits.service";
@@ -13,6 +13,7 @@ import {
   TransactionNotificationData,
 } from "../Interfaces/notification.interface";
 import logger from "../Config/logger";
+import { CREDITS_AD_AWARD } from "../Constants/credits";
 
 const revenueCatConfig: RevenueCatConfig = {
   apiKey: process.env.REVENUECAT_API_KEY as string,
@@ -52,9 +53,7 @@ const paymentController = {
         throw new AppError("User not authenticated", 401);
       }
       try {
-        const subscriptions = await paymentService.getUserSubscriptions(
-          userId
-        );
+        const subscriptions = await paymentService.getUserSubscriptions(userId);
         res.status(200).json({
           message: "User subscriptions retrieved successfully",
           data: subscriptions,
@@ -167,17 +166,61 @@ const paymentController = {
   ),
   rewardCredits: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
-      const userId = req.user?.id
+      const userId = req.user?.id;
       const updatedCredits = await creditService.addCredits(userId, 1);
       if (!updatedCredits) {
         throw new AppError("Failed While Updating User Credits", 400);
       }
       const userCredits = await creditService.getCredits(userId);
-      await notificationService.sendTransactionalSocketNotification(userId, {
+      const notificationData: TransactionNotificationData = {
+        type: "transaction",
+        status: "completed",
+        userId,
         userCredits,
-      });   
+        amount: CREDITS_AD_AWARD,
+      };
+
+      const notification: INotification = {
+        title: translationService.translateText(
+          "notifications.transaction.completion",
+          "title",
+          "en"
+        ),
+        message: `${translationService.translateText(
+          "notifications.transaction.completion",
+          "message",
+          "en",
+          { CREDITS_AD_AWARD }
+        )}`,
+        data: notificationData,
+        category: "transactions",
+        redirectTo: "/transactions",
+      };
+      console.log("Notification Saved in DB", notification);
+      const user = await User.findById(userId);
+      if (!user) throw new AppError("no user found", 404);
+      await notificationService.saveNotificationToUser(user, notification);
+
+      const translatedNotification: INotification = {
+        ...notification,
+        title: translationService.translateText(
+          "notifications.transaction.completion",
+          "title",
+          user.preferredLanguage || "en"
+        ),
+        message: translationService.translateText(
+          "notifications.transaction.completion",
+          "message",
+          user.preferredLanguage || "en",
+          { CREDITS_AD_AWARD }
+        ),
+      };
+      await notificationService.sendPushNotificationToUser(
+        userId,
+        translatedNotification
+      );
       res.status(200).json({
-        message: `Successfully rewarded 1 credit`,
+        message: `Successfully rewarded ${CREDITS_AD_AWARD} credit`,
         data: {
           totalUserCredits: userCredits,
         },
