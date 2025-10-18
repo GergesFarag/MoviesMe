@@ -1,21 +1,17 @@
 import otp_reids from "../Config/otp-reids";
-import {
-  COOL_DOWN_PERIOD,
-  INCREMENT_VALUE,
-  OTP_EXPIRE_SECONDS,
-} from "../Constants/otp-redis";
+import { COOL_DOWN_PERIOD, OTP_EXPIRE_SECONDS } from "../Constants/otp-redis";
 import { OTPResponse, OTPVerificationResponse } from "../types/otp-response";
 import AppError from "../Utils/Errors/AppError";
 
 class OTPService {
   private cooldownKey: string;
   private otpKey: string;
-  private coolDownPeriod: number;
-  private static instance: OTPService;
-  private constructor(phoneNumber: string) {
+  private incrementKey: string;
+
+  constructor(private phoneNumber: string) {
     this.cooldownKey = `otp_cooldown:${phoneNumber}`;
     this.otpKey = `otp_value:${phoneNumber}`;
-    this.coolDownPeriod = COOL_DOWN_PERIOD;
+    this.incrementKey = `otp_increment:${phoneNumber}`;
   }
 
   async sendOTP(): Promise<OTPResponse> {
@@ -26,47 +22,50 @@ class OTPService {
         `Please wait ${ttl} seconds before requesting a new OTP.`
       );
     }
+
+    const incrementStr = await otp_reids.get(this.incrementKey);
+    const increment = incrementStr ? parseInt(incrementStr) : 0;
+
+    const coolDownPeriod = Math.floor(
+      COOL_DOWN_PERIOD * Math.pow(2, increment)
+    );
     const otp = this.generateOTP();
     await otp_reids.set(this.otpKey, otp, "EX", OTP_EXPIRE_SECONDS);
-    await otp_reids.set(this.cooldownKey, "1", "EX", Math.floor(this.coolDownPeriod));
+    await otp_reids.set(this.cooldownKey, "1", "EX", coolDownPeriod);
+    
+    await otp_reids.set(this.incrementKey, (increment + 1).toString(), "EX", 86400);
+
     console.log(
-      `✅ OTP for: ${otp} with coolDownPeriod : ${this.coolDownPeriod}`
+      `✅ OTP for ${this.phoneNumber}: ${otp} with coolDownPeriod: ${coolDownPeriod}s (increment: ${increment})`
     );
-    this.coolDownPeriod = Math.floor(this.coolDownPeriod * INCREMENT_VALUE);
+
     return {
       message: "OTP sent successfully",
-      OTP : otp,
+      OTP: otp,
       expiresIn: OTP_EXPIRE_SECONDS,
-      nextRequestInSeconds: this.coolDownPeriod,
+      nextRequestInSeconds: coolDownPeriod,
     };
   }
 
-  async verifyOTP(
-    phoneNumber: string,
-    otp: string
-  ): Promise<OTPVerificationResponse> {
-    const otp_key = `otp_value:${phoneNumber}`;
-    const storedOtp = await otp_reids.get(otp_key);
+  async verifyOTP(otp: string): Promise<OTPVerificationResponse> {
+    const storedOtp = await otp_reids.get(this.otpKey);
     if (!storedOtp) {
       throw new AppError("OTP expired or not found");
     }
     if (storedOtp !== otp) {
       throw new AppError("Invalid OTP");
     }
-    await otp_reids.del(otp_key);
+
+    await otp_reids.del(this.otpKey);
+    await otp_reids.del(this.cooldownKey);
+    await otp_reids.del(this.incrementKey); // Reset increment counter
+
     return { message: "OTP Verified Successfully!", isVerified: true };
   }
 
-  public static getInstance(phoneNumber: string): OTPService {
-    if (!OTPService.instance) {
-      OTPService.instance = new OTPService(phoneNumber);
-    }
-    return OTPService.instance;
-  }
-
   private generateOTP(): string {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    return otp;
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }
+
 export default OTPService;

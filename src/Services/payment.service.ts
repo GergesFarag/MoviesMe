@@ -6,7 +6,7 @@ import {
   NonSubscriptionPurchase,
 } from "../Interfaces/revenueCat.interface";
 
-export class PurchasingService {
+export class PaymentService {
   private client: AxiosInstance;
   constructor(config: RevenueCatConfig) {
     this.client = axios.create({

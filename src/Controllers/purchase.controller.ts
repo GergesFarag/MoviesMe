@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import catchError from "../Utils/Errors/catchError";
-import { PurchasingService } from "../Services/purchasing.service";
+import {PaymentService } from "../Services/payment.service";
 import { RevenueCatConfig } from "../Interfaces/revenueCat.interface";
 import AppError from "../Utils/Errors/AppError";
 import { CreditService } from "../Services/credits.service";
@@ -19,12 +19,12 @@ const revenueCatConfig: RevenueCatConfig = {
   baseUrl: process.env.REVENUECAT_BASE_URL || "https://api.revenuecat.com/v1",
 };
 
-const purchasingService = new PurchasingService(revenueCatConfig);
+const paymentService = new PaymentService(revenueCatConfig);
 const creditService = new CreditService();
 const translationService = TranslationService.getInstance();
 const notificationService = new NotificationService();
 
-const purchasingController = {
+const paymentController = {
   getSubscribers: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const userId = req.user?.id;
@@ -34,7 +34,7 @@ const purchasingController = {
       }
 
       try {
-        const subscribers = await purchasingService.getAllSubscribers();
+        const subscribers = await paymentService.getAllSubscribers();
 
         res.status(200).json({
           message: "Users retrieved successfully",
@@ -52,7 +52,7 @@ const purchasingController = {
         throw new AppError("User not authenticated", 401);
       }
       try {
-        const subscriptions = await purchasingService.getUserSubscriptions(
+        const subscriptions = await paymentService.getUserSubscriptions(
           userId
         );
         res.status(200).json({
@@ -166,4 +166,4 @@ const purchasingController = {
     }
   ),
 };
-export default purchasingController;
+export default paymentController;

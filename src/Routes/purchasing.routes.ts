@@ -1,25 +1,25 @@
 import { Router } from "express";
 import { authMiddle } from "../Middlewares/auth.middleware";
-import purchasingController from "../Controllers/purchase.controller";
+import paymentController from "../Controllers/purchase.controller";
 import verifyWebhookSignature from "../Middlewares/revenueCat.middleware";
 
 const router = Router();
 
 router.post(
-  "/validate",
+  "/validatePurchasing",
   verifyWebhookSignature,
-  purchasingController.validateSpecificPurchase
+  paymentController.validateSpecificPurchase
 );
 router.post(
   "/refund",
   verifyWebhookSignature,
-  purchasingController.refundPurchase
+  paymentController.refundPurchase
 );
-router.get("/subscribers", authMiddle, purchasingController.getSubscribers);
+router.get("/subscribers", authMiddle, paymentController.getSubscribers);
 router.get(
   "/subscribers/:userId",
   authMiddle,
-  purchasingController.getUserSubscriptions
+  paymentController.getUserSubscriptions
 );
 
 export default router;
