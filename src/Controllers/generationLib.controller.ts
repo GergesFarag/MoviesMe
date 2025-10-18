@@ -72,7 +72,7 @@ const generationLibController = {
       }else{
         const deductCredits = await creditService.deductCredits(
           userId,
-          requestData.credits
+          Number(requestData.credits)
         );
         if (!deductCredits) {
           console.error(

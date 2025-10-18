@@ -269,7 +269,7 @@ const modelsController = {
         HTTP_STATUS_CODE.PAYMENT_REQUIRED
       );
     } else {
-      const deductCredits = await creditService.deductCredits(req.user?.id, model.credits);
+      const deductCredits = await creditService.deductCredits(req.user?.id, Number(model.credits));
       if (!deductCredits) {
         console.error(`❌ Failed to deduct credits for user ${req.user?.id}`);
         return;

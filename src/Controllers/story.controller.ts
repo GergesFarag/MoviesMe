@@ -90,7 +90,7 @@ const storyController = {
       } else {
         const deductCredits = await creditService.deductCredits(
           userId,
-          credits
+          Number(credits)
         );
         if (!deductCredits) {
           console.error(`❌ Failed to deduct credits for user ${userId}`);
