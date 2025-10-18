@@ -151,7 +151,7 @@ export class EffectsQueueHandler {
       console.error(`Job ${job.id} failed with error: ${err.message}`);
       const refund = await this.creditService.addCredits(
         job.data.userId,
-        job.data.model.credits
+        Number(job.data.model.credits)
       );
       if (!refund) {
         console.error(
@@ -160,7 +160,7 @@ export class EffectsQueueHandler {
       } else {
         const transactionNotificationData = {
             userCredits: await this.creditService.getCredits(job.data.userId),
-            refundedCredits: job.data.credits,
+            refundedCredits: +job.data.credits,
 
         };
         await this.notificationService.sendTransactionalSocketNotification(

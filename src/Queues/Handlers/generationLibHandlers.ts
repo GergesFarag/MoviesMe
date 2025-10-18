@@ -368,7 +368,7 @@ export class GenerationLibQueueHandler {
       const user = await User.findById(userId);
       const refund = await this.creditService.addCredits(
         String(userId),
-        credits as number
+        Number(credits)
       );
       if (!refund) {
         console.error("Failed to refund credits for userId:", userId);
