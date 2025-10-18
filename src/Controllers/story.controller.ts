@@ -69,7 +69,10 @@ const storyController = {
         storyDuration / 5,
         hasVoiceOver
       );
-      const verifyCorrectCredits = creditService.isValidCredits(credits,calculatedCredits);
+      const verifyCorrectCredits = creditService.isValidCredits(
+        credits,
+        calculatedCredits
+      );
       console.log(verifyCorrectCredits);
       if (!verifyCorrectCredits) {
         console.log("GONE IN ERROR");
@@ -330,6 +333,35 @@ const storyController = {
         audio: story.voiceOver?.sound || undefined,
         credits: story.credits,
       };
+      const creditService = new CreditService();
+      const notificationService = new NotificationService();
+      const hasSufficientCredits = await creditService.hasSufficientCredits(
+        req.user!.id,
+        +story.credits
+      );
+      if (!hasSufficientCredits) {
+        throw new AppError(
+          "Insufficient credits to create story",
+          HTTP_STATUS_CODE.PAYMENT_REQUIRED
+        );
+      } else {
+        const deductCredits = await creditService.deductCredits(
+          userId,
+          Number(story.credits)
+        );
+        if (!deductCredits) {
+          console.error(`❌ Failed to deduct credits for user ${userId}`);
+          return;
+        }
+        const transactionNotificationData = {
+          userCredits: await creditService.getCredits(userId),
+          consumedCredits: story.credits,
+        };
+        await notificationService.sendTransactionalSocketNotification(
+          userId,
+          transactionNotificationData
+        );
+      }
       const processingStory = new StoryProcessingDTO(storyRequest).toDTO(
         story.style || null,
         story.location || null

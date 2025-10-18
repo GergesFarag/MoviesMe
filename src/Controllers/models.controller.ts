@@ -269,7 +269,10 @@ const modelsController = {
         HTTP_STATUS_CODE.PAYMENT_REQUIRED
       );
     } else {
-      const deductCredits = await creditService.deductCredits(req.user?.id, Number(model.credits));
+      const deductCredits = await creditService.deductCredits(
+        req.user?.id,
+        Number(model.credits)
+      );
       if (!deductCredits) {
         console.error(`❌ Failed to deduct credits for user ${req.user?.id}`);
         return;
@@ -373,6 +376,35 @@ const modelsController = {
       effectItem.data.images && effectItem.data.images.length > 1
         ? "images"
         : "image";
+    const creditService = new CreditService();
+    const notificationService = new NotificationService();
+    const hasSufficientCredits = await creditService.hasSufficientCredits(
+      req.user!.id,
+      +model.credits
+    );
+    if (!hasSufficientCredits) {
+      throw new AppError(
+        "Insufficient credits to create story",
+        HTTP_STATUS_CODE.PAYMENT_REQUIRED
+      );
+    } else {
+      const deductCredits = await creditService.deductCredits(
+        userId,
+        Number(model.credits)
+      );
+      if (!deductCredits) {
+        console.error(`❌ Failed to deduct credits for user ${userId}`);
+        return;
+      }
+      const transactionNotificationData = {
+        userCredits: await creditService.getCredits(userId),
+        consumedCredits: model.credits,
+      };
+      await notificationService.sendTransactionalSocketNotification(
+        userId,
+        transactionNotificationData
+      );
+    }
     try {
       const queueJobData = createQueueJobData(
         model,

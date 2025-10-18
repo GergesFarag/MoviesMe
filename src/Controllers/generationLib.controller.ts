@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { GenerationLibService } from "../Services/generationLib.service";
 import { IGenerationLibRequestDTO } from "../DTOs/generationLib.dto";
-import AppError from "../Utils/Errors/AppError";
+import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
 import { generationLibQueue } from "../Queues/generationLib.queue";
@@ -30,8 +30,9 @@ const generationLibController = {
       } else {
         req.body.isVideo = true;
       }
-      if(!req.body.prompt){
-        req.body.prompt = "";      }
+      if (!req.body.prompt) {
+        req.body.prompt = "";
+      }
       const requestData: IGenerationLibRequestDTO = req.body;
 
       const generationInfo = await GenerationInfo.findOne();
@@ -69,15 +70,13 @@ const generationLibController = {
       );
       if (!hasSufficientCredits) {
         throw new AppError("Insufficient credits for this generation", 402);
-      }else{
+      } else {
         const deductCredits = await creditService.deductCredits(
           userId,
           Number(requestData.credits)
         );
         if (!deductCredits) {
-          console.error(
-            `❌ Failed to deduct credits for user ${userId}`
-          );
+          console.error(`❌ Failed to deduct credits for user ${userId}`);
           return;
         }
         const transactionNotificationData = {
@@ -232,10 +231,39 @@ const generationLibController = {
       isVideo: generationLibItem.isVideo,
       modelId: generationLibItem.data.modelId,
       duration: generationLibItem.duration,
-      credits: generationLibItem.data.credits
+      credits: generationLibItem.data.credits,
     };
-    if(generationLibItem.data.prompt){
+    if (generationLibItem.data.prompt) {
       genLibQueueJobData.prompt = generationLibItem.data.prompt;
+    }
+    const creditService = new CreditService();
+    const notificationService = new NotificationService();
+    const hasSufficientCredits = await creditService.hasSufficientCredits(
+      req.user!.id,
+      Number(generationLibItem.data.credits)
+    );
+    if (!hasSufficientCredits) {
+      throw new AppError(
+        "Insufficient credits to create story",
+        HTTP_STATUS_CODE.PAYMENT_REQUIRED
+      );
+    } else {
+      const deductCredits = await creditService.deductCredits(
+        userId,
+        Number(generationLibItem.data.credits)
+      );
+      if (!deductCredits) {
+        console.error(`❌ Failed to deduct credits for user ${userId}`);
+        return;
+      }
+      const transactionNotificationData = {
+        userCredits: await creditService.getCredits(userId),
+        consumedCredits: generationLibItem.data.credits,
+      };
+      await notificationService.sendTransactionalSocketNotification(
+        userId,
+        transactionNotificationData
+      );
     }
 
     try {
