@@ -165,5 +165,24 @@ const paymentController = {
       });
     }
   ),
+  rewardCredits: catchError(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const userId = req.user?.id
+      const updatedCredits = await creditService.addCredits(userId, 1);
+      if (!updatedCredits) {
+        throw new AppError("Failed While Updating User Credits", 400);
+      }
+      const userCredits = await creditService.getCredits(userId);
+      await notificationService.sendTransactionalSocketNotification(userId, {
+        userCredits,
+      });   
+      res.status(200).json({
+        message: `Successfully rewarded 1 credit`,
+        data: {
+          totalUserCredits: userCredits,
+        },
+      });
+    }
+  ),
 };
 export default paymentController;

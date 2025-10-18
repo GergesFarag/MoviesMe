@@ -15,6 +15,7 @@ router.post(
   verifyWebhookSignature,
   paymentController.refundPurchase
 );
+router.post("/rewardCredits", authMiddle, paymentController.rewardCredits);
 router.get("/subscribers", authMiddle, paymentController.getSubscribers);
 router.get(
   "/subscribers/:userId",

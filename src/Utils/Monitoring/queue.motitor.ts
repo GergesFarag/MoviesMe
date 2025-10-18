@@ -7,6 +7,7 @@ import { NotificationService } from "../../Services/notification.service";
 import Job from "../../Models/job.model";
 import Story from "../../Models/story.model";
 import User from "../../Models/user.model";
+import { Job as BullJob } from "bull";
 
 export class QueueMonitor {
   private effectQueue;
@@ -108,7 +109,7 @@ export class QueueMonitor {
     }
   }
 
-  private async handleStoryJobFailure(job: any): Promise<void> {
+  private async handleStoryJobFailure(job: BullJob): Promise<void> {
     try {
       const { userId, credits, jobId } = job.data;
       
@@ -165,7 +166,7 @@ export class QueueMonitor {
     }
   }
 
-  private async handleEffectJobFailure(job: any): Promise<void> {
+  private async handleEffectJobFailure(job: BullJob): Promise<void> {
     try {
       const { userId, modelData, jobId } = job.data;
       const jobIdToUse = jobId || job.opts?.jobId || job.id;
@@ -225,7 +226,7 @@ export class QueueMonitor {
     }
   }
 
-  private async handleGenerationJobFailure(job: any): Promise<void> {
+  private async handleGenerationJobFailure(job: BullJob): Promise<void> {
     try {
       const { userId, credits, jobId } = job.data;
       
@@ -285,7 +286,7 @@ export class QueueMonitor {
     }
   }
 
-  private async safeJobRemoval(job: any, jobType: string): Promise<void> {
+  private async safeJobRemoval(job: BullJob, jobType: string): Promise<void> {
     try {
       const isActive = await job.isActive();
       
