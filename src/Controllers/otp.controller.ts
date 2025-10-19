@@ -1,12 +1,13 @@
+import { OTPChannel } from "../Enums/opt.enum";
 import OTPService from "../Services/otp.service";
 import AppError from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 
 export const requestOtp = catchError(async (req, res) => {
-  const {phoneNumber} = req.body
-  if(!phoneNumber) throw new AppError('Phone number is required!')
+  const {phoneNumber , channel = OTPChannel.SMS} = req.body
+  if(!phoneNumber ) throw new AppError('Phone number is required!')
   const otpService = new OTPService(phoneNumber);
-  const response = await otpService.sendOTP();
+  const response = await otpService.sendOTP(channel);
   res.status(200).json(response);
 });
 

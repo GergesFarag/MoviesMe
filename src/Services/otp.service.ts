@@ -1,20 +1,21 @@
 import otp_reids from "../Config/otp-reids";
-import { COOL_DOWN_PERIOD, OTP_EXPIRE_SECONDS } from "../Constants/otp-redis";
-import { OTPResponse, OTPVerificationResponse } from "../types/otp-response";
+import twilioVerification from "../Config/twilio";
+import { COOL_DOWN_PERIOD, TWILIO_OTP_EXPIRATION } from "../Constants/otp-redis";
+import { OTPChannel } from "../Enums/opt.enum";
+import { OTPResponse, OTPVerificationResponse } from "../types/otp";
 import AppError from "../Utils/Errors/AppError";
+import logger from "../Config/logger";
 
 class OTPService {
   private cooldownKey: string;
-  private otpKey: string;
   private incrementKey: string;
 
   constructor(private phoneNumber: string) {
     this.cooldownKey = `otp_cooldown:${phoneNumber}`;
-    this.otpKey = `otp_value:${phoneNumber}`;
     this.incrementKey = `otp_increment:${phoneNumber}`;
   }
 
-  async sendOTP(): Promise<OTPResponse> {
+  async sendOTP(channel: OTPChannel): Promise<OTPResponse> {
     const lastRequest = await otp_reids.get(this.cooldownKey);
     if (lastRequest) {
       const ttl = await otp_reids.ttl(this.cooldownKey);
@@ -26,45 +27,54 @@ class OTPService {
     const incrementStr = await otp_reids.get(this.incrementKey);
     const increment = incrementStr ? parseInt(incrementStr) : 0;
 
+    const verification = await twilioVerification.verifications.create({
+      to: this.phoneNumber,
+      channel: channel,
+    });
+    
+    if (!verification) throw new AppError("Error While Verification!");
+    
+    logger.info({ 
+      message: "Verification sent",
+      sid: verification.sid, 
+      to: verification.to,
+      channel: verification.channel,
+      status: verification.status 
+    });
+
     const coolDownPeriod = Math.floor(
       COOL_DOWN_PERIOD * Math.pow(2, increment)
     );
-    const otp = this.generateOTP();
-    await otp_reids.set(this.otpKey, otp, "EX", OTP_EXPIRE_SECONDS);
-    await otp_reids.set(this.cooldownKey, "1", "EX", coolDownPeriod);
+    await otp_reids.set(this.incrementKey, (increment + 1).toString(), "EX", 3600);
     
-    await otp_reids.set(this.incrementKey, (increment + 1).toString(), "EX", 86400);
-
-    console.log(
-      `✅ OTP for ${this.phoneNumber}: ${otp} with coolDownPeriod: ${coolDownPeriod}s (increment: ${increment})`
-    );
+    await otp_reids.set(this.cooldownKey, "1", "EX", coolDownPeriod);
 
     return {
       message: "OTP sent successfully",
-      OTP: otp,
-      expiresIn: OTP_EXPIRE_SECONDS,
+      expiresIn: TWILIO_OTP_EXPIRATION,
       nextRequestInSeconds: coolDownPeriod,
     };
   }
 
   async verifyOTP(otp: string): Promise<OTPVerificationResponse> {
-    const storedOtp = await otp_reids.get(this.otpKey);
-    if (!storedOtp) {
-      throw new AppError("OTP expired or not found");
+    const verificationCheck =
+      await twilioVerification.verificationChecks.create({
+        to: this.phoneNumber,
+        code: otp,
+      });
+    
+    logger.info({ 
+      message: "Verification check result",
+      verificationCheck 
+    });
+    
+    if (verificationCheck.status !== "approved") {
+      throw new AppError("Invalid or expired OTP");
     }
-    if (storedOtp !== otp) {
-      throw new AppError("Invalid OTP");
-    }
-
-    await otp_reids.del(this.otpKey);
     await otp_reids.del(this.cooldownKey);
-    await otp_reids.del(this.incrementKey); // Reset increment counter
+    await otp_reids.del(this.incrementKey);
 
     return { message: "OTP Verified Successfully!", isVerified: true };
-  }
-
-  private generateOTP(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }
 
