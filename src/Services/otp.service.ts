@@ -77,6 +77,7 @@ class OTPService {
     await otp_reids.del(this.cooldownKey);
     await otp_reids.del(this.incrementKey);
     const customToken = await firebaseAdmin.auth().createCustomToken(this.phoneNumber);
+    console.log("Custom Token" , customToken);
     return { message: "OTP Verified Successfully!", isVerified: true, token: customToken };
   }
 }
