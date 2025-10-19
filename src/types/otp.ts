@@ -7,4 +7,5 @@ export type OTPResponse = {
 export type OTPVerificationResponse = {
   message: string;
   isVerified: true;
+  token: string;
 };

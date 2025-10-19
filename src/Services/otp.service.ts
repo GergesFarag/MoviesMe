@@ -5,6 +5,7 @@ import { OTPChannel } from "../Enums/opt.enum";
 import { OTPResponse, OTPVerificationResponse } from "../types/otp";
 import AppError from "../Utils/Errors/AppError";
 import logger from "../Config/logger";
+import { firebaseAdmin } from "../Config/firebase";
 
 class OTPService {
   private cooldownKey: string;
@@ -19,9 +20,11 @@ class OTPService {
     const lastRequest = await otp_reids.get(this.cooldownKey);
     if (lastRequest) {
       const ttl = await otp_reids.ttl(this.cooldownKey);
-      throw new AppError(
-        `Please wait ${ttl} seconds before requesting a new OTP.`
-      );
+      return {
+        message: "Please wait before requesting a new OTP",
+        expiresIn: TWILIO_OTP_EXPIRATION,
+        nextRequestInSeconds: ttl,
+      };
     }
 
     const incrementStr = await otp_reids.get(this.incrementKey);
@@ -62,7 +65,7 @@ class OTPService {
         to: this.phoneNumber,
         code: otp,
       });
-    
+
     logger.info({ 
       message: "Verification check result",
       verificationCheck 
@@ -73,8 +76,8 @@ class OTPService {
     }
     await otp_reids.del(this.cooldownKey);
     await otp_reids.del(this.incrementKey);
-
-    return { message: "OTP Verified Successfully!", isVerified: true };
+    const customToken = await firebaseAdmin.auth().createCustomToken(this.phoneNumber);
+    return { message: "OTP Verified Successfully!", isVerified: true, token: customToken };
   }
 }
 
