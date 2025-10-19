@@ -190,7 +190,7 @@ const paymentController = {
           "notifications.transaction.completion",
           "message",
           "en",
-          { CREDITS_AD_AWARD }
+          { credits: CREDITS_AD_AWARD }
         )}`,
         data: notificationData,
         category: "transactions",
@@ -212,7 +212,7 @@ const paymentController = {
           "notifications.transaction.completion",
           "message",
           user.preferredLanguage || "en",
-          { CREDITS_AD_AWARD }
+          { credits: CREDITS_AD_AWARD }
         ),
       };
       await notificationService.sendPushNotificationToUser(

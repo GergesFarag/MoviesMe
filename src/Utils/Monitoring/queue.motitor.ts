@@ -291,23 +291,19 @@ export class QueueMonitor {
       const isActive = await job.isActive();
       
       if (isActive) {
-        // For active jobs: Mark them with a flag to prevent double refund, then fail them
-        // This is critical because retry logic checks if job exists in queue
         try {
           // Add a flag to job data to indicate this was already handled
           const updatedData = {
             ...job.data,
-            _serverRestartCleanup: true, // Flag to prevent double refund in onFailed handler
+            _serverRestartCleanup: true,
             _cleanupTimestamp: Date.now(),
           };
           
-          // Update job data first
           await job.update(updatedData);
           logger.info(
             `✅ Marked ${jobType} job ${job.id} with cleanup flag.`
           );
           
-          // Now move to failed - the onFailed handler will see the flag and skip refund
           await job.moveToFailed(
             { message: "Server restarted - job interrupted" },
             true // ignoreLock - allows failing active jobs
@@ -315,11 +311,6 @@ export class QueueMonitor {
           logger.info(
             `✅ Moved active ${jobType} job ${job.id} to failed state.`
           );
-          
-          // Try to remove from failed set to clear the way for retry
-          // Wait a moment for the state transition
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
           try {
             await job.remove();
             logger.info(
@@ -336,7 +327,6 @@ export class QueueMonitor {
           );
         }
       } else {
-        // Non-active jobs can be safely removed
         const jobExists =
           (await job.isWaiting()) ||
           (await job.isDelayed()) ||

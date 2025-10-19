@@ -10,7 +10,6 @@ export function initSocket(server: http.Server) {
       allowedHeaders: ["*"],
       credentials: true
     },
-    // Try polling first, then upgrade to websocket for more stability
     transports: ["polling", "websocket"],
     pingInterval: 90000,    // 90 seconds (1.5 minutes) - when to check if idle
     pingTimeout: 90000,     // 90 seconds (1.5 minutes) - how long to wait for pong
@@ -18,7 +17,6 @@ export function initSocket(server: http.Server) {
     connectTimeout: 45000,  // 45 seconds for initial connection
     upgradeTimeout: 30000,  // 30 seconds for transport upgrade
     maxHttpBufferSize: 1e8, // 100MB for large data transfers
-    // Add additional stability options
     allowUpgrades: true,
     httpCompression: true,
     perMessageDeflate: {

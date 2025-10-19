@@ -288,7 +288,6 @@ const storyController = {
       throw new AppError("User authentication required", 401);
     }
 
-    // Find the job in the database
     const job = await Job.findOne({ jobId: jobId });
 
     console.log("USER ID : ", userId, "JOB USER ID", job?.userId);
@@ -296,12 +295,10 @@ const storyController = {
       throw new AppError("Job not found", 404);
     }
 
-    // Verify that the job belongs to the authenticated user
     if (job.userId.toString() !== String(userId)) {
       throw new AppError("Unauthorized to retry this job", 403);
     }
 
-    // Check if job is actually failed
     if (job.status !== "failed") {
       throw new AppError(
         `Job is currently ${job.status}. Only failed jobs can be retried`,
@@ -314,18 +311,14 @@ const storyController = {
       if (!story) {
         throw new AppError("Story associated with this job not found", 404);
       }
-      
-      // Check if job already exists in queue and remove it if found
+
       const existingStoryJob = await storyQueue.getJob(jobId);
       if (existingStoryJob) {
-        console.log(`📋 Found existing story job ${jobId} in queue. Checking state...`);
-        
-        // Check if job is in a terminal state
+        console.log(`📋 Found existing story job ${jobId} in queue. Checking state...`);      
         const isCompleted = await existingStoryJob.isCompleted();
         const isFailed = await existingStoryJob.isFailed();
         
         if (!isCompleted && !isFailed) {
-          // Job is still active/waiting - shouldn't happen but handle it
           throw new AppError(
             `Job ${jobId} is currently being processed. Please wait for it to complete.`,
             409

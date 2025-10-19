@@ -372,10 +372,6 @@ const modelsController = {
     const model = (await Model.findById(
       effectItem.data.modelId
     ).lean()) as IAiModel;
-    const key =
-      effectItem.data.images && effectItem.data.images.length > 1
-        ? "images"
-        : "image";
     const creditService = new CreditService();
     const notificationService = new NotificationService();
     const hasSufficientCredits = await creditService.hasSufficientCredits(
@@ -406,6 +402,10 @@ const modelsController = {
       );
     }
     try {
+      const key =
+        effectItem.data.images && effectItem.data.images.length > 1
+          ? "images"
+          : "image";
       const queueJobData = createQueueJobData(
         model,
         user._id.toString(),
