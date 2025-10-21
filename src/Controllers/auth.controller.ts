@@ -10,11 +10,15 @@ import {
 } from "../Utils/Auth/tokenHelpers";
 import { loginResponse } from "../Interfaces/response.interface";
 import { translationService } from "../Services/translation.service";
+import { removeSpace } from "../Utils/Format/phoneNumber";
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
-    const { uid, email, phone_number } = req.user!;
+    let { uid, email, phone_number } = req.user!;
     let existingUser = await User.findOne({ firebaseUid: uid });
     if (!existingUser) {
+      if (!phone_number && !email) {
+        phone_number = removeSpace(uid || "");
+      }
       existingUser = await User.create({
         username: email?.split("@")[0] || phone_number || null,
         email: email || null,

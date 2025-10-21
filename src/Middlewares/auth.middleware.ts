@@ -3,6 +3,7 @@ import { firebaseAdmin } from "../Config/firebase";
 import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
 import catchError from "../Utils/Errors/catchError";
 import { verifyAccessToken } from "../Utils/Auth/tokenHelpers";
+import logger from "../Config/logger";
 
 export const firebaseAuth = catchError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -24,6 +25,7 @@ export const firebaseAuth = catchError(
 
     try {
       const decoded = await firebaseAdmin.auth().verifyIdToken(token);
+      logger.info({decoded});
       if (!decoded) {
         return next(
           new AppError(
@@ -108,7 +110,6 @@ export const optionalAuth = catchError(
     next();
   }
 );
-
 export const isAdmin = catchError(
   async (req: Request, res: Response, next: NextFunction) => {
     //@ts-ignore

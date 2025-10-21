@@ -54,14 +54,15 @@ app.get(`/`, (req, res) => {
   
 //*HERE IS CUSTOM SCRIPTS TO RUN ON DB
 app.post(`${basePath}/dbScript`, async (req, res) => {
-  const user = await User.findById(new mongoose.Types.ObjectId("68ee80e8d911b17b29200955")).lean();
-  console.log("USER" , user);
-  const userNotifications = user?.notifications;
-  if(!userNotifications || userNotifications.length === 0) {
-    return res.status(200).json({ message: "No notifications found for user" });
+  const users = await User.find();
+  for (const user of users) {
+    user.storiesLib = [];
+    user.effectsLib = [];
+    user.notifications = [];
+    user.jobs = [];
+    await user.save();  
   }
-  let { status , type } = NotificationService.getNotificationStatusAndType(userNotifications[0]);
-  return res.status(200).json({ message: "Script executed successfully", status, type });
+  res.status(200).json({ message: "DB Script executed" });  
 });
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);

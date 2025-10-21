@@ -1,13 +1,16 @@
 import otp_reids from "../Config/otp-reids";
 import twilioVerification from "../Config/twilio";
-import { COOL_DOWN_PERIOD, TWILIO_OTP_EXPIRATION } from "../Constants/otp-redis";
+import {
+  COOL_DOWN_PERIOD,
+  TWILIO_OTP_EXPIRATION,
+} from "../Constants/otp-redis";
 import { OTPChannel } from "../Enums/opt.enum";
 import { OTPResponse, OTPVerificationResponse } from "../types/otp";
 import AppError from "../Utils/Errors/AppError";
 import logger from "../Config/logger";
 import { firebaseAdmin } from "../Config/firebase";
 
-class OTPService {
+export class OTPService {
   private cooldownKey: string;
   private incrementKey: string;
 
@@ -34,22 +37,27 @@ class OTPService {
       to: this.phoneNumber,
       channel: channel,
     });
-    
+
     if (!verification) throw new AppError("Error While Verification!");
-    
-    logger.info({ 
+
+    logger.info({
       message: "Verification sent",
-      sid: verification.sid, 
+      sid: verification.sid,
       to: verification.to,
       channel: verification.channel,
-      status: verification.status 
+      status: verification.status,
     });
 
     const coolDownPeriod = Math.floor(
       COOL_DOWN_PERIOD * Math.pow(2, increment)
     );
-    await otp_reids.set(this.incrementKey, (increment + 1).toString(), "EX", 3600);
-    
+    await otp_reids.set(
+      this.incrementKey,
+      (increment + 1).toString(),
+      "EX",
+      3600
+    );
+
     await otp_reids.set(this.cooldownKey, "1", "EX", coolDownPeriod);
 
     return {
@@ -66,20 +74,24 @@ class OTPService {
         code: otp,
       });
 
-    logger.info({ 
+    logger.info({
       message: "Verification check result",
-      verificationCheck 
+      verificationCheck,
     });
-    
+
     if (verificationCheck.status !== "approved") {
       throw new AppError("Invalid or expired OTP");
     }
     await otp_reids.del(this.cooldownKey);
     await otp_reids.del(this.incrementKey);
-    const customToken = await firebaseAdmin.auth().createCustomToken(this.phoneNumber);
-    console.log("Custom Token" , customToken);
-    return { message: "OTP Verified Successfully!", isVerified: true, token: customToken };
+    const customToken = await firebaseAdmin
+      .auth()
+      .createCustomToken(this.phoneNumber);
+    console.log("Custom Token", customToken);
+    return {
+      message: "OTP Verified Successfully!",
+      isVerified: true,
+      token: customToken,
+    };
   }
 }
-
-export default OTPService;

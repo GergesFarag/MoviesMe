@@ -4,16 +4,11 @@ import IAiModel from "../Interfaces/aiModel.interface";
 import { JobStatus, ModelFilterType } from "../Constants/modelConstants";
 import { IEffectItemRequest } from "../Interfaces/effectItem.interface";
 
-/**
- * User interface with properly typed MongoDB _id
- */
 export interface UserWithId extends IUser {
   _id: Types.ObjectId;
 }
 
-/**
- * Configuration for querying models with pagination and filters
- */
+
 export interface ModelQueryConfig {
   filterType: ModelFilterType;
   limit?: number;
@@ -23,18 +18,12 @@ export interface ModelQueryConfig {
   locale: string;
 }
 
-/**
- * Result from image upload operations
- */
 export interface ImageUploadResult {
   url: string;
   secure_url: string;
   public_id?: string;
 }
 
-/**
- * Options for processing model jobs
- */
 export interface ProcessJobOptions {
   isMultiImage: boolean;
   persistJob: boolean;
@@ -42,16 +31,11 @@ export interface ProcessJobOptions {
   removeOnFail?: boolean;
 }
 
-/**
- * Payload for model processing - can be extended based on specific model needs
- */
 export interface ModelProcessPayload {
   [key: string]: any;
 }
 
-/**
- * Common data required for processing any model job
- */
+
 export interface BaseProcessModelData {
   user: UserWithId;
   model: IAiModel;
@@ -60,28 +44,16 @@ export interface BaseProcessModelData {
   jobId: string;
 }
 
-/**
- * Data for processing single image model jobs
- */
 export interface ProcessSingleImageJobData extends BaseProcessModelData {
   image: Express.Multer.File;
 }
 
-/**
- * Data for processing multi-image model jobs
- */
 export interface ProcessMultiImageJobData extends BaseProcessModelData {
   images: Express.Multer.File[];
 }
 
-/**
- * Union type for all model processing data
- */
 export type ProcessModelJobData = ProcessSingleImageJobData | ProcessMultiImageJobData;
 
-/**
- * Result from job processing operations
- */
 export interface JobResult {
   success: boolean;
   jobId?: string;
@@ -116,9 +88,6 @@ export interface ModelFetchResult {
   };
 }
 
-/**
- * Item data for effect library
- */
 export interface EffectItemData {
   URL: string;
   modelType: string;
