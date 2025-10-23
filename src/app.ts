@@ -51,18 +51,10 @@ app.get(`/`, (req, res) => {
   console.log("Health check OK");
   res.status(200).json({ message: "API is running" });
 });
-  
+
 //*HERE IS CUSTOM SCRIPTS TO RUN ON DB
 app.post(`${basePath}/dbScript`, async (req, res) => {
-  const users = await User.find();
-  for (const user of users) {
-    user.storiesLib = [];
-    user.effectsLib = [];
-    user.notifications = [];
-    user.jobs = [];
-    await user.save();  
-  }
-  res.status(200).json({ message: "DB Script executed" });  
+
 });
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);

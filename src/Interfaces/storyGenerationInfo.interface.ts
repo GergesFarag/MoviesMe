@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 export interface ILanguage {
   _id:Types.ObjectId;
@@ -10,6 +10,7 @@ export interface IGenderOption {
   name:string;
 }
 export interface IStoryGenerationInfo {
+  _id:mongoose.Schema.Types.ObjectId;
   location: {
     name: string;
     image: string;

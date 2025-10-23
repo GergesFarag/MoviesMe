@@ -1,37 +1,44 @@
-import Model from "../Models/ai.model";
-import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
-import catchError from "../Utils/Errors/catchError";
-import User from "../Models/user.model";
-import Job from "../Models/job.model";
-import { getCachedModel, getCachedUser } from "../Utils/Cache/caching";
+import Model from '../Models/ai.model';
+import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import catchError from '../Utils/Errors/catchError';
+import User from '../Models/user.model';
+import Job from '../Models/job.model';
+import { getCachedModel, getCachedUser } from '../Utils/Cache/caching';
 import {
   createQueueJobData,
   processModelJobAsync,
   processMultiImageJobAsync,
-} from "../Services/applyModel.service";
+} from '../Services/applyModel.service';
 import {
   getModelsByType,
   getTrendingModels,
-} from "../Services/modelFetch.service";
-import { TModelFetchQuery } from "../types";
-import IAiModel from "../Interfaces/aiModel.interface";
-import { translationService } from "../Services/translation.service";
+} from '../Services/modelFetch.service';
+import { TModelFetchQuery } from '../types';
+import IAiModel from '../Interfaces/aiModel.interface';
+import { translationService } from '../Services/translation.service';
 import {
   MODEL_FILTER_TYPE,
   QUERY_TYPE_TO_FILTER,
-} from "../Constants/modelConstants";
-import { UserWithId } from "../types/modelProcessing.types";
-import { taskQueue } from "../Queues/model.queue";
-import { Types } from "mongoose";
-import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
-import { CreditService } from "../Services/credits.service";
-import { NotificationService } from "../Services/notification.service";
+} from '../Constants/modelConstants';
+import { UserWithId } from '../types/modelProcessing.types';
+import { taskQueue } from '../Queues/model.queue';
+import { Types } from 'mongoose';
+import { QUEUE_NAMES } from '../Queues/Constants/queueConstants';
+import { CreditService } from '../Services/credits.service';
+import { NotificationService } from '../Services/notification.service';
+import { ModelRepository } from '../Repositories/ModelRepository';
+import { UserRepository } from '../Repositories/UserRepository';
+import { JobRepository } from '../Repositories/JobRepository';
+
+const modelRepository = ModelRepository.getInstance();
+const userRepository = UserRepository.getInstance();
+const jobRepository = JobRepository.getInstance();
 
 const modelsController = {
   getVideoModels: catchError(async (req, res) => {
     const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
 
     const result = await getModelsByType({
       filterType: MODEL_FILTER_TYPE.VIDEO,
@@ -43,7 +50,7 @@ const modelsController = {
     });
 
     res.status(200).json({
-      message: "Models retrieved successfully",
+      message: 'Models retrieved successfully',
       data: result,
     });
   }),
@@ -51,7 +58,7 @@ const modelsController = {
   getImageModels: catchError(async (req, res) => {
     const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
 
     const result = await getModelsByType({
       filterType: MODEL_FILTER_TYPE.IMAGE,
@@ -63,7 +70,7 @@ const modelsController = {
     });
 
     res.status(200).json({
-      message: "Models retrieved successfully",
+      message: 'Models retrieved successfully',
       data: result,
     });
   }),
@@ -77,7 +84,7 @@ const modelsController = {
       category,
     }: TModelFetchQuery & { types?: string } = req.query;
 
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
 
     const result = await getTrendingModels({
       filterType: MODEL_FILTER_TYPE.TRENDING,
@@ -90,7 +97,7 @@ const modelsController = {
     });
 
     res.status(200).json({
-      message: "Models retrieved successfully",
+      message: 'Models retrieved successfully',
       data: result,
     });
   }),
@@ -98,7 +105,7 @@ const modelsController = {
   getCharacterEffects: catchError(async (req, res) => {
     const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
 
     const result = await getModelsByType({
       filterType: MODEL_FILTER_TYPE.CHARACTER,
@@ -110,7 +117,7 @@ const modelsController = {
     });
 
     res.status(200).json({
-      message: "Models retrieved successfully",
+      message: 'Models retrieved successfully',
       data: result,
     });
   }),
@@ -118,7 +125,7 @@ const modelsController = {
   getAITools: catchError(async (req, res) => {
     const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
 
     const result = await getModelsByType({
       filterType: MODEL_FILTER_TYPE.AI_TOOL,
@@ -130,7 +137,7 @@ const modelsController = {
     });
 
     res.status(200).json({
-      message: "Models retrieved successfully",
+      message: 'Models retrieved successfully',
       data: result,
     });
   }),
@@ -138,7 +145,7 @@ const modelsController = {
   getAI3DTools: catchError(async (req, res) => {
     const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
 
     const result = await getModelsByType({
       filterType: MODEL_FILTER_TYPE.AI_3D_TOOL,
@@ -150,7 +157,7 @@ const modelsController = {
     });
 
     res.status(200).json({
-      message: "Models retrieved successfully",
+      message: 'Models retrieved successfully',
       data: result,
     });
   }),
@@ -158,7 +165,7 @@ const modelsController = {
   getMarketingTools: catchError(async (req, res) => {
     const { limit, page, sortBy, category }: TModelFetchQuery = req.query;
 
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
 
     const result = await getModelsByType({
       filterType: MODEL_FILTER_TYPE.MARKETING_TOOL,
@@ -170,7 +177,7 @@ const modelsController = {
     });
 
     res.status(200).json({
-      message: "Models retrieved successfully",
+      message: 'Models retrieved successfully',
       data: result,
     });
   }),
@@ -185,57 +192,56 @@ const modelsController = {
     }
 
     if (isTrending !== undefined) {
-      query[MODEL_FILTER_TYPE.TRENDING] = isTrending === "true";
+      query[MODEL_FILTER_TYPE.TRENDING] = isTrending === 'true';
     }
 
-    console.log("Query:", query);
-    const categories = (await Model.distinct("category").where(
+    console.log('Query:', query);
+    const categories = (await Model.distinct('category').where(
       query
     )) as string[];
-    const locale = req.headers["accept-language"] || "en";
+    const locale = req.headers['accept-language'] || 'en';
     const translatedCategories = translationService.translateCategories(
       categories,
       locale
     );
     res.status(200).json({
-      message: "Categories retrieved successfully",
+      message: 'Categories retrieved successfully',
       data: translatedCategories,
     });
   }),
 
   addModel: catchError(async (req, res) => {
-    const newModel = new Model(req.body);
-    await newModel.save();
+    const newModel = await modelRepository.create(req.body);
     res
       .status(201)
-      .json({ message: "Model added successfully", data: newModel });
+      .json({ message: 'Model added successfully', data: newModel });
   }),
 
   deleteModel: catchError(async (req, res) => {
     const { id } = req.params;
     if (!id) {
-      throw new AppError("Model ID is required", 400);
+      throw new AppError('Model ID is required', 400);
     }
-    const deletedModel = await Model.findByIdAndDelete(id);
+    const deletedModel = await modelRepository.delete(id);
     if (!deletedModel) {
-      throw new AppError("Model not found", 404);
+      throw new AppError('Model not found', 404);
     }
     res
       .status(200)
-      .json({ message: "Model deleted successfully", data: deletedModel });
+      .json({ message: 'Model deleted successfully', data: deletedModel });
   }),
 
   updateModel: catchError(async (req, res) => {
     const { id } = req.params;
-    const existingModel = await Model.findById(id);
+    const existingModel = await modelRepository.findById(id);
     if (!existingModel) {
-      throw new AppError("Model not found", 404);
+      throw new AppError('Model not found', 404);
     }
-    const model = { ...existingModel.toObject(), ...req.body };
-    await Model.findByIdAndUpdate(id, model);
+    const model = { ...existingModel, ...req.body };
+    const updatedModel = await modelRepository.updateModel(id, model);
     res
       .status(200)
-      .json({ message: "Model updated successfully", data: model });
+      .json({ message: 'Model updated successfully', data: updatedModel });
   }),
 
   applyModel: catchError(async (req, res) => {
@@ -243,7 +249,7 @@ const modelsController = {
     const files = req.files as Express.Multer.File[];
 
     if (!modelId || !files || files.length === 0) {
-      throw new AppError("Model ID and at least one image are required", 400);
+      throw new AppError('Model ID and at least one image are required', 400);
     }
 
     const [user, model] = await Promise.all([
@@ -252,20 +258,20 @@ const modelsController = {
     ]);
 
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError('User not found', 404);
     }
     if (!model) {
-      throw new AppError("Model data not found", 404);
+      throw new AppError('Model data not found', 404);
     }
-    const creditService = new CreditService();
-    const notificationService = new NotificationService();
+    const creditService = CreditService.getInstance();
+    const notificationService = NotificationService.getInstance();
     const hasSufficientCredits = await creditService.hasSufficientCredits(
       req.user!.id,
       model.credits
     );
     if (!hasSufficientCredits) {
       throw new AppError(
-        "Insufficient credits to apply this model",
+        'Insufficient credits to apply this model',
         HTTP_STATUS_CODE.PAYMENT_REQUIRED
       );
     } else {
@@ -289,9 +295,9 @@ const modelsController = {
     const jobId = new Types.ObjectId().toString();
 
     res.status(202).json({
-      message: "Model processing request accepted",
+      message: 'Model processing request accepted',
       jobId,
-      status: "accepted",
+      status: 'accepted',
     });
 
     try {
@@ -341,27 +347,27 @@ const modelsController = {
     const userId = req.user?.id;
 
     if (!jobId) {
-      throw new AppError("Job ID is required", 400);
+      throw new AppError('Job ID is required', 400);
     }
 
     if (!userId) {
-      throw new AppError("User authentication required", 401);
+      throw new AppError('User authentication required', 401);
     }
 
-    const user = await User.findById(userId).lean();
+    const user = await userRepository.findById(userId, 'effectsLib FCMToken');
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError('User not found', 404);
     }
     const effectItem = user.effectsLib?.find((item) => item.jobId === jobId);
     if (!effectItem) {
-      throw new AppError("Effect item not found for the given Job ID", 404);
+      throw new AppError('Effect item not found for the given Job ID', 404);
     }
     const existingModelJob = await taskQueue.getJob(effectItem.jobId);
 
     if (
       existingModelJob &&
-      !["completed", "failed"].includes(
-        existingModelJob.finishedOn ? "completed" : "failed"
+      !['completed', 'failed'].includes(
+        existingModelJob.finishedOn ? 'completed' : 'failed'
       )
     ) {
       throw new AppError(
@@ -369,18 +375,18 @@ const modelsController = {
         409
       );
     }
-    const model = (await Model.findById(
+    const model = (await modelRepository.findById(
       effectItem.data.modelId
-    ).lean()) as IAiModel;
-    const creditService = new CreditService();
-    const notificationService = new NotificationService();
+    )) as IAiModel;
+    const creditService = CreditService.getInstance();
+    const notificationService = NotificationService.getInstance();
     const hasSufficientCredits = await creditService.hasSufficientCredits(
       req.user!.id,
       +model.credits
     );
     if (!hasSufficientCredits) {
       throw new AppError(
-        "Insufficient credits to create story",
+        'Insufficient credits to create story',
         HTTP_STATUS_CODE.PAYMENT_REQUIRED
       );
     } else {
@@ -404,8 +410,8 @@ const modelsController = {
     try {
       const key =
         effectItem.data.images && effectItem.data.images.length > 1
-          ? "images"
-          : "image";
+          ? 'images'
+          : 'image';
       const queueJobData = createQueueJobData(
         model,
         user._id.toString(),
@@ -424,22 +430,19 @@ const modelsController = {
         removeOnFail: true,
       });
 
-      await Job.findByIdAndUpdate(effectItem.jobId, {
-        status: "pending",
-        updatedAt: new Date(),
-      });
+      await jobRepository.updateJobStatus(String(effectItem.jobId), 'pending');
 
       res.status(200).json({
-        message: "Effect job successfully added back to queue",
+        message: 'Effect job successfully added back to queue',
         data: {
           jobId: job.id,
-          status: "pending",
-          queueType: "model",
+          status: 'pending',
+          queueType: 'model',
         },
       });
     } catch (queueError) {
-      console.error("Error adding model job to queue:", queueError);
-      throw new AppError("Failed to add model job to processing queue", 500);
+      console.error('Error adding model job to queue:', queueError);
+      throw new AppError('Failed to add model job to processing queue', 500);
     }
   }),
 };

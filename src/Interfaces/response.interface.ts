@@ -1,4 +1,3 @@
-import { IUser } from "./user.interface";
 
 export interface loginResponse {
   message: string;
@@ -7,7 +6,7 @@ export interface loginResponse {
       id: string;
       username: string;
       isAdmin: boolean;
-      credits?: number;
+      credits: number;
     };
     accessToken: string;
     refreshToken: string;
@@ -26,6 +25,7 @@ export type UserProfileNonSelectableFields =
   "-generationLib"|
   "-jobs"|
   "-notifications"
+  
 export interface userProfileResponse {
   message: string;
   data: Record<any, any>;

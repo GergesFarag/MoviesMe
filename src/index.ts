@@ -6,6 +6,8 @@ import "./Queues/model.queue";
 import "./Queues/generationLib.queue";
 import "./Queues/story.queue";
 import { QueueMonitor } from "./Utils/Monitoring/queue.motitor";
+import { Validator } from "./Services/validation.service";
+import runEnvValidation from "./Config/env.validator";
 
 const PORT = process.env.PORT_NUMBER || 3000;
 (async () => {
@@ -14,6 +16,8 @@ const PORT = process.env.PORT_NUMBER || 3000;
   // Create HTTP server
   const server = http.createServer(app);
 
+  runEnvValidation();
+  
   // Initialize socket.io
   initSocket(server);
 

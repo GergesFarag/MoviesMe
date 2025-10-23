@@ -25,7 +25,6 @@ export const firebaseAuth = catchError(
 
     try {
       const decoded = await firebaseAdmin.auth().verifyIdToken(token);
-      logger.info({decoded});
       if (!decoded) {
         return next(
           new AppError(
@@ -88,7 +87,6 @@ export const authMiddle = catchError(
     if (!decoded) {
       next(new AppError("Invalid authentication access token", 401));
     }
-    //@ts-ignore
     req.user = decoded;
     next();
   }

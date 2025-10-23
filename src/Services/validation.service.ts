@@ -101,7 +101,7 @@ export class Validator implements IValidator {
       }
     },
   };
-  
+
   TextValidator = {
     sanitizeImageDescription(description: string): string {
       const sensitiveTerms = {
@@ -230,6 +230,17 @@ export class Validator implements IValidator {
     validateRequestBody(...args:any[]){
       const data = args.join(" , ");
       throw new AppError(`Request Body keys ${data} are required`, 400);
+    }
+  }
+
+  static EnvValidator = {
+    validateEnvVariable(envVariables: string[]): void {
+      envVariables.forEach((variableName) => {
+        if (!process.env[variableName]) {
+          throw new AppError(`Environment variable ${variableName} is not set`, 500);
+        }
+      });
+      console.log("Env Validator run successfully!");
     }
   }
 }

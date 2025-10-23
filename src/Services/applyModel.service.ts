@@ -1,13 +1,13 @@
-import { UploadApiResponse } from "cloudinary";
-import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
-import { taskQueue } from "../Queues/model.queue";
+import { UploadApiResponse } from 'cloudinary';
+import { cloudUpload, generateHashFromBuffer } from '../Utils/APIs/cloudinary';
+import { taskQueue } from '../Queues/model.queue';
 import {
   filterModelType,
   modelTypeMapper,
-} from "../Utils/Format/filterModelType";
-import { createJobAndUpdateUser } from "../Utils/Database/optimizedOps";
-import AppError from "../Utils/Errors/AppError";
-import IAiModel from "../Interfaces/aiModel.interface";
+} from '../Utils/Format/filterModelType';
+import { RepositoryOrchestrationService } from '../Services/repositoryOrchestration.service';
+import AppError from '../Utils/Errors/AppError';
+import IAiModel from '../Interfaces/aiModel.interface';
 import {
   UserWithId,
   ProcessSingleImageJobData,
@@ -18,12 +18,12 @@ import {
   QueueJobOptions,
   ProcessJobOptions,
   EffectItemData,
-} from "../types/modelProcessing.types";
+} from '../types/modelProcessing.types';
 import {
   UPLOAD_PATHS,
   JOB_STATUS,
   MODEL_TYPE,
-} from "../Constants/modelConstants";
+} from '../Constants/modelConstants';
 
 const uploadImages = async (
   images: Express.Multer.File[],
@@ -33,7 +33,7 @@ const uploadImages = async (
 
   for (const image of images) {
     if (!image || !image.buffer) {
-      throw new AppError("Invalid image file", 400);
+      throw new AppError('Invalid image file', 400);
     }
 
     const imageHash = generateHashFromBuffer(image.buffer);
@@ -44,7 +44,7 @@ const uploadImages = async (
     )) as UploadApiResponse;
 
     if (!uploadResult || !uploadResult.secure_url) {
-      throw new AppError("Image upload failed", 500);
+      throw new AppError('Image upload failed', 500);
     }
 
     imageUrls.push(uploadResult.secure_url);
@@ -86,7 +86,7 @@ export const processModelJobAsync = async (
     const job = await taskQueue.add(queueJobData, { jobId });
 
     if (!job || !job.id) {
-      throw new AppError("Job creation failed", 500);
+      throw new AppError('Job creation failed', 500);
     }
 
     const modelType = filterModelType(model);
@@ -110,7 +110,8 @@ export const processModelJobAsync = async (
       duration: 0,
     };
 
-    const createdJob = await createJobAndUpdateUser(
+    const orchestrationService = RepositoryOrchestrationService.getInstance();
+    const createdJob = await orchestrationService.createJobAndUpdateUser(
       userId,
       {
         jobId,
@@ -125,10 +126,10 @@ export const processModelJobAsync = async (
       jobId: job.id.toString(),
     };
   } catch (error) {
-    console.error("Error in processModelJobAsync:", error);
+    console.error('Error in processModelJobAsync:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
 };
@@ -157,11 +158,11 @@ export const processMultiImageJobAsync = async (
     });
 
     if (!job || !job.id) {
-      throw new AppError("Job creation failed", 500);
+      throw new AppError('Job creation failed', 500);
     }
     const itemData: EffectItemData = {
       URL: imageUrls[0],
-      modelType: "image-effects",
+      modelType: 'image-effects',
       jobId: job.id.toString(),
       status: JOB_STATUS.PENDING,
       previewURL: imageUrls[0],
@@ -176,7 +177,8 @@ export const processMultiImageJobAsync = async (
       duration: 0,
     };
 
-    const createdJob = await createJobAndUpdateUser(
+    const orchestrationService = RepositoryOrchestrationService.getInstance();
+    const createdJob = await orchestrationService.createJobAndUpdateUser(
       userId,
       {
         jobId,
@@ -191,10 +193,10 @@ export const processMultiImageJobAsync = async (
       jobId: job.id.toString(),
     };
   } catch (error) {
-    console.error("Error in processMultiImageJobAsync:", error);
+    console.error('Error in processMultiImageJobAsync:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
 };

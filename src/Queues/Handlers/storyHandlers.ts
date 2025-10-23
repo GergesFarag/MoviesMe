@@ -1,64 +1,64 @@
-import { Job } from "bull";
-import { getIO } from "../../Sockets/socket";
-import {
-  NotificationService,
-} from "../../Services/notification.service";
-import JobModel from "../../Models/job.model";
-import Story from "../../Models/story.model";
-import storyQueue from "../story.queue";
-import AppError from "../../Utils/Errors/AppError";
-import { CreditService } from "../../Services/credits.service";
+import { Job } from 'bull';
+import { getIO } from '../../Sockets/socket';
+import { NotificationService } from '../../Services/notification.service';
+import JobModel from '../../Models/job.model';
+import Story from '../../Models/story.model';
+import storyQueue from '../story.queue';
+import AppError from '../../Utils/Errors/AppError';
+import { CreditService } from '../../Services/credits.service';
 
 export class StoryQueueHandlers {
   private notificationService;
   private creditService;
   constructor() {
-    this.notificationService = new NotificationService();
-    this.creditService = new CreditService();
+    this.notificationService = NotificationService.getInstance();
+    this.creditService = CreditService.getInstance();
   }
   async onCompleted(job: Job, result: any) {
     console.log(`✅ Story job with ID ${job.id} has been completed.`);
-    console.log("Result:", result);
+    console.log('Result:', result);
     await storyQueue.removeJobs(job.data.jobId);
     try {
       if (job.data.userId && result?.story) {
         await this.notificationService.sendStoryCompletionNotification(
           job.data.userId,
           result.story,
-          result.finalVideoUrl || "",
-          String(job.opts.jobId || "")
+          result.finalVideoUrl || '',
+          String(job.opts.jobId || '')
         );
         console.log(`📤 All completion notifications sent for job ${job.id}`);
       } else {
         console.warn(
-          "⚠️ Missing userId or story data, skipping completion notifications"
+          '⚠️ Missing userId or story data, skipping completion notifications'
         );
       }
     } catch (error) {
-      console.error("❌ Error in completion handler:", error);
+      console.error('❌ Error in completion handler:', error);
     } finally {
       try {
         await job.remove();
         console.log(`🗑️ Job ${job.id} removed from queue`);
       } catch (removeError) {
-        console.error("❌ Failed to remove completed job:", removeError);
+        console.error('❌ Failed to remove completed job:', removeError);
       }
     }
   }
 
   async onFailed(job: Job, err: Error | AppError) {
     console.log(`❌ Story job with ID ${job?.id} has failed.`);
-    console.log("Error:", err);
-    
+    console.log('Error:', err);
+
     // Check if this job was already handled by server restart cleanup
     const isServerRestartCleanup = job.data?._serverRestartCleanup === true;
-    
+
     if (isServerRestartCleanup) {
-      console.log(`ℹ️ Story job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`);
+      console.log(
+        `ℹ️ Story job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`
+      );
       await storyQueue.removeJobs(job.data.jobId);
       return; // Exit early - everything already handled
     }
-    
+
     await storyQueue.removeJobs(job.data.jobId);
     const refund = await this.creditService.addCredits(
       job.data.userId,
@@ -81,22 +81,22 @@ export class StoryQueueHandlers {
       if (job?.data?.userId) {
         await this.notificationService.sendStoryFailureNotification(
           job.data.userId,
-          String(job.opts?.jobId || ""),
+          String(job.opts?.jobId || ''),
           err,
           job.data.storyId
         );
         console.log(`📤 All failure notifications sent for job ${job?.id}`);
       } else {
-        console.warn("⚠️ Missing userId, skipping failure notifications");
+        console.warn('⚠️ Missing userId, skipping failure notifications');
       }
     } catch (error) {
-      console.error("❌ Error in failure handler:", error);
+      console.error('❌ Error in failure handler:', error);
     }
   }
 
   private async updateFailedJobStatus(job: Job): Promise<void> {
     if (!job?.opts?.jobId) {
-      console.log("⚠️ No jobId found, skipping database status update");
+      console.log('⚠️ No jobId found, skipping database status update');
       return;
     }
 
@@ -105,9 +105,9 @@ export class StoryQueueHandlers {
       await JobModel.findOneAndUpdate(
         { jobId: job.opts.jobId as string },
         {
-          status: "failed",
+          status: 'failed',
           updatedAt: new Date(),
-          error: "Processing failed",
+          error: 'Processing failed',
         }
       );
 
@@ -115,8 +115,8 @@ export class StoryQueueHandlers {
       await Story.findOneAndUpdate(
         { jobId: job.opts.jobId as string },
         {
-          status: "failed",
-          title: "Failed Story Generation",
+          status: 'failed',
+          title: 'Failed Story Generation',
           updatedAt: new Date(),
         }
       );
@@ -126,7 +126,7 @@ export class StoryQueueHandlers {
       );
     } catch (dbError) {
       console.error(
-        "❌ Failed to update job/story status in database:",
+        '❌ Failed to update job/story status in database:',
         dbError
       );
     }
@@ -145,7 +145,7 @@ export class StoryQueueHandlers {
         `📈 Queue Stats - Waiting: ${waiting.length}, Active: ${active.length}, Completed: ${completed.length}, Failed: ${failed.length}`
       );
     } catch (error) {
-      console.error("❌ Failed to get queue statistics:", error);
+      console.error('❌ Failed to get queue statistics:', error);
     }
   }
 }

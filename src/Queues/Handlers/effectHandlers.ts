@@ -1,25 +1,27 @@
-import logger from "../../Config/logger";
-import { NotificationItemDTO } from "../../DTOs/item.dto";
-import { EffectNotificationData, INotification, NotificationData } from "../../Interfaces/notification.interface";
-import Job from "../../Models/job.model";
-import User from "../../Models/user.model";
-import { CreditService } from "../../Services/credits.service";
+import logger from '../../Config/logger';
+import { NotificationItemDTO } from '../../DTOs/item.dto';
 import {
-  NotificationService,
-} from "../../Services/notification.service";
-import { translationService } from "../../Services/translation.service";
-import { getIO } from "../../Sockets/socket";
-import { getItemFromUser } from "../../Utils/Database/optimizedOps";
-import AppError from "../../Utils/Errors/AppError";
-import { modelTypeMapper } from "../../Utils/Format/filterModelType";
-import { getUserLangFromDB } from "../../Utils/Format/languageUtils";
+  EffectNotificationData,
+  INotification,
+  NotificationData,
+} from '../../Interfaces/notification.interface';
+import Job from '../../Models/job.model';
+import User from '../../Models/user.model';
+import { CreditService } from '../../Services/credits.service';
+import { NotificationService } from '../../Services/notification.service';
+import { translationService } from '../../Services/translation.service';
+import { getIO } from '../../Sockets/socket';
+import { UserRepository } from '../../Repositories/UserRepository';
+import AppError from '../../Utils/Errors/AppError';
+import { modelTypeMapper } from '../../Utils/Format/filterModelType';
+import { getUserLangFromDB } from '../../Utils/Format/languageUtils';
 
 export class EffectsQueueHandler {
   private notificationService: NotificationService;
   private creditService: CreditService;
   constructor() {
-    this.notificationService = new NotificationService();
-    this.creditService = new CreditService();
+    this.notificationService = NotificationService.getInstance();
+    this.creditService = CreditService.getInstance();
   }
 
   async onCompleted(job: any, result: any) {
@@ -27,12 +29,12 @@ export class EffectsQueueHandler {
       const locale = await getUserLangFromDB(result.userId);
       await Job.findOneAndUpdate(
         { jobId: result.jobId },
-        { status: "completed" }
+        { status: 'completed' }
       );
       await this.jobRemoval(job);
       const user = await User.findById(result.userId);
       if (!user) {
-        console.error("User not found for userId:", result.userId);
+        console.error('User not found for userId:', result.userId);
         return;
       }
       // Initialize effectsLib if it doesn't exist (but don't overwrite existing data)
@@ -46,11 +48,11 @@ export class EffectsQueueHandler {
       const modelType =
         modelTypeMapper[result.modelType as keyof typeof modelTypeMapper] ||
         result.modelType ||
-        "unknown";
+        'unknown';
 
       if (!result.resultURL) {
-        console.error("Result URL is missing for jobId:", result.jobId);
-        throw new AppError("Result URL is missing", 500);
+        console.error('Result URL is missing for jobId:', result.jobId);
+        throw new AppError('Result URL is missing', 500);
       }
 
       const existingEffectIndex = user.effectsLib.findIndex(
@@ -60,7 +62,7 @@ export class EffectsQueueHandler {
       if (existingEffectIndex >= 0) {
         const existingEffect = user.effectsLib[existingEffectIndex];
         existingEffect.URL = result.resultURL;
-        existingEffect.status = "completed";
+        existingEffect.status = 'completed';
         existingEffect.effectThumbnail =
           result.effectThumbnail || result.resultURL;
         existingEffect.modelType = modelType;
@@ -70,7 +72,7 @@ export class EffectsQueueHandler {
         const newEffect = {
           jobId: result.jobId,
           URL: result.resultURL,
-          status: "completed",
+          status: 'completed',
           effectThumbnail: result.effectThumbnail || result.resultURL,
           modelType: modelType,
           modelName: result.modelName,
@@ -99,32 +101,33 @@ export class EffectsQueueHandler {
         throw validationError;
       }
 
-      const item = await getItemFromUser(user.id, result.jobId);
+      const userRepository = UserRepository.getInstance();
+      const item = await userRepository.getEffectItem(user.id, result.jobId);
       if (item) {
         // const notificationDTO = NotificationItemDTO.toNotificationDTO(item);
-        const effectData:EffectNotificationData = {
-          type: "effect",
-          status: "completed",
+        const effectData: EffectNotificationData = {
+          type: 'effect',
+          status: 'completed',
           effectId: item._id!.toString(),
           jobId: item.jobId.toString(),
           userId: user.id,
-        }
+        };
 
-        console.log("Locale", locale);
+        console.log('Locale', locale);
         const notificationData: INotification = {
           title: translationService.translateText(
-            "notifications.effect.completion",
-            "title",
+            'notifications.effect.completion',
+            'title',
             locale
           ),
           message: translationService.translateText(
-            "notifications.effect.completion",
-            "message",
+            'notifications.effect.completion',
+            'message',
             locale
           ),
           data: effectData,
-          redirectTo: "/effectDetails",
-          category: "activities",
+          redirectTo: '/effectDetails',
+          category: 'activities',
         };
         const res = await this.notificationService.sendPushNotificationToUser(
           job.data.userId,
@@ -142,7 +145,7 @@ export class EffectsQueueHandler {
         }
       }
     } catch (err) {
-      console.error("Failed to handle job completion:", err);
+      console.error('Failed to handle job completion:', err);
       throw err;
     }
   }
@@ -150,18 +153,20 @@ export class EffectsQueueHandler {
   async onFailed(job: any, err: Error) {
     try {
       console.error(`Job ${job.id} failed with error: ${err.message}`);
-      logger.info({jobData : job.data});
-      
+      logger.info({ jobData: job.data });
+
       // Check if this job was already handled by server restart cleanup
       const isServerRestartCleanup = job.data?._serverRestartCleanup === true;
-      
+
       if (isServerRestartCleanup) {
-        console.log(`ℹ️ Effect job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`);
+        console.log(
+          `ℹ️ Effect job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`
+        );
         // Still try to remove the job from queue
         await this.jobRemoval(job);
         return; // Exit early - everything already handled
       }
-      
+
       const refund = await this.creditService.addCredits(
         job.data.userId,
         Number(job.data.modelData.credits)
@@ -172,9 +177,8 @@ export class EffectsQueueHandler {
         );
       } else {
         const transactionNotificationData = {
-            userCredits: await this.creditService.getCredits(job.data.userId),
-            refundedCredits: Number(job.data.modelData.credits),
-
+          userCredits: await this.creditService.getCredits(job.data.userId),
+          refundedCredits: Number(job.data.modelData.credits),
         };
         await this.notificationService.sendTransactionalSocketNotification(
           job.data.userId,
@@ -184,21 +188,21 @@ export class EffectsQueueHandler {
       const jobId = job.opts.jobId || job.id;
       const jobUpdated = await Job.findOneAndUpdate(
         { jobId: jobId },
-        { status: "failed", error: err.message }
+        { status: 'failed', error: err.message }
       );
       await this.jobRemoval(job);
       const user = await User.findById(jobUpdated?.userId);
       if (user) {
         const item = user.effectsLib?.find((item) => item.jobId === jobId);
         if (item) {
-          item.status = "failed";
+          item.status = 'failed';
           item.updatedAt = new Date();
           await user.save();
         }
         const io = getIO();
         const payload = {
           jobId: job.id,
-          status: "failed",
+          status: 'failed',
           progress: job.progress() ?? 0,
           result: { success: false, data: null },
           failedReason: err?.message,
@@ -206,31 +210,34 @@ export class EffectsQueueHandler {
         };
 
         if (job.data?.userId) {
-          io.to(`user:${job.data.userId}`).emit("job:failed", payload);
+          io.to(`user:${job.data.userId}`).emit('job:failed', payload);
         }
-        const notificationDTO:EffectNotificationData = {
-          type: "effect",
+        const notificationDTO: EffectNotificationData = {
+          type: 'effect',
           jobId: String(jobId),
           userId: String(job.data.userId || null),
-          status: "failed",
+          status: 'failed',
         };
 
         const notificationData: INotification = {
           title: translationService.translateText(
-            "notifications.effect.failure",
-            "title",
-            user.preferredLanguage || "en"
+            'notifications.effect.failure',
+            'title',
+            user.preferredLanguage || 'en'
           ),
           message: translationService.translateText(
-            "notifications.effect.failure",
-            "message",
-            user.preferredLanguage || "en"
+            'notifications.effect.failure',
+            'message',
+            user.preferredLanguage || 'en'
           ),
           data: notificationDTO,
           redirectTo: null,
-          category: "activities",
+          category: 'activities',
         };
-        await this.notificationService.saveNotificationToUser(user, notificationData);
+        await this.notificationService.saveNotificationToUser(
+          user,
+          notificationData
+        );
         if (user?.FCMToken) {
           const notificationResult =
             await this.notificationService.sendPushNotificationToUser(
@@ -247,7 +254,7 @@ export class EffectsQueueHandler {
         }
       }
     } catch (error) {
-      console.error("Failed to handle job failure:", error);
+      console.error('Failed to handle job failure:', error);
     }
   }
 
@@ -269,7 +276,7 @@ export class EffectsQueueHandler {
         );
       }
     } catch (removeError: any) {
-      if (removeError?.message?.includes("Could not remove job")) {
+      if (removeError?.message?.includes('Could not remove job')) {
         console.warn(
           `⚠️ Job ${job.id} might already be removed or processed by another worker`
         );

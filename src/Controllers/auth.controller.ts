@@ -1,26 +1,30 @@
-import { Request, Response } from "express";
-import catchError from "../Utils/Errors/catchError";
-import { firebaseAdmin } from "../Config/firebase";
-import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
-import User from "../Models/user.model";
+import { Request, Response } from 'express';
+import catchError from '../Utils/Errors/catchError';
+import { firebaseAdmin } from '../Config/firebase';
+import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import User from '../Models/user.model';
 import {
   createAccessToken,
   createRefreshToken,
   verifyRefreshToken,
-} from "../Utils/Auth/tokenHelpers";
-import { loginResponse } from "../Interfaces/response.interface";
-import { translationService } from "../Services/translation.service";
-import { removeSpace } from "../Utils/Format/phoneNumber";
+} from '../Utils/Auth/tokenHelpers';
+import { loginResponse } from '../Interfaces/response.interface';
+import { translationService } from '../Services/translation.service';
+import { removeSpace } from '../Utils/Format/phoneNumber';
+import { UserRepository } from '../Repositories/UserRepository';
+
+const userRepository = UserRepository.getInstance();
+
 const authController = {
   login: catchError(async (req: Request, res: Response) => {
     let { uid, email, phone_number } = req.user!;
-    let existingUser = await User.findOne({ firebaseUid: uid });
+    let existingUser = await userRepository.findByFirebaseUid(uid);
     if (!existingUser) {
       if (!phone_number && !email) {
-        phone_number = removeSpace(uid || "");
+        phone_number = removeSpace(uid || '');
       }
-      existingUser = await User.create({
-        username: email?.split("@")[0] || phone_number || null,
+      existingUser = await userRepository.create({
+        username: email?.split('@')[0] || phone_number,
         email: email || null,
         phoneNumber: phone_number || null,
         firebaseUid: uid,
@@ -31,7 +35,7 @@ const authController = {
         credits: 10,
       });
     }
-    const responseUser: loginResponse["data"]["user"] = {
+    const responseUser: loginResponse['data']['user'] = {
       id: String(existingUser._id),
       username: existingUser.username as string,
       credits: existingUser.credits || 10,
@@ -40,11 +44,11 @@ const authController = {
     const accessToken = createAccessToken(responseUser);
     const refreshToken = createRefreshToken(responseUser);
     res.status(200).json({
-      message: "User Logged in successfully",
+      message: 'User Logged in successfully',
       greeting: translationService.translateText(
-        "user",
-        "greeting",
-        req.headers["accept-language"] || "en",
+        'user',
+        'greeting',
+        req.headers['accept-language'] || 'en',
         { name: responseUser.username }
       ),
       data: {
@@ -59,19 +63,19 @@ const authController = {
     const { uid, email } = req.user!;
 
     if (!email) {
-      throw new AppError("Email is required", 400);
+      throw new AppError('Email is required', 400);
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await userRepository.findOne({ email });
     if (existingUser) {
-      throw new AppError("User already exists", 409);
+      throw new AppError('User already exists', 409);
     }
 
     let newUser;
     try {
-      newUser = await User.create({
+      newUser = await userRepository.create({
         email,
-        username: email.split("@")[0] || null,
+        username: email.split('@')[0],
         firebaseUid: uid || null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -80,10 +84,10 @@ const authController = {
         credits: 10,
       });
     } catch (error) {
-      throw new AppError("Failed to create user", 500);
+      throw new AppError('Failed to create user', 500);
     }
 
-    const responseUser: loginResponse["data"]["user"] = {
+    const responseUser: loginResponse['data']['user'] = {
       id: String(newUser._id),
       username: newUser.username as string,
       credits: newUser.credits || 10,
@@ -93,11 +97,11 @@ const authController = {
     const refreshToken = createRefreshToken(responseUser);
 
     res.status(201).json({
-      message: "User registered successfully",
-       greeting: translationService.translateText(
-        "user",
-        "greeting",
-        req.headers["accept-language"] || "en",
+      message: 'User registered successfully',
+      greeting: translationService.translateText(
+        'user',
+        'greeting',
+        req.headers['accept-language'] || 'en',
         { name: responseUser.username }
       ),
       data: {
@@ -112,17 +116,17 @@ const authController = {
     const { email } = req.body;
 
     if (!email) {
-      throw new AppError("Email is required", 400);
+      throw new AppError('Email is required', 400);
     }
     const resetLink = await firebaseAdmin
       .auth()
       .generatePasswordResetLink(email);
 
     if (!resetLink) {
-      throw new AppError("Failed to generate reset link", 500);
+      throw new AppError('Failed to generate reset link', 500);
     }
     res.status(200).json({
-      message: "Password reset link sent to your email",
+      message: 'Password reset link sent to your email',
       data: { resetLink },
     });
   }),
@@ -132,7 +136,7 @@ const authController = {
 
     if (!refreshToken) {
       throw new AppError(
-        "Refresh token is required",
+        'Refresh token is required',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
@@ -140,14 +144,14 @@ const authController = {
     const decoded = verifyRefreshToken(refreshToken);
     if (!decoded) {
       throw new AppError(
-        "Invalid refresh token",
+        'Invalid refresh token',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
 
     const newAccessToken = createAccessToken(decoded);
     res.status(200).json({
-      message: "Access token refreshed successfully",
+      message: 'Access token refreshed successfully',
       data: { accessToken: newAccessToken },
     });
   }),
@@ -157,18 +161,18 @@ const authController = {
 
     if (!FCMToken) {
       throw new AppError(
-        "FCM token is required",
+        'FCM token is required',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
-    const user = await User.findById(req.user!.id).select("+FCMToken");
+    const user = await userRepository.findByIdAndUpdate(req.user!.id, {
+      FCMToken,
+    });
     if (!user) {
-      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+      throw new AppError('User not found', HTTP_STATUS_CODE.NOT_FOUND);
     }
-    user.FCMToken = FCMToken;
-    await user.save();
     res.status(200).json({
-      message: "FCM token added successfully",
+      message: 'FCM token added successfully',
       data: { fcmToken: user.FCMToken },
     });
   }),

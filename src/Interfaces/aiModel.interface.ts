@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import mongoose, { Document } from "mongoose";
 
 export type TModelCategory =
   | "fashion"
@@ -13,6 +13,7 @@ export type TModelCategory =
   | "lifestyle"
   | "unknown";
 interface IGeneralModel extends Document {
+  _id:mongoose.Types.ObjectId;
   name: string;
   thumbnail: string;
   isVideo: boolean;

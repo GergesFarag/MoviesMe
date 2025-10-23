@@ -1,9 +1,10 @@
-import { ObjectId } from "mongoose";
+import mongoose, { ObjectId } from "mongoose";
 import { IEffectItem } from "./effectItem.interface";
 import { IGenerationLib } from "./generationLib.interface";
 import { INotification } from "./notification.interface";
 
 export interface IUser {
+  _id: mongoose.Types.ObjectId;
   username: string;
   isAdmin: boolean;
   isActive: boolean;

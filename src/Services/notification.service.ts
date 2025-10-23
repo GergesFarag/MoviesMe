@@ -1,16 +1,15 @@
-import User from "../Models/user.model";
-import { sendNotificationToClient } from "../Utils/Notifications/notifications";
-import { getIO } from "../Sockets/socket";
-import { StoryDTO } from "../DTOs/story.dto";
-import { TNotificationCategory } from "../types";
-import { translationService } from "./translation.service";
-import { getUserLangFromDB } from "../Utils/Format/languageUtils";
-import AppError from "../Utils/Errors/AppError";
-import { INotificationItemDTO } from "../DTOs/item.dto";
-import { 
-  INotification, 
-} from "../Interfaces/notification.interface";
-import { CreditService } from "./credits.service";
+import User from '../Models/user.model';
+import { sendNotificationToClient } from '../Utils/Notifications/notifications';
+import { getIO } from '../Sockets/socket';
+import { StoryDTO } from '../DTOs/story.dto';
+import { TNotificationCategory } from '../types';
+import { translationService } from './translation.service';
+import { getUserLangFromDB } from '../Utils/Format/languageUtils';
+import AppError from '../Utils/Errors/AppError';
+import { INotificationItemDTO } from '../DTOs/item.dto';
+import { INotification } from '../Interfaces/notification.interface';
+import { CreditService } from './credits.service';
+import { UserRepository } from '../Repositories/UserRepository';
 
 interface SocketNotificationPayload {
   message: string;
@@ -21,11 +20,19 @@ interface SocketNotificationPayload {
 }
 type keyType = 'refundedCredits' | 'consumedCredits';
 export class NotificationService {
-  private creditService: CreditService;
-  constructor() {
-    this.creditService = new CreditService();
+  private static instance: NotificationService;
+  private userRepository: UserRepository;
+
+  private constructor() {
+    this.userRepository = UserRepository.getInstance();
   }
 
+  public static getInstance(): NotificationService {
+    if (!NotificationService.instance) {
+      NotificationService.instance = new NotificationService();
+    }
+    return NotificationService.instance;
+  }
   async sendStoryCompletionNotification(
     userId: string,
     storyData: any,
@@ -35,11 +42,11 @@ export class NotificationService {
     const locale = await getUserLangFromDB(userId);
     // Validate story data
     if (!storyData) {
-      console.error("❌ No story found in result object");
-      await this.sendSocketNotification(userId, "story:failed", {
-        message: "Story generation completed but no story data found",
+      console.error('❌ No story found in result object');
+      await this.sendSocketNotification(userId, 'story:failed', {
+        message: 'Story generation completed but no story data found',
         jobId,
-        error: "Missing story data in result",
+        error: 'Missing story data in result',
         timestamp: new Date().toISOString(),
       });
       return;
@@ -47,11 +54,11 @@ export class NotificationService {
 
     // Ensure scenes array exists and is valid
     if (!storyData.scenes || !Array.isArray(storyData.scenes)) {
-      console.error("❌ Story scenes are missing or invalid:", storyData);
-      await this.sendSocketNotification(userId, "story:failed", {
-        message: "Story scenes data is invalid",
+      console.error('❌ Story scenes are missing or invalid:', storyData);
+      await this.sendSocketNotification(userId, 'story:failed', {
+        message: 'Story scenes data is invalid',
         jobId,
-        error: "Invalid scenes data",
+        error: 'Invalid scenes data',
         timestamp: new Date().toISOString(),
       });
       return;
@@ -62,28 +69,28 @@ export class NotificationService {
 
       const notificationData: INotification = {
         title: translationService.translateText(
-          "notifications.story.completion",
-          "title",
+          'notifications.story.completion',
+          'title',
           locale
         ),
         message: translationService.translateText(
-          "notifications.story.completion",
-          "message",
+          'notifications.story.completion',
+          'message',
           locale
         ),
         data: {
-          type: "story",
-          status: "completed",
+          type: 'story',
+          status: 'completed',
           storyId: String(storyData._id || null),
           jobId: String(jobId),
           userId: String(userId),
           credits: storyData.credits,
         },
-        redirectTo: "/storyDetails",
-        category: "activities",
+        redirectTo: '/storyDetails',
+        category: 'activities',
       };
 
-      await this.sendSocketNotification(userId, "story:completed", {
+      await this.sendSocketNotification(userId, 'story:completed', {
         message: notificationData.message,
         story: storyDTO,
         jobId,
@@ -94,18 +101,18 @@ export class NotificationService {
 
       await this.sendPushNotificationToUser(userId, notificationData);
     } catch (dtoError) {
-      console.error("❌ Error converting story to DTO:", dtoError);
-      await this.sendSocketNotification(userId, "story:failed", {
+      console.error('❌ Error converting story to DTO:', dtoError);
+      await this.sendSocketNotification(userId, 'story:failed', {
         message: translationService.translateText(
-          "notifications.story.failure",
-          "message",
+          'notifications.story.failure',
+          'message',
           locale
         ),
         jobId,
         error:
           dtoError instanceof Error
             ? dtoError.message
-            : "DTO conversion failed",
+            : 'DTO conversion failed',
         timestamp: new Date().toISOString(),
       });
     }
@@ -125,29 +132,29 @@ export class NotificationService {
 
     const notificationData: INotification = {
       title: translationService.translateText(
-        "notifications.story.failure",
-        "title",
+        'notifications.story.failure',
+        'title',
         locale
       ),
       message: translationService.translateText(
-        "notifications.story.failure",
-        "message",
+        'notifications.story.failure',
+        'message',
         locale
       ),
       data: {
-        type: "story",
-        status: "failed",
+        type: 'story',
+        status: 'failed',
         storyId: String(storyId || null),
         jobId: String(jobId),
         userId: String(userId),
         error: error.message,
       },
       redirectTo: null,
-      category: "activities",
+      category: 'activities',
     };
 
     // Send socket notification
-    await this.sendSocketNotification(userId, "story:failed", {
+    await this.sendSocketNotification(userId, 'story:failed', {
       message: notificationData.message,
       jobId,
       error: error.message,
@@ -167,7 +174,7 @@ export class NotificationService {
     progress: number,
     message: string
   ): Promise<void> {
-    await this.sendSocketNotification(userId, "story:progress", {
+    await this.sendSocketNotification(userId, 'story:progress', {
       jobId,
       progress,
       message,
@@ -183,7 +190,7 @@ export class NotificationService {
     notificationData: INotification
   ): Promise<boolean> {
     try {
-      const user = await User.findById(userId);
+      const user = await this.userRepository.findById(userId, '+FCMToken');
       if (!user) {
         console.error(`❌ User not found for notification: ${userId}`);
         return false;
@@ -238,19 +245,22 @@ export class NotificationService {
     notificationData: INotification
   ): Promise<void> {
     try {
-      user.notifications = user.notifications || [];
-      user.notifications.push({
+      const notification = {
         title: notificationData.title,
         message: notificationData.message,
         data: notificationData.data || {},
         redirectTo: notificationData.redirectTo,
         createdAt: new Date(),
-        category: notificationData.category || "system",
+        category: notificationData.category || 'system',
         isRead: false,
-      });
+      };
 
-      await user.save();
-      console.log(`✅ Notification saved to user ${user._id} database`);
+      await this.userRepository.findByIdAndUpdate(user._id || user.id, {
+        $push: { notifications: notification },
+      });
+      console.log(
+        `✅ Notification saved to user ${user._id || user.id} database`
+      );
     } catch (error) {
       console.error(`❌ Failed to save notification to user database:`, error);
     }
@@ -261,20 +271,21 @@ export class NotificationService {
   ): INotificationItemDTO {
     const status = NotificationService.getNotificationStatus(notification);
     const type = NotificationService.getNotificationType(notification);
-    console.log("Notification status and type:", { status, type });
+    console.log('Notification status and type:', { status, type });
     return { status, type };
   }
   async sendTransactionalSocketNotification(
     userId: string,
-    notificationData: {userCredits: number} & {[key in keyType]?: number}){
-    const user = await User.findById(userId).lean();
+    notificationData: { userCredits: number } & { [key in keyType]?: number }
+  ) {
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       console.error(`❌ User not found for notification: ${userId}`);
       return;
     }
-    await this.sendSocketNotification(userId, "user:transactions", {
+    await this.sendSocketNotification(userId, 'user:transactions', {
       message: `Transaction for effect has been completed.`,
-      data: notificationData
+      data: notificationData,
     });
   }
   private async sendSocketNotification(
@@ -298,11 +309,11 @@ export class NotificationService {
     }
   }
   private static getNotificationStatus(notification: INotification): string {
-    type validStatuses = "completed" | "pending" | "failed";
+    type validStatuses = 'completed' | 'pending' | 'failed';
     const statusMapper: Record<validStatuses, string> = {
-      completed: "completion",
-      pending: "pending",
-      failed: "failure",
+      completed: 'completion',
+      pending: 'pending',
+      failed: 'failure',
     };
     return statusMapper[notification.data.status as validStatuses];
   }

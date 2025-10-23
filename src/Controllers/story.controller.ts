@@ -1,58 +1,54 @@
-import { NextFunction, Request, Response } from "express";
-import catchError from "../Utils/Errors/catchError";
-import Story from "../Models/story.model";
-import User from "../Models/user.model";
-import Job from "../Models/job.model";
-import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
-import mongoose, { Types } from "mongoose";
-import StoryGenerationInfo from "../Models/storyGenerationInfo.model";
+import { NextFunction, Request, Response } from 'express';
+import catchError from '../Utils/Errors/catchError';
+import Story from '../Models/story.model';
+import User from '../Models/user.model';
+import Job from '../Models/job.model';
+import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import mongoose, { Types } from 'mongoose';
+import StoryGenerationInfo from '../Models/storyGenerationInfo.model';
 import {
   IStoryRequest,
   IStoryRequestKeys,
-} from "../Interfaces/storyRequest.interface";
-import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
-import { UploadApiResponse } from "cloudinary";
-import { VideoGenerationService } from "../Services/videoGeneration.service";
-import {
-  checkGenereExists,
-  createInitialStoryAndUpdateUser,
-  getLocationName,
-  getStyleName,
-} from "../Utils/Database/optimizedOps";
-import { processStoryJobAsnc } from "../Services/generateStory.service";
-import { generateRandomNumber } from "../Utils/Format/generateRandom";
-import storyQueue from "../Queues/story.queue";
-import { translationService } from "../Services/translation.service";
-import { extractLanguageFromRequest } from "../Utils/Format/languageUtils";
-import path from "path";
-import { getJsonKey } from "../Utils/Format/json";
-import { QUEUE_NAMES } from "../Queues/Constants/queueConstants";
-import { StoryProcessingDTO } from "../DTOs/storyRequest.dto";
-import { CreditService } from "../Services/credits.service";
-import { NotificationService } from "../Services/notification.service";
+} from '../Interfaces/storyRequest.interface';
+import { cloudUpload, generateHashFromBuffer } from '../Utils/APIs/cloudinary';
+import { UploadApiResponse } from 'cloudinary';
+import { VideoGenerationService } from '../Services/videoGeneration.service';
+import { StoryGenerationInfoRepository } from '../Repositories/StoryGenerationInfoRepository';
+import { RepositoryOrchestrationService } from '../Services/repositoryOrchestration.service';
+import { processStoryJobAsnc } from '../Services/generateStory.service';
+import { generateRandomNumber } from '../Utils/Format/generateRandom';
+import storyQueue from '../Queues/story.queue';
+import { translationService } from '../Services/translation.service';
+import { extractLanguageFromRequest } from '../Utils/Format/languageUtils';
+import path from 'path';
+import { getJsonKey } from '../Utils/Format/json';
+import { QUEUE_NAMES } from '../Queues/Constants/queueConstants';
+import { StoryProcessingDTO } from '../DTOs/storyRequest.dto';
+import { CreditService } from '../Services/credits.service';
+import { NotificationService } from '../Services/notification.service';
 const validKeys: IStoryRequestKeys[] = [
-  "prompt",
-  "storyDuration",
-  "voiceOver",
-  "storyLocationId",
-  "storyStyleId",
-  "storyTitle",
-  "genere",
-  "image",
-  "credits",
+  'prompt',
+  'storyDuration',
+  'voiceOver',
+  'storyLocationId',
+  'storyStyleId',
+  'storyTitle',
+  'genere',
+  'image',
+  'credits',
 ];
 
 const storyController = {
   generateStory: catchError(
     async (req: Request, res: Response, next: NextFunction) => {
       const { prompt, storyDuration } = req.body;
-      console.log("BODY", req.body);
+      console.log('BODY', req.body);
       const userId = req.user!.id;
       Object.keys(req.body).forEach((key) => {
         if (!validKeys.includes(key as IStoryRequestKeys)) {
           throw new AppError(
             `Invalid field: ${key} \n valid fields are: ${validKeys.join(
-              ", "
+              ', '
             )}`,
             400
           );
@@ -60,10 +56,10 @@ const storyController = {
       });
       const credits = Number(req.body.credits);
       if (!credits) {
-        throw new AppError("Credits field is required", 400);
+        throw new AppError('Credits field is required', 400);
       }
-      const creditService = new CreditService();
-      const notificationService = new NotificationService();
+      const creditService = CreditService.getInstance();
+      const notificationService = NotificationService.getInstance();
       const hasVoiceOver: boolean = req.body.voiceOver || req.body.audio;
       const calculatedCredits = await creditService.getStoryCredits(
         storyDuration / 5,
@@ -75,7 +71,7 @@ const storyController = {
       );
       console.log(verifyCorrectCredits);
       if (!verifyCorrectCredits) {
-        console.log("GONE IN ERROR");
+        console.log('GONE IN ERROR');
         throw new AppError(
           `Incorrect credits provided. Required credits for the story is ${calculatedCredits}`,
           400
@@ -87,7 +83,7 @@ const storyController = {
       );
       if (!hasSufficientCredits) {
         throw new AppError(
-          "Insufficient credits to create story",
+          'Insufficient credits to create story',
           HTTP_STATUS_CODE.PAYMENT_REQUIRED
         );
       } else {
@@ -109,32 +105,36 @@ const storyController = {
         );
       }
       const image =
-        req.files && "image" in req.files
-          ? (req.files["image"] as Express.Multer.File[])[0]
+        req.files && 'image' in req.files
+          ? (req.files['image'] as Express.Multer.File[])[0]
           : null;
       const audio =
-        req.files && "audio" in req.files
-          ? (req.files["audio"] as Express.Multer.File[])[0]
+        req.files && 'audio' in req.files
+          ? (req.files['audio'] as Express.Multer.File[])[0]
           : null;
-      console.log("Request Body: ", req.body, " and image : ", image);
+      console.log('Request Body: ', req.body, ' and image : ', image);
       if (!prompt || !storyDuration) {
-        throw new AppError("Prompt and story duration are required", 400);
+        throw new AppError('Prompt and story duration are required', 400);
       }
       let storyData: IStoryRequest = { ...req.body } as IStoryRequest;
-      console.log("Story Data: ", storyData);
+      console.log('Story Data: ', storyData);
       const lang = extractLanguageFromRequest(req);
       const translation = require(path.join(
         __dirname,
         `../../locales`,
         `${lang}`,
-        "translation.json"
+        'translation.json'
       ));
+      const storyGenerationInfoRepository =
+        StoryGenerationInfoRepository.getInstance();
       if (storyData.genere) {
         const genreValue =
-          getJsonKey(translation["genres"], storyData.genere) ||
+          getJsonKey(translation['genres'], storyData.genere) ||
           storyData.genere;
-        if (!(await checkGenereExists(genreValue))) {
-          throw new AppError("Invalid genere provided", 400);
+        if (
+          !(await storyGenerationInfoRepository.checkGenreExists(genreValue))
+        ) {
+          throw new AppError('Invalid genere provided', 400);
         }
         storyData.genere = genreValue;
       }
@@ -163,46 +163,52 @@ const storyController = {
       }
       let locationName, styleName;
       if (storyData.storyLocationId) {
-        locationName = await getLocationName(storyData.storyLocationId);
+        locationName = await storyGenerationInfoRepository.getLocationName(
+          storyData.storyLocationId
+        );
         if (!locationName) {
-          throw new AppError("Invalid location ID provided", 400);
+          throw new AppError('Invalid location ID provided', 400);
         }
       }
 
       if (storyData.storyStyleId) {
-        styleName = await getStyleName(storyData.storyStyleId);
+        styleName = await storyGenerationInfoRepository.getStyleName(
+          storyData.storyStyleId
+        );
         if (!styleName) {
-          throw new AppError("Invalid style ID provided", 400);
+          throw new AppError('Invalid style ID provided', 400);
         }
       }
 
-      const createdStory = await createInitialStoryAndUpdateUser(
-        userId,
-        jobId,
-        {
-          title:
-            storyData.storyTitle ||
-            translationService.translateText(
-              "notifications.story.pending",
-              "title",
-              req.headers["accept-language"] || "en"
-            ),
-          prompt: storyData.prompt,
-          genre: storyData.genere || null,
-          location: locationName || null,
-          style: styleName || null,
-          refImage: storyData.image || null,
-          duration: storyData.storyDuration,
-          thumbnail: storyData.image,
-          credits: storyData.credits,
-        }
-      );
+      const orchestrationService = RepositoryOrchestrationService.getInstance();
+      const createdStory =
+        await orchestrationService.createInitialStoryAndUpdateUser(
+          userId,
+          jobId,
+          {
+            title:
+              storyData.storyTitle ||
+              translationService.translateText(
+                'notifications.story.pending',
+                'title',
+                req.headers['accept-language'] || 'en'
+              ),
+            prompt: storyData.prompt,
+            genre: storyData.genere || null,
+            location: locationName || null,
+            style: styleName || null,
+            refImage: storyData.image || null,
+            duration: storyData.storyDuration,
+            thumbnail: storyData.image,
+            credits: storyData.credits,
+          }
+        );
 
       res.status(202).json({
-        message: "Story created and processing started",
+        message: 'Story created and processing started',
         jobId: jobId,
         storyId: createdStory._id,
-        status: "pending",
+        status: 'pending',
         data: {
           story: {
             _id: createdStory._id,
@@ -223,7 +229,7 @@ const storyController = {
         await processStoryJobAsnc(storyData, userId, jobId);
       } catch (error) {
         // await Story.findByIdAndUpdate(createdStory._id, { status: "failed" });
-        throw new AppError("Failed to process story generation", 500);
+        throw new AppError('Failed to process story generation', 500);
       }
     }
   ),
@@ -234,7 +240,7 @@ const storyController = {
       const { storyID } = req.params;
 
       if (!mongoose.Types.ObjectId.isValid(storyID)) {
-        throw new AppError("Invalid story ID", 400);
+        throw new AppError('Invalid story ID', 400);
       }
 
       const story = await Story.findOneAndDelete({
@@ -248,31 +254,31 @@ const storyController = {
         { $pull: { stories: storyID }, new: true }
       );
       if (!user) {
-        throw new AppError("Failed to update user with deleted story", 500);
+        throw new AppError('Failed to update user with deleted story', 500);
       }
 
       if (!story) {
         throw new AppError(
-          "Story not found or you do not have permission to delete it",
+          'Story not found or you do not have permission to delete it',
           404
         );
       }
 
-      res.status(200).json({ message: "Story deleted successfully" });
+      res.status(200).json({ message: 'Story deleted successfully' });
     }
   ),
 
   getGenerationData: catchError(async (req: Request, res: Response) => {
     const generationData = await StoryGenerationInfo.findOne().lean();
     if (!generationData) {
-      throw new AppError("Generation data not found", 404);
+      throw new AppError('Generation data not found', 404);
     }
     const translatedGenerationData = translationService.translateGenerationData(
       generationData,
-      req.headers["accept-language"] || "en"
+      req.headers['accept-language'] || 'en'
     );
     res.status(200).json({
-      message: "Generation data fetched successfully",
+      message: 'Generation data fetched successfully',
       data: { ...translatedGenerationData },
     });
   }),
@@ -281,25 +287,25 @@ const storyController = {
     const { jobId } = req.params;
     const userId = req.user?.id;
     if (!jobId) {
-      throw new AppError("Job ID is required", 400);
+      throw new AppError('Job ID is required', 400);
     }
 
     if (!userId) {
-      throw new AppError("User authentication required", 401);
+      throw new AppError('User authentication required', 401);
     }
 
     const job = await Job.findOne({ jobId: jobId });
 
-    console.log("USER ID : ", userId, "JOB USER ID", job?.userId);
+    console.log('USER ID : ', userId, 'JOB USER ID', job?.userId);
     if (!job) {
-      throw new AppError("Job not found", 404);
+      throw new AppError('Job not found', 404);
     }
 
     if (job.userId.toString() !== String(userId)) {
-      throw new AppError("Unauthorized to retry this job", 403);
+      throw new AppError('Unauthorized to retry this job', 403);
     }
 
-    if (job.status !== "failed") {
+    if (job.status !== 'failed') {
       throw new AppError(
         `Job is currently ${job.status}. Only failed jobs can be retried`,
         400
@@ -309,32 +315,36 @@ const storyController = {
     try {
       const story = await Story.findOne({ jobId });
       if (!story) {
-        throw new AppError("Story associated with this job not found", 404);
+        throw new AppError('Story associated with this job not found', 404);
       }
 
       const existingStoryJob = await storyQueue.getJob(jobId);
       if (existingStoryJob) {
-        console.log(`📋 Found existing story job ${jobId} in queue. Checking state...`);      
+        console.log(
+          `📋 Found existing story job ${jobId} in queue. Checking state...`
+        );
         const isCompleted = await existingStoryJob.isCompleted();
         const isFailed = await existingStoryJob.isFailed();
-        
+
         if (!isCompleted && !isFailed) {
           throw new AppError(
             `Job ${jobId} is currently being processed. Please wait for it to complete.`,
             409
           );
         }
-        
+
         // Remove the old failed/completed job to make way for retry
         try {
           await existingStoryJob.remove();
-          console.log(`✅ Removed old story job ${jobId} from queue to allow retry`);
+          console.log(
+            `✅ Removed old story job ${jobId} from queue to allow retry`
+          );
         } catch (removeError) {
           console.warn(`⚠️ Could not remove old job ${jobId}:`, removeError);
           // Continue anyway - Bull might allow overwriting
         }
       }
-      
+
       const storyRequest: IStoryRequest = {
         prompt: story.prompt,
         storyDuration: story.duration,
@@ -342,7 +352,7 @@ const storyController = {
           ? {
               voiceOverLyrics: story.voiceOver.voiceOverLyrics,
               voiceLanguage: story.voiceOver.voiceLanguage,
-              voiceGender: story.voiceOver.voiceGender || "male",
+              voiceGender: story.voiceOver.voiceGender || 'male',
               voiceAccent: story.voiceOver.voiceAccent,
               sound: story.voiceOver.sound,
               text: story.voiceOver.text,
@@ -354,15 +364,15 @@ const storyController = {
         audio: story.voiceOver?.sound || undefined,
         credits: story.credits,
       };
-      const creditService = new CreditService();
-      const notificationService = new NotificationService();
+      const creditService = CreditService.getInstance();
+      const notificationService = NotificationService.getInstance();
       const hasSufficientCredits = await creditService.hasSufficientCredits(
         req.user!.id,
         +story.credits
       );
       if (!hasSufficientCredits) {
         throw new AppError(
-          "Insufficient credits to create story",
+          'Insufficient credits to create story',
           HTTP_STATUS_CODE.PAYMENT_REQUIRED
         );
       } else {
@@ -388,7 +398,7 @@ const storyController = {
         story.location || null
       );
 
-      console.log("📋 Processing story data for retry:", {
+      console.log('📋 Processing story data for retry:', {
         jobId,
         userId,
         storyData: processingStory,
@@ -397,7 +407,7 @@ const storyController = {
       await Job.findOneAndUpdate(
         { jobId },
         {
-          status: "pending",
+          status: 'pending',
           updatedAt: new Date(),
         }
       );
@@ -405,7 +415,7 @@ const storyController = {
       await Story.findOneAndUpdate(
         { jobId },
         {
-          status: "pending",
+          status: 'pending',
           updatedAt: new Date(),
         }
       );
@@ -422,10 +432,10 @@ const storyController = {
       );
 
       res.status(200).json({
-        message: "Job successfully added back to queue",
+        message: 'Job successfully added back to queue',
         data: {
           jobId,
-          status: "pending",
+          status: 'pending',
           retryTimestamp: new Date(),
           jobData: newJob.data,
         },
@@ -433,17 +443,17 @@ const storyController = {
     } catch (error: any) {
       console.error(`❌ Error retrying job ${jobId}:`, error);
       if (
-        error?.message?.includes("Queue") ||
-        error?.message?.includes("Redis")
+        error?.message?.includes('Queue') ||
+        error?.message?.includes('Redis')
       ) {
         throw new AppError(
-          "Queue service is currently unavailable. Please try again later.",
+          'Queue service is currently unavailable. Please try again later.',
           503
         );
       }
 
       throw new AppError(
-        error?.message || "Failed to retry job. Please try again later.",
+        error?.message || 'Failed to retry job. Please try again later.',
         500
       );
     }
@@ -457,10 +467,10 @@ const storyController = {
       { new: true }
     );
     if (!generationData) {
-      throw new AppError("Failed to update generation data", 500);
+      throw new AppError('Failed to update generation data', 500);
     }
     res.status(200).json({
-      message: "Generation data updated successfully",
+      message: 'Generation data updated successfully',
       data: generationData,
     });
   }),

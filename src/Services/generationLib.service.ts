@@ -1,38 +1,49 @@
-import { Types } from "mongoose";
-import User from "../Models/user.model";
-import JobModel from "../Models/job.model";
-import { generationLibQueue } from "../Queues/generationLib.queue";
+import { Types } from 'mongoose';
+import User from '../Models/user.model';
+import JobModel from '../Models/job.model';
+import { generationLibQueue } from '../Queues/generationLib.queue';
 import {
   IGenerationLibRequestDTO,
   IGenerationLibResponseDTO,
   GenerationLibDTO,
-} from "../DTOs/generationLib.dto";
-import AppError from "../Utils/Errors/AppError";
-import { IGenerationLibJobData } from "../Queues/Handlers/generationLibHandlers";
-import { Sorting } from "../Utils/Sorting/sorting";
-import { IGenerationInfo } from "../Interfaces/generationInfo.interface";
-import GenerationInfo from "../Models/generation.model";
-import { IGenerationLib } from "../Interfaces/generationLib.interface";
+} from '../DTOs/generationLib.dto';
+import AppError from '../Utils/Errors/AppError';
+import { IGenerationLibJobData } from '../Queues/Handlers/generationLibHandlers';
+import { Sorting } from '../Utils/Sorting/sorting';
+import { IGenerationInfo } from '../Interfaces/generationInfo.interface';
+import GenerationInfo from '../Models/generation.model';
+import { IGenerationLib } from '../Interfaces/generationLib.interface';
+import { UserRepository } from '../Repositories/UserRepository';
+import { JobRepository } from '../Repositories/JobRepository';
+import { GenerationInfoRepository } from '../Repositories/GenerationInfoRepository';
 
 export class GenerationLibService {
+  private userRepository: UserRepository;
+  private jobRepository: JobRepository;
+  private generationInfoRepository: GenerationInfoRepository;
+
+  constructor() {
+    this.userRepository = UserRepository.getInstance();
+    this.jobRepository = JobRepository.getInstance();
+    this.generationInfoRepository = GenerationInfoRepository.getInstance();
+  }
   async createGeneration(
     userId: string,
     jobId: string,
     requestData: IGenerationLibRequestDTO
   ): Promise<IGenerationLibResponseDTO> {
     try {
-      const user = await User.findById(userId);
+      const user = await this.userRepository.findById(userId);
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
-      const jobRecord = new JobModel({
+      await this.jobRepository.create({
         jobId,
-        userId,
-        status: "pending",
+        userId: userId as any,
+        status: 'pending',
         createdAt: new Date(),
       });
-      await jobRecord.save();
 
       if (!user.generationLib) {
         user.generationLib = [];
@@ -42,10 +53,10 @@ export class GenerationLibService {
         _id: new Types.ObjectId(),
         jobId,
         URL: null,
-        status: "pending",
+        status: 'pending',
         thumbnail: null,
         duration: requestData.isVideo ? 5 : 0,
-        data:requestData,
+        data: requestData,
         createdAt: new Date(),
         updatedAt: new Date(),
         credits: requestData.credits || 0,
@@ -53,8 +64,9 @@ export class GenerationLibService {
         isFav: false,
       };
 
-      (user.generationLib as any).push(newGenerationItem);
-      await user.save();
+      await this.userRepository.findByIdAndUpdate(userId, {
+        $push: { generationLib: newGenerationItem },
+      });
 
       const jobData: IGenerationLibJobData = {
         userId,
@@ -68,7 +80,7 @@ export class GenerationLibService {
       };
       await generationLibQueue.add(jobData, {
         backoff: {
-          type: "exponential",
+          type: 'exponential',
           delay: 2000,
         },
       });
@@ -79,31 +91,31 @@ export class GenerationLibService {
 
       return {
         success: true,
-        message: "Generation task created successfully",
+        message: 'Generation task created successfully',
         jobId,
         data: new GenerationLibDTO(newGenerationItem as any).toDTO(
           newGenerationItem as any
         ),
       };
     } catch (error) {
-      console.error("Error creating generation task:", error);
+      console.error('Error creating generation task:', error);
       throw new AppError(
         error instanceof Error
           ? error.message
-          : "Failed to create generation task",
+          : 'Failed to create generation task',
         500
       );
     }
-  } 
+  }
 
   async getUserGenerations(
     userId: string,
     query: Record<string, string>
   ): Promise<any[]> {
     try {
-      const user = await User.findById(userId).select("generationLib");
+      const user = await this.userRepository.findById(userId, 'generationLib');
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
       if (!user.generationLib || user.generationLib.length === 0) {
@@ -113,7 +125,7 @@ export class GenerationLibService {
       let filteredGenerations = [...user.generationLib];
 
       // Apply status filter if provided
-      if (query.status && query.status !== "all") {
+      if (query.status && query.status !== 'all') {
         filteredGenerations = filteredGenerations.filter(
           (generation: any) => generation.status === query.status
         );
@@ -121,20 +133,23 @@ export class GenerationLibService {
 
       // Apply favorite filter if provided
       if (query.isFav !== undefined) {
-        const isFavValue = query.isFav === "true";
+        const isFavValue = query.isFav === 'true';
         filteredGenerations = filteredGenerations.filter(
           (generation: any) => generation.isFav === isFavValue
         );
       }
 
-      const sortedGenerations = Sorting.sortItems(filteredGenerations, "newest");
+      const sortedGenerations = Sorting.sortItems(
+        filteredGenerations,
+        'newest'
+      );
       return GenerationLibDTO.toDTOArray(sortedGenerations);
     } catch (error) {
-      console.error("Error getting user generations:", error);
+      console.error('Error getting user generations:', error);
       throw new AppError(
         error instanceof Error
           ? error.message
-          : "Failed to get user generations",
+          : 'Failed to get user generations',
         500
       );
     }
@@ -142,13 +157,13 @@ export class GenerationLibService {
 
   async getGenerationById(userId: string, generationId: string): Promise<any> {
     try {
-      const user = await User.findById(userId).select("generationLib");
+      const user = await this.userRepository.findById(userId, 'generationLib');
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
       if (!user.generationLib) {
-        throw new AppError("Generation not found", 404);
+        throw new AppError('Generation not found', 404);
       }
 
       const generation = user.generationLib.find(
@@ -156,14 +171,14 @@ export class GenerationLibService {
       );
 
       if (!generation) {
-        throw new AppError("Generation not found", 404);
+        throw new AppError('Generation not found', 404);
       }
 
       return new GenerationLibDTO(generation).toDTO(generation);
     } catch (error) {
-      console.error("Error getting generation by ID:", error);
+      console.error('Error getting generation by ID:', error);
       throw new AppError(
-        error instanceof Error ? error.message : "Failed to get generation",
+        error instanceof Error ? error.message : 'Failed to get generation',
         500
       );
     }
@@ -174,13 +189,13 @@ export class GenerationLibService {
     generationId: string
   ): Promise<any> {
     try {
-      const user = await User.findById(userId);
+      const user = await this.userRepository.findById(userId, 'generationLib');
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
       if (!user.generationLib) {
-        throw new AppError("Generation not found", 404);
+        throw new AppError('Generation not found', 404);
       }
 
       const generationIndex = user.generationLib.findIndex(
@@ -188,22 +203,35 @@ export class GenerationLibService {
       );
 
       if (generationIndex === -1) {
-        throw new AppError("Generation not found", 404);
+        throw new AppError('Generation not found', 404);
       }
 
-      user.generationLib[generationIndex].isFav = !user.generationLib[generationIndex].isFav;
-      user.generationLib[generationIndex].updatedAt = new Date();
-      await user.save();
+      const isFav = !user.generationLib[generationIndex].isFav;
 
-      return new GenerationLibDTO(user.generationLib[generationIndex]).toDTO(
-        user.generationLib[generationIndex]
+      await this.userRepository.findByIdAndUpdate(userId, {
+        $set: {
+          [`generationLib.${generationIndex}.isFav`]: isFav,
+          [`generationLib.${generationIndex}.updatedAt`]: new Date(),
+        },
+      });
+
+      const updatedUser = await this.userRepository.findById(
+        userId,
+        'generationLib'
       );
+      const updatedGeneration = updatedUser?.generationLib?.[generationIndex];
+
+      if (!updatedGeneration) {
+        throw new AppError('Failed to update favorite status', 500);
+      }
+
+      return new GenerationLibDTO(updatedGeneration).toDTO(updatedGeneration);
     } catch (error) {
-      console.error("Error updating favorite status:", error);
+      console.error('Error updating favorite status:', error);
       throw new AppError(
         error instanceof Error
           ? error.message
-          : "Failed to update favorite status",
+          : 'Failed to update favorite status',
         500
       );
     }
@@ -211,13 +239,13 @@ export class GenerationLibService {
 
   async deleteGeneration(userId: string, generationId: string): Promise<void> {
     try {
-      const user = await User.findById(userId);
+      const user = await this.userRepository.findById(userId, 'generationLib');
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
       if (!user.generationLib) {
-        throw new AppError("Generation not found", 404);
+        throw new AppError('Generation not found', 404);
       }
 
       const generationIndex = user.generationLib.findIndex(
@@ -225,24 +253,25 @@ export class GenerationLibService {
       );
 
       if (generationIndex === -1) {
-        throw new AppError("Generation not found", 404);
+        throw new AppError('Generation not found', 404);
       }
       const generationItem = user.generationLib[generationIndex];
       const jobId = generationItem.jobId;
 
-      user.generationLib.splice(generationIndex, 1);
-      await user.save();
+      await this.userRepository.findByIdAndUpdate(userId, {
+        $pull: { generationLib: { _id: new Types.ObjectId(generationId) } },
+      });
 
       if (jobId) {
-        await JobModel.findOneAndDelete({ jobId: jobId });
+        await this.jobRepository.delete(String(jobId));
         console.log(`✅ Deleted job ${jobId} for generation ${generationId}`);
       }
 
       console.log(`✅ Deleted generation ${generationId} for user ${userId}`);
     } catch (error) {
-      console.error("Error deleting generation:", error);
+      console.error('Error deleting generation:', error);
       throw new AppError(
-        error instanceof Error ? error.message : "Failed to delete generation",
+        error instanceof Error ? error.message : 'Failed to delete generation',
         500
       );
     }
@@ -253,9 +282,9 @@ export class GenerationLibService {
     query: Record<string, string>
   ): Promise<any[]> {
     try {
-      const user = await User.findById(userId).select("generationLib");
+      const user = await this.userRepository.findById(userId, 'generationLib');
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
       if (!user.generationLib || user.generationLib.length === 0) {
@@ -268,7 +297,7 @@ export class GenerationLibService {
       );
 
       // Apply status filter if provided
-      if (query.status && query.status !== "all") {
+      if (query.status && query.status !== 'all') {
         videoGenerations = videoGenerations.filter(
           (generation: any) => generation.status === query.status
         );
@@ -276,7 +305,7 @@ export class GenerationLibService {
 
       // Apply favorite filter if provided
       if (query.isFav !== undefined) {
-        const isFavValue = query.isFav === "true";
+        const isFavValue = query.isFav === 'true';
         videoGenerations = videoGenerations.filter(
           (generation: any) => generation.isFav === isFavValue
         );
@@ -284,15 +313,15 @@ export class GenerationLibService {
 
       const sortedVidGenerations = Sorting.sortItems(
         videoGenerations,
-        "newest"
+        'newest'
       );
       return GenerationLibDTO.toDTOArray(sortedVidGenerations);
     } catch (error) {
-      console.error("Error getting user video generations:", error);
+      console.error('Error getting user video generations:', error);
       throw new AppError(
         error instanceof Error
           ? error.message
-          : "Failed to get user video generations",
+          : 'Failed to get user video generations',
         500
       );
     }
@@ -303,9 +332,9 @@ export class GenerationLibService {
     query: Record<string, string>
   ): Promise<any[]> {
     try {
-      const user = await User.findById(userId).select("generationLib");
+      const user = await this.userRepository.findById(userId, 'generationLib');
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
       if (!user.generationLib || user.generationLib.length === 0) {
@@ -318,7 +347,7 @@ export class GenerationLibService {
       );
 
       // Apply status filter if provided
-      if (query.status && query.status !== "all") {
+      if (query.status && query.status !== 'all') {
         imageGenerations = imageGenerations.filter(
           (generation: any) => generation.status === query.status
         );
@@ -326,7 +355,7 @@ export class GenerationLibService {
 
       // Apply favorite filter if provided
       if (query.isFav !== undefined) {
-        const isFavValue = query.isFav === "true";
+        const isFavValue = query.isFav === 'true';
         imageGenerations = imageGenerations.filter(
           (generation: any) => generation.isFav === isFavValue
         );
@@ -334,15 +363,15 @@ export class GenerationLibService {
 
       const sortedImgGenerations = Sorting.sortItems(
         imageGenerations,
-        "newest"
+        'newest'
       );
       return GenerationLibDTO.toDTOArray(sortedImgGenerations);
     } catch (error) {
-      console.error("Error getting user image generations:", error);
+      console.error('Error getting user image generations:', error);
       throw new AppError(
         error instanceof Error
           ? error.message
-          : "Failed to get user image generations",
+          : 'Failed to get user image generations',
         500
       );
     }
@@ -350,17 +379,18 @@ export class GenerationLibService {
 
   async getGenerationInfo(): Promise<IGenerationInfo | null> {
     try {
-      const generations = await GenerationInfo.findOne({});
+      const generations =
+        await this.generationInfoRepository.getGenerationInfo();
       if (!generations) {
-        throw new AppError("Generation info not found", 404);
+        throw new AppError('Generation info not found', 404);
       }
       return generations;
     } catch (error) {
-      console.error("Error getting generation info:", error);
+      console.error('Error getting generation info:', error);
       throw new AppError(
         error instanceof Error
           ? error.message
-          : "Failed to get generation info",
+          : 'Failed to get generation info',
         500
       );
     }
@@ -370,20 +400,28 @@ export class GenerationLibService {
     updates: Partial<IGenerationInfo>
   ): Promise<IGenerationInfo> {
     try {
-      let generationInfo = await GenerationInfo.findOne({});
+      let generationInfo =
+        await this.generationInfoRepository.getGenerationInfo();
       if (!generationInfo) {
-        generationInfo = new GenerationInfo(updates);
+        generationInfo = (await this.generationInfoRepository.create(
+          updates
+        )) as any;
       } else {
-        Object.assign(generationInfo, updates);
+        generationInfo =
+          (await this.generationInfoRepository.updateGenerationInfo(
+            updates
+          )) as any;
       }
-      await generationInfo.save();
+      if (!generationInfo) {
+        throw new AppError('Failed to update generation info', 500);
+      }
       return generationInfo;
     } catch (error) {
-      console.error("Error updating generation info:", error);
+      console.error('Error updating generation info:', error);
       throw new AppError(
         error instanceof Error
           ? error.message
-          : "Failed to update generation info",
+          : 'Failed to update generation info',
         500
       );
     }
