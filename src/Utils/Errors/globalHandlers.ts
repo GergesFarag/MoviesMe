@@ -1,5 +1,6 @@
 import { Response } from "express";
-import AppError, { HTTP_STATUS_CODE, DB_ERROR_CODE } from "./AppError";
+import AppError from "./AppError";
+import { HTTP_STATUS_CODE } from "../../Enums/error.enum";
 
 export const handleCastErrorDB = (err: any): AppError => {
   const message = `Invalid ${err.path}: ${err.value}`;

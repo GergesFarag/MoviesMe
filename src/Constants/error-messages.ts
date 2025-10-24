@@ -1,5 +1,4 @@
-import { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
-
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 export const ERROR_MESSAGES = {
   USER_NOT_FOUND: {
     message: 'User not found',

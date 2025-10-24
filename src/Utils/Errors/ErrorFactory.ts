@@ -1,5 +1,6 @@
 import { ERROR_MESSAGES } from '../../Constants/error-messages';
-import AppError, { HTTP_STATUS_CODE } from './AppError';
+import AppError from './AppError';
+import { HTTP_STATUS_CODE } from '../../Enums/error.enum';
 
 export class ErrorFactory {
   static userNotFound(userId?: string): AppError {

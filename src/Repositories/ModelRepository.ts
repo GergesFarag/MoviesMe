@@ -2,8 +2,8 @@ import IAiModel, { TModelCategory } from '../Interfaces/aiModel.interface';
 import Model from '../Models/ai.model';
 import { BaseRepository } from './BaseRepository';
 import { FilterQuery } from 'mongoose';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
-
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 export class ModelRepository extends BaseRepository<IAiModel> {
   private static instance: ModelRepository;
 

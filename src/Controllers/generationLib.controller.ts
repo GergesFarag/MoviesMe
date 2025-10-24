@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { GenerationLibService } from '../Services/generationLib.service';
 import { IGenerationLibRequestDTO } from '../DTOs/generationLib.dto';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import catchError from '../Utils/Errors/catchError';
 import { cloudUpload, generateHashFromBuffer } from '../Utils/APIs/cloudinary';
 import { generationLibQueue } from '../Queues/generationLib.queue';

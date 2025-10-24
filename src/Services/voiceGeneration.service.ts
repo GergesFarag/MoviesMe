@@ -1,6 +1,7 @@
 import { IStoryRequest } from '../Interfaces/storyRequest.interface';
 import { AudioModelRepository } from '../Repositories/AudioModelRepository';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import {
   cloudUploadAudio,

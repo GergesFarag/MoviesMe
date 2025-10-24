@@ -1,6 +1,7 @@
 import { ICreditService } from '../Interfaces/credits.model';
 import { MAX_CREDITS_AMT, MIN_CREDITS_AMT } from '../Constants/credits';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import { UserRepository } from '../Repositories/UserRepository';
 import { ModelRepository } from '../Repositories/ModelRepository';
 import { GenerationInfoRepository } from '../Repositories/GenerationInfoRepository';

@@ -6,8 +6,8 @@ import {
   InitialStoryData,
   StoryUpdateData,
 } from '../Repositories/StoryRepository';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
-
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 export interface ItemData {
   URL: string;
   modelType: string;

@@ -5,7 +5,8 @@ import {
 } from "../Interfaces/response.interface";
 import User from "../Models/user.model";
 import Story from "../Models/story.model";
-import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
+import AppError from "../Utils/Errors/AppError";
+import { HTTP_STATUS_CODE } from "../Enums/error.enum";
 import catchError from "../Utils/Errors/catchError";
 import { ModelType, modelTypeMapper } from "../Utils/Format/filterModelType";
 import paginator from "../Utils/Pagination/paginator";
@@ -279,7 +280,7 @@ const userController = {
     await User.findByIdAndUpdate(userId, {
       $pull: { jobs: { jobId: story.jobId } },
     });
-    
+
     res.status(200).json({
       message: "Story Deleted Successfully",
       data: StoryDTO.toDTO(story),

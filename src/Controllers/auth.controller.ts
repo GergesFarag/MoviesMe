@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import catchError from '../Utils/Errors/catchError';
 import { firebaseAdmin } from '../Config/firebase';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
-import User from '../Models/user.model';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import {
   createAccessToken,
   createRefreshToken,

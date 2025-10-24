@@ -1,5 +1,6 @@
 import Model from '../Models/ai.model';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import catchError from '../Utils/Errors/catchError';
 import User from '../Models/user.model';
 import Job from '../Models/job.model';

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import AppError, { DB_ERROR_CODE } from "../Utils/Errors/AppError";
+import AppError from "../Utils/Errors/AppError";
+import { DB_ERROR_CODE } from "../Enums/error.enum";
 import {
   handleCastErrorDB,
   handleDuplicateFieldsDB,

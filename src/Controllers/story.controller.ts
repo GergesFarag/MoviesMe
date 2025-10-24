@@ -3,7 +3,8 @@ import catchError from '../Utils/Errors/catchError';
 import Story from '../Models/story.model';
 import User from '../Models/user.model';
 import Job from '../Models/job.model';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import mongoose, { Types } from 'mongoose';
 import StoryGenerationInfo from '../Models/storyGenerationInfo.model';
 import {

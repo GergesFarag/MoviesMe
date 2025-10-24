@@ -1,8 +1,8 @@
 import { IAudioModel } from '../Interfaces/audioModel.interface';
 import AudioModel from '../Models/audio.model';
 import { BaseRepository } from './BaseRepository';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
-
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 export class AudioModelRepository extends BaseRepository<IAudioModel> {
   private static instance: AudioModelRepository;
 

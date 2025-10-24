@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { firebaseAdmin } from "../Config/firebase";
-import AppError, { HTTP_STATUS_CODE } from "../Utils/Errors/AppError";
+import AppError from "../Utils/Errors/AppError";
+import { HTTP_STATUS_CODE } from "../Enums/error.enum";
 import catchError from "../Utils/Errors/catchError";
 import { verifyAccessToken } from "../Utils/Auth/tokenHelpers";
-import logger from "../Config/logger";
 
 export const firebaseAuth = catchError(
   async (req: Request, res: Response, next: NextFunction) => {

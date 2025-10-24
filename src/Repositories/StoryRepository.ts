@@ -2,7 +2,8 @@ import { IStory } from '../Interfaces/story.interface';
 import Story from '../Models/story.model';
 import { JobStatus } from '../types/job';
 import { BaseRepository } from './BaseRepository';
-import AppError, { HTTP_STATUS_CODE } from '../Utils/Errors/AppError';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 
 export interface StoryCreationData {
   userId: string;
