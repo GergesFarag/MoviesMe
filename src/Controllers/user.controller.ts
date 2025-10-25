@@ -591,33 +591,6 @@ const userController = {
     });
   }),
 
-  changeLanguage: catchError(async (req, res) => {
-    const userId = req.user?.id;
-    const { language } = req.body;
-    if (!userId) {
-      throw new AppError(
-        'User not authenticated',
-        HTTP_STATUS_CODE.UNAUTHORIZED
-      );
-    }
-    if (!language || (language.trim() !== 'en' && language.trim() !== 'ar')) {
-      throw new AppError('Language is required with values en or ar', 400);
-    }
-    const user = await User.findByIdAndUpdate(
-      req.user?.id,
-      { preferredLanguage: language },
-      { new: true }
-    );
-
-    if (!user) {
-      throw new AppError('User not found', 404);
-    }
-    res.status(200).json({
-      message: 'Language updated successfully',
-      data: user.preferredLanguage,
-    });
-  }),
-
   deleteBulkStories: catchError(async (req, res) => {
     const userId = req.user!.id;
     const { ids } = req.body;
