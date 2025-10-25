@@ -54,7 +54,7 @@ export class StoryProcessorService {
         `🚀 Starting story processing for job ${job.id} with jobId: ${jobData.jobId}`
       );
 
-      await this.validateJobData(jobData);
+      await this.validateJobData(job, jobData);
 
       const existingResult = await this.checkExistingJob(jobData.jobId);
       if (existingResult) {
@@ -72,7 +72,7 @@ export class StoryProcessorService {
 
       if (jobData.voiceOver) {
         [voiceOver, imageUrls] = await Promise.all([
-          this.processVoiceOverWithProgress(job, jobData, story),
+          this.processVoiceOverWithProgress(job, jobData),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
       } else {
@@ -140,9 +140,17 @@ export class StoryProcessorService {
   }
 
   private async validateJobData(
+    job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<void> {
-    // Validate job data
+
+    updateJobProgress(
+      job,
+      PROGRESS_STEPS.VALIDATION,
+      'Validating job data',
+      getIO(),
+      QUEUE_EVENTS.STORY_PROGRESS
+    );
     if (!jobData.userId || !jobData.jobId) {
       console.log(`❌ VALIDATION FAILED: Missing userId or jobId`);
       throw new AppError('Missing required job data: userId or jobId', 400);
@@ -184,22 +192,30 @@ export class StoryProcessorService {
   ): Promise<{ story: IStoryResponse; seedreamPrompt: string }> {
     updateJobProgress(
       job,
-      10,
+      PROGRESS_STEPS.STORY_GENERATION,
       `Generating story with ${jobData.numOfScenes} scenes`,
       getIO(),
-      'story:progress'
+      QUEUE_EVENTS.STORY_PROGRESS
     );
 
-    const openAIService = new OpenAIService(
-      jobData.numOfScenes,
-      jobData.title,
-      jobData.style,
-      jobData.genere,
-      jobData.location
-    );
+    const openAIService = new OpenAIService();
 
     try {
-      const story = await openAIService.generateScenes(jobData.prompt);
+      const story:IStoryResponse = {
+        title: jobData.title || "Untitled Story",
+        scenes : Array.from({length : jobData.numOfScenes} , (_,i) => {
+          return {
+            sceneNumber : i+1,
+            sceneDescription: null,
+            image: null,
+            videoDescription: null,
+            imageDescription: null,
+            narration: null,
+            scenePrompt: null,
+          }
+        })
+      }
+
       console.log('🎯 Generating Seedream prompt...');
       const seedreamPrompt = await openAIService.generateSeedreamPrompt(
         jobData.prompt,
@@ -208,25 +224,6 @@ export class StoryProcessorService {
         jobData.genere,
         jobData.location
       );
-
-      // Validate generated story
-      if (
-        !story ||
-        !story.scenes ||
-        story.scenes.length !== jobData.numOfScenes
-      ) {
-        console.error('❌ Invalid story generated:', {
-          hasStory: !!story,
-          hasScenes: !!story?.scenes,
-          sceneCount: story?.scenes?.length,
-          expectedScenes: jobData.numOfScenes,
-        });
-        throw new AppError(
-          'Failed to generate the correct number of story scenes',
-          500
-        );
-      }
-
       console.log(
         `✅ Story generated successfully with ${story.scenes.length} scenes`
       );
@@ -510,8 +507,7 @@ export class StoryProcessorService {
   }
   private async processVoiceOverWithProgress(
     job: Job,
-    jobData: IStoryProcessingDTO & { userId: string; jobId: string },
-    story: IStoryResponse
+    jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<IProcessedVoiceOver | null> {
     if (!jobData.voiceOver) {
       console.log('⏭️ No voice over requested, skipping...');
@@ -540,13 +536,7 @@ export class StoryProcessorService {
         console.log('📝 Using provided voice over lyrics');
       } else {
         console.log('🤖 Generating narrative text with OpenAI...');
-        const openAIService = new OpenAIService(
-          jobData.numOfScenes,
-          jobData.title,
-          jobData.style,
-          jobData.genere,
-          jobData.location
-        );
+        const openAIService = new OpenAIService();
         const generationInfo = await StoryGenerationInfo.findOne().lean();
 
         const language = generationInfo?.languages.find(

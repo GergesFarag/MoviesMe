@@ -23,7 +23,6 @@ export class VideoGenerationService {
       ffmpeg.setFfmpegPath(ffmpegInstaller.path);
       console.log("✅ FFmpeg configured successfully:", ffmpegInstaller.path);
     } catch (error) {
-      console.error("❌ Failed to configure FFmpeg:", error);
       throw new AppError("FFmpeg configuration failed", 500);
     }
   }
@@ -145,16 +144,8 @@ export class VideoGenerationService {
         fs.promises.writeFile(tempAudioPath, downloadedAudioBuffer),
       ]);
 
-      console.log(`📁 Created temporary files:`);
-      console.log(`  Video: ${tempVideoPath}`);
-      console.log(`  Audio: ${tempAudioPath}`);
-
       const videoStats = await fs.promises.stat(tempVideoPath);
       const audioStats = await fs.promises.stat(tempAudioPath);
-
-      console.log(`📊 File sizes:`);
-      console.log(`  Video: ${videoStats.size} bytes`);
-      console.log(`  Audio: ${audioStats.size} bytes`);
 
       if (videoStats.size === 0) {
         throw new Error("Video file is empty");
@@ -163,7 +154,6 @@ export class VideoGenerationService {
         throw new Error("Audio file is empty");
       }
 
-      // Use default video duration (no ffprobe)
       const videoDuration = numOfScenes * 5; // 5 seconds per scene
       console.log(
         `📹 Using calculated video duration: ${videoDuration} seconds`
@@ -208,12 +198,6 @@ export class VideoGenerationService {
               "🎬 Started audio composition with video buffer, command:",
               commandLine
             );
-          })
-          .on("progress", (progress) => {
-            console.log(`⏳ FFmpeg progress: ${progress.percent}% done`);
-          })
-          .on("stderr", (stderrLine) => {
-            console.log(`📝 FFmpeg stderr: ${stderrLine}`);
           })
           .on("end", () => {
             console.log(

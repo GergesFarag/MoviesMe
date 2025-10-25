@@ -1,9 +1,9 @@
 export interface IScene {
   sceneNumber: number;
-  imageDescription: string;
-  videoDescription: string;
-  sceneDescription: string;
-  scenePrompt?: string;
-  image?: string;
-  narration?: string;
+  imageDescription: string|null;
+  videoDescription: string|null;
+  sceneDescription: string|null;
+  scenePrompt?: string|null;
+  image?: string|null;
+  narration?: string|null;
 }

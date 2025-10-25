@@ -90,53 +90,53 @@ export class ImageGenerationService {
     return resultUrl;
   }
 
-  async generateImagesForScenes(
-    scenes: IScene[],
-    refImage: string,
-    skipFirstIteration: boolean
-  ): Promise<string[]> {
-    const imageUrls: string[] = [];
-    let currentRefImage = refImage;
-    let scene = null;
-    for (let i = 0; i < scenes.length; i++) {
-      if (skipFirstIteration && i === 0) {
-        imageUrls.push(refImage);
-        continue;
-      }
-      scene = scenes[i];
-      try {
-        console.log(`Generating image for scene ${i + 1}/${scenes.length}`);
-        console.log(
-          `Original description: ${scene.imageDescription.substring(0, 100)}...`
-        );
+  // async generateImagesForScenes(
+  //   scenes: IScene[],
+  //   refImage: string,
+  //   skipFirstIteration: boolean
+  // ): Promise<string[]> {
+  //   const imageUrls: string[] = [];
+  //   let currentRefImage = refImage;
+  //   let scene = null;
+  //   for (let i = 0; i < scenes.length; i++) {
+  //     if (skipFirstIteration && i === 0) {
+  //       imageUrls.push(refImage);
+  //       continue;
+  //     }
+  //     scene = scenes[i];
+  //     try {
+  //       console.log(`Generating image for scene ${i + 1}/${scenes.length}`);
+  //       console.log(
+  //         `Original description: ${scene.imageDescription.substring(0, 100)}...`
+  //       );
 
-        const imageUrl = await this.generateImageFromRefImage(
-          currentRefImage,
-          scene.imageDescription
-        );
+  //       const imageUrl = await this.generateImageFromRefImage(
+  //         currentRefImage,
+  //         scene.imageDescription
+  //       );
 
-        if (!imageUrl) {
-          throw new Error(`Failed to generate image for scene ${i + 1}`);
-        }
+  //       if (!imageUrl) {
+  //         throw new Error(`Failed to generate image for scene ${i + 1}`);
+  //       }
 
-        imageUrls.push(imageUrl);
-        currentRefImage = imageUrl;
+  //       imageUrls.push(imageUrl);
+  //       currentRefImage = imageUrl;
 
-        console.log(
-          `Successfully generated image for scene ${i + 1}: ${imageUrl}`
-        );
-      } catch (error) {
-        console.error(`Error generating image for scene ${i + 1}:`, error);
-        throw new Error(
-          `Failed to generate image for scene ${i + 1}: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-      }
-    }
+  //       console.log(
+  //         `Successfully generated image for scene ${i + 1}: ${imageUrl}`
+  //       );
+  //     } catch (error) {
+  //       console.error(`Error generating image for scene ${i + 1}:`, error);
+  //       throw new Error(
+  //         `Failed to generate image for scene ${i + 1}: ${
+  //           error instanceof Error ? error.message : "Unknown error"
+  //         }`
+  //       );
+  //     }
+  //   }
 
-    return imageUrls;
-  }
+  //   return imageUrls;
+  // }
 
   async generateSeedreamImages(
     seedreamPrompt: string,

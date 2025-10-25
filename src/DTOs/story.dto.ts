@@ -1,4 +1,4 @@
-import { IStory } from "../Interfaces/story.interface";
+import { IStory } from '../Interfaces/story.interface';
 interface IStoryDTO {
   _id: string;
   title: string | null;
@@ -47,18 +47,18 @@ class StoryDTO implements IStoryMapper {
   toAbstractDTO(): IStoryAbstactDTO {
     // Add safety checks to prevent undefined errors
     if (!this.story) {
-      throw new Error("Story object is undefined or null");
+      throw new Error('Story object is undefined or null');
     }
 
     if (!this.story.scenes || !Array.isArray(this.story.scenes)) {
-      throw new Error("Story scenes are undefined, null, or not an array");
+      throw new Error('Story scenes are undefined, null, or not an array');
     }
 
     return {
       _id: this.story._id as string,
       title: this.story.title || null,
       prompt: this.story.prompt || null,
-      status: this.story.status || "unknown",
+      status: this.story.status || 'unknown',
       jobId: this.story.jobId || null,
       isFav: this.story.isFav || false,
       thumbnail: this.story.thumbnail || null,
@@ -68,11 +68,11 @@ class StoryDTO implements IStoryMapper {
 
   toDTO(): IStoryDTO {
     if (!this.story) {
-      throw new Error("Story object is undefined or null");
+      throw new Error('Story object is undefined or null');
     }
 
     if (!this.story.scenes || !Array.isArray(this.story.scenes)) {
-      throw new Error("Story scenes are undefined, null, or not an array");
+      throw new Error('Story scenes are undefined, null, or not an array');
     }
 
     return {
@@ -106,14 +106,14 @@ class StoryDTO implements IStoryMapper {
 
   static toDTO(story: IStory): IStoryDTO {
     if (!story) {
-      throw new Error("Cannot convert undefined or null story to DTO");
+      throw new Error('Cannot convert undefined or null story to DTO');
     }
     return new StoryDTO(story).toDTO();
   }
 
   static toAbstractDTO(story: IStory): IStoryAbstactDTO {
     if (!story) {
-      throw new Error("Cannot convert undefined or null story to AbstractDTO");
+      throw new Error('Cannot convert undefined or null story to AbstractDTO');
     }
     return new StoryDTO(story).toAbstractDTO();
   }

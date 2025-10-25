@@ -15,7 +15,6 @@ export class StoryQueueHandlers {
     this.creditService = CreditService.getInstance();
   }
   async onCompleted(job: Job, result: any) {
-    console.log(`✅ Story job with ID ${job.id} has been completed.`);
     console.log('Result:', result);
     await storyQueue.removeJobs(job.data.jobId);
     try {
@@ -56,7 +55,7 @@ export class StoryQueueHandlers {
         `ℹ️ Story job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`
       );
       await storyQueue.removeJobs(job.data.jobId);
-      return; // Exit early - everything already handled
+      return;
     }
 
     await storyQueue.removeJobs(job.data.jobId);
