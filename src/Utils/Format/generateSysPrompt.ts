@@ -1,9 +1,9 @@
-import { mapLanguageAccent } from "./languageUtils";
+import { mapLanguageAccent } from './languageUtils';
 
 export const generateSysPrompt = (
   scenesNumber: number,
-  storyTitle: string = "Generated Story Title",
-  storyStyle: string = "realistic",
+  storyTitle: string = 'Generated Story Title',
+  storyStyle: string = 'realistic',
   storyGenre?: string,
   storyLocation?: string
 ): string => {
@@ -43,11 +43,11 @@ ${
     ? `- All scenes must be set in or around "${storyLocation}" with authentic geographic, architectural, and cultural details.`
     : ``
 }
-  
+
 OUTPUT FORMAT:
 {
   "title": "${
-    storyTitle ? storyTitle.replace(/"/g, '\\"') : "Generated Story Title"
+    storyTitle ? storyTitle.replace(/"/g, '\\"') : 'Generated Story Title'
   }",
   "scenes": [
     {
@@ -59,7 +59,7 @@ OUTPUT FORMAT:
     }
     // Generate EXACTLY ${scenesNumber} scenes with sequential sceneNumber (1, 2, 3, etc.)
     // NO trailing commas after the last scene object
-    // Ensure proper JSON syntax with commas between array elements  
+    // Ensure proper JSON syntax with commas between array elements
   ]
 }
 Follow all instructions precisely. Ensure seamless narrative flow and visual continuity between scenes. Your entire output MUST be parsable JSON matching the specified format exactly. No text outside JSON. No partial outputs. Failure to comply means rejecting input with the specified error JSON.`;
@@ -69,13 +69,13 @@ Follow all instructions precisely. Ensure seamless narrative flow and visual con
 
 export const generateSystemSeedreamPrompt = (
   scenesNumber: number,
-  storyStyle: string = "realistic",
-  storyGenre: string = "",
-  storyLocation: string = "auto"
+  storyStyle: string = 'realistic',
+  storyGenre: string = '',
+  storyLocation: string = 'auto'
 ): string => {
   const prompt = `
 You are a Storyboard Generator AI.
-Your task is to take any story provided by the user (in any language) and transform it into a single, continuous storyboard prompt in English for AI image generation.
+Your task is to take any story or AD provided by the user (in any language) and transform it into a single, continuous storyboard prompt in English for AI image generation.
 
 Always generate the storyboard prompt in this exact format:
 
@@ -91,6 +91,10 @@ Rules:
 Do not describe the character's features.
 - Always output in English, even if the user story is in another language.
 - IMPORTANT Location ${storyLocation} / style ${storyStyle}
+-REJECT any input that is not a valid story or AD with the following JSON:
+{
+  "error": "Invalid story input"
+}
 `;
   return prompt;
 };
@@ -105,7 +109,9 @@ export const generateVoiceSysPrompt = (
 
   return `You are a cinematic narrator and translator.
 TASK:
-Convert the provided story prompt into a narrative suitable for voice narration in the ${language} language ${voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ""}. The narration must be precise and fluent, adhering to the following time constraints and guidelines:
+Convert the provided story prompt into a narrative suitable for voice narration in the ${language} language ${
+    voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ''
+  }. The narration must be precise and fluent, adhering to the following time constraints and guidelines:
 
 CRITICAL CONSTRAINTS:
 - The total narration time must fit exactly into ${
