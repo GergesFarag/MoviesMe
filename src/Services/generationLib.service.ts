@@ -261,6 +261,9 @@ export class GenerationLibService {
       await this.userRepository.findByIdAndUpdate(userId, {
         $pull: { generationLib: { _id: new Types.ObjectId(generationId) } },
       });
+      await this.userRepository.findByIdAndUpdate(userId, {
+        $pull: { jobs: { jobId } },
+      });
 
       if (jobId) {
         await this.jobRepository.delete(String(jobId));

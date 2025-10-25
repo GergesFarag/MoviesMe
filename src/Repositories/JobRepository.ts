@@ -68,4 +68,11 @@ export class JobRepository extends BaseRepository<IJob> {
       updatedAt: new Date(),
     } as any);
   }
+
+  async deleteManyByJobIds(
+    jobIds: string[]
+  ): Promise<{ deletedCount: number }> {
+    const result = await this.model.deleteMany({ jobId: { $in: jobIds } });
+    return { deletedCount: result.deletedCount || 0 };
+  }
 }

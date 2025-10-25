@@ -1,56 +1,64 @@
-import { IEffectItem } from "../Interfaces/effectItem.interface";
+import { IEffectItem } from '../Interfaces/effectItem.interface';
 import {
   UserProfileNonSelectableFields,
   userProfileResponse,
-} from "../Interfaces/response.interface";
-import User from "../Models/user.model";
-import Story from "../Models/story.model";
-import AppError from "../Utils/Errors/AppError";
-import { HTTP_STATUS_CODE } from "../Enums/error.enum";
-import catchError from "../Utils/Errors/catchError";
-import { ModelType, modelTypeMapper } from "../Utils/Format/filterModelType";
-import paginator from "../Utils/Pagination/paginator";
-import Job from "../Models/job.model";
-import { UploadApiResponse } from "cloudinary";
-import { cloudUpload, generateHashFromBuffer } from "../Utils/APIs/cloudinary";
-import { ItemDTO } from "../DTOs/item.dto";
-import { IStoryDTO, StoryDTO } from "../DTOs/story.dto";
-import { TPaginationQuery, TSort, TUserLibraryQuery } from "../types";
-import { Sorting } from "../Utils/Sorting/sorting";
-import mongoose, { ObjectId } from "mongoose";
-import { IStory } from "../Interfaces/story.interface";
-import { GenerationLibService } from "../Services/generationLib.service";
-import { translationService } from "../Services/translation.service";
-import { NotificationService } from "../Services/notification.service";
+} from '../Interfaces/response.interface';
+import User from '../Models/user.model';
+import Story from '../Models/story.model';
+import AppError from '../Utils/Errors/AppError';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
+import catchError from '../Utils/Errors/catchError';
+import { ModelType, modelTypeMapper } from '../Utils/Format/filterModelType';
+import paginator from '../Utils/Pagination/paginator';
+import Job from '../Models/job.model';
+import { UploadApiResponse } from 'cloudinary';
+import { cloudUpload, generateHashFromBuffer } from '../Utils/APIs/cloudinary';
+import { ItemDTO } from '../DTOs/item.dto';
+import { IStoryDTO, StoryDTO } from '../DTOs/story.dto';
+import { TPaginationQuery, TSort, TUserLibraryQuery } from '../types';
+import { Sorting } from '../Utils/Sorting/sorting';
+import mongoose, { ObjectId } from 'mongoose';
+import { IStory } from '../Interfaces/story.interface';
+import { GenerationLibService } from '../Services/generationLib.service';
+import { translationService } from '../Services/translation.service';
+import { NotificationService } from '../Services/notification.service';
+import { UserRepository } from '../Repositories/UserRepository';
+import { StoryRepository } from '../Repositories/StoryRepository';
+import { JobRepository } from '../Repositories/JobRepository';
+import { user } from '@elevenlabs/elevenlabs-js/api';
 
 const generationLibService = new GenerationLibService();
+const userRepository = UserRepository.getInstance();
+const storyRepository = StoryRepository.getInstance();
+const jobRepository = JobRepository.getInstance();
+
 const NON_SELECTABLE_FIELDS: UserProfileNonSelectableFields[] = [
-  "-FCMToken",
-  "-__v",
-  "-effectsLib",
-  "-storiesLib",
-  "-generationLib",
-  "-jobs",
-  "-notifications",
-  "-isActive",
-  "-isAdmin",
-  "-firebaseUid",
-  "-preferredLanguage",
+  '-FCMToken',
+  '-__v',
+  '-effectsLib',
+  '-storiesLib',
+  '-generationLib',
+  '-jobs',
+  '-notifications',
+  '-isActive',
+  '-isAdmin',
+  '-firebaseUid',
+  '-preferredLanguage',
 ];
 const userController = {
   getProfile: catchError(async (req, res) => {
-    console.log("UserId", req.user!.id);
+    console.log('UserId', req.user!.id);
     if (!req.user?.id) {
-      throw new AppError("Unauthorized", HTTP_STATUS_CODE.UNAUTHORIZED);
+      throw new AppError('Unauthorized', HTTP_STATUS_CODE.UNAUTHORIZED);
     }
     const user = await User.findById(req.user!.id)
-      .select(NON_SELECTABLE_FIELDS.join(" "))
+      .select(NON_SELECTABLE_FIELDS.join(' '))
       .lean();
     if (!user) {
-      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+      throw new AppError('User not found', HTTP_STATUS_CODE.NOT_FOUND);
     }
     res.status(200).json({
-      message: "User profile retrieved successfully",
+      message: 'User profile retrieved successfully',
       data: user,
     } as userProfileResponse);
   }),
@@ -59,8 +67,8 @@ const userController = {
     const { id } = req.user!;
     const profilePicture = req.file;
     if (
-      Object.keys(req.body).includes("profilePicture") &&
-      req.body.profilePicture === "null"
+      Object.keys(req.body).includes('profilePicture') &&
+      req.body.profilePicture === 'null'
     ) {
       req.body.profilePicture = null;
     } else {
@@ -68,17 +76,17 @@ const userController = {
         const result = (await cloudUpload(
           profilePicture.buffer,
           `user_${id}/images/profile`,
-          "profile_picture",
+          'profile_picture',
           { overwrite: true, invalidate: true }
         )) as UploadApiResponse;
         req.body.profilePicture = result.secure_url;
       }
       const user = await User.findById(id).select(
-        NON_SELECTABLE_FIELDS.join(" ")
+        NON_SELECTABLE_FIELDS.join(' ')
       );
 
       if (!user) {
-        throw new AppError("User not found", 404);
+        throw new AppError('User not found', 404);
       }
 
       const updatedData = {
@@ -93,7 +101,7 @@ const userController = {
       await user.save();
 
       res.status(200).json({
-        message: "User profile updated successfully",
+        message: 'User profile updated successfully',
         data: user,
       } as userProfileResponse);
     }
@@ -107,27 +115,27 @@ const userController = {
     const page = query.page ? parseInt(query.page.toString(), 10) : 1;
     const status = query.status;
     const isFav = query.isFav;
-    const sortBy: TSort = query.sortBy || "newest";
-    const sortOrder = sortBy === "oldest" ? 1 : -1;
+    const sortBy: TSort = query.sortBy || 'newest';
+    const sortOrder = sortBy === 'oldest' ? 1 : -1;
 
     if (isNaN(page) || page <= 0) {
-      throw new AppError("Invalid page number", 400);
+      throw new AppError('Invalid page number', 400);
     }
     if (isNaN(limit) || limit <= 0) {
-      throw new AppError("Invalid limit", 400);
+      throw new AppError('Invalid limit', 400);
     }
 
     if (!modelType) {
-      throw new AppError("Model type is required", 400);
+      throw new AppError('Model type is required', 400);
     }
 
-    let filteringArr = modelType.split(",").map((item: string) => item.trim());
+    let filteringArr = modelType.split(',').map((item: string) => item.trim());
     filteringArr = filteringArr.map((type: string) => {
       return modelTypeMapper[type as ModelType];
     });
     const user = await User.findById(userId).lean();
     if (!user) {
-      throw new AppError("User not found", HTTP_STATUS_CODE.NOT_FOUND);
+      throw new AppError('User not found', HTTP_STATUS_CODE.NOT_FOUND);
     }
     const userItems =
       user.effectsLib?.sort((a, b) => {
@@ -149,20 +157,20 @@ const userController = {
     if (userItems) {
       userLib = userItems.filter((item: IEffectItem) => {
         return (
-          ((status as string) === "all" ? true : item.status === status) &&
+          ((status as string) === 'all' ? true : item.status === status) &&
           filteringArr.find((type: string) => type === item.modelType)
         );
       });
       if (isFav !== undefined) {
-        const favStatus = isFav === "true";
+        const favStatus = isFav === 'true';
         userLib = userLib.filter((item) => item.isFav === favStatus);
       }
       paginatedItems = paginator(userLib, page, limit);
     }
     const itemsDTO = ItemDTO.toListDTO(paginatedItems);
-    console.log("Last item", itemsDTO[0]);
+    console.log('Last item', itemsDTO[0]);
     res.status(200).json({
-      message: "User items retrieved successfully",
+      message: 'User items retrieved successfully',
       data: {
         items: itemsDTO,
         paginationData: {
@@ -180,17 +188,17 @@ const userController = {
       limit = 10,
       isFav,
       status,
-      sortBy = "newest",
+      sortBy = 'newest',
     }: TUserLibraryQuery = req.query;
     const userId = req.user!.id;
 
     let filterQuery: any = { userId };
 
     if (isFav !== undefined) {
-      filterQuery.isFav = isFav === "true";
+      filterQuery.isFav = isFav === 'true';
     }
 
-    if (status && status !== "all") {
+    if (status && status !== 'all') {
       filterQuery.status = status;
     }
 
@@ -206,9 +214,9 @@ const userController = {
     const storiesDTO = paginatedStories.map((story: IStory) =>
       StoryDTO.toAbstractDTO(story)
     );
-    console.log("Stories", storiesDTO);
+    console.log('Stories', storiesDTO);
     res.status(200).json({
-      message: "Stories Fetched Successfully",
+      message: 'Stories Fetched Successfully',
       data: {
         items: storiesDTO,
         paginationData: {
@@ -225,14 +233,14 @@ const userController = {
     const { storyId } = req.params;
     let couldBeDeleted = false;
     if (!storyId) {
-      throw new AppError("Story ID is required", 400);
+      throw new AppError('Story ID is required', 400);
     }
 
     if (!mongoose.Types.ObjectId.isValid(storyId)) {
-      throw new AppError("Invalid story ID format", 400);
+      throw new AppError('Invalid story ID format', 400);
     }
     if (userId) {
-      const user = await User.findById(userId).select("storiesLib").lean();
+      const user = await User.findById(userId).select('storiesLib').lean();
       if (user?.storiesLib?.find((s: ObjectId) => s.toString() === storyId)) {
         couldBeDeleted = true;
       }
@@ -242,11 +250,11 @@ const userController = {
     }).lean();
 
     if (!story) {
-      throw new AppError("Story not found", 404);
+      throw new AppError('Story not found', 404);
     }
 
     res.status(200).json({
-      message: "Story Fetched Successfully",
+      message: 'Story Fetched Successfully',
       data: { ...StoryDTO.toDTO(story as IStory), couldBeDeleted },
     });
   }),
@@ -256,20 +264,15 @@ const userController = {
     const { storyId } = req.params;
 
     if (!storyId) {
-      throw new AppError("Story ID is required", 400);
+      throw new AppError('Story ID is required', 400);
     }
-
-    if (!mongoose.Types.ObjectId.isValid(storyId)) {
-      throw new AppError("Invalid story ID format", 400);
-    }
-
     const story = await Story.findOneAndDelete({
       _id: storyId,
       userId: userId,
     });
 
     if (!story) {
-      throw new AppError("Story not found", 404);
+      throw new AppError('Story not found', 404);
     }
 
     await Promise.all([
@@ -282,7 +285,7 @@ const userController = {
     });
 
     res.status(200).json({
-      message: "Story Deleted Successfully",
+      message: 'Story Deleted Successfully',
       data: StoryDTO.toDTO(story),
     });
   }),
@@ -292,17 +295,17 @@ const userController = {
     const itemId = req.body.itemId;
 
     if (!itemId) {
-      throw new AppError("Item ID is required", 400);
+      throw new AppError('Item ID is required', 400);
     }
 
     const user = await User.findById(userId);
 
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError('User not found', 404);
     }
     const itemIds = user?.effectsLib?.map((item) => item._id!.toString());
     if (!itemIds!.includes(itemId)) {
-      throw new AppError("Item not found", 404);
+      throw new AppError('Item not found', 404);
     }
     user.effectsLib?.map((item) => {
       if (item._id!.toString() === itemId) {
@@ -311,7 +314,7 @@ const userController = {
     });
     await user.save();
     res.status(HTTP_STATUS_CODE.OK).json({
-      message: "User favorites updated successfully",
+      message: 'User favorites updated successfully',
       data: {
         userFavs: user.effectsLib?.filter((item) => item.isFav === true),
       },
@@ -323,11 +326,11 @@ const userController = {
     const { storyId } = req.body;
 
     if (!storyId) {
-      throw new AppError("Story ID is required", 400);
+      throw new AppError('Story ID is required', 400);
     }
 
     if (!mongoose.Types.ObjectId.isValid(storyId)) {
-      throw new AppError("Invalid story ID format", 400);
+      throw new AppError('Invalid story ID format', 400);
     }
 
     const story = await Story.findOne({
@@ -336,14 +339,14 @@ const userController = {
     });
 
     if (!story) {
-      throw new AppError("Story not found", 404);
+      throw new AppError('Story not found', 404);
     }
 
     story.isFav = !story.isFav;
     await story.save();
 
     res.status(HTTP_STATUS_CODE.OK).json({
-      message: "Story favorite status updated successfully",
+      message: 'Story favorite status updated successfully',
       data: {
         storyId: story._id,
         isFav: story.isFav,
@@ -356,27 +359,27 @@ const userController = {
     const itemId = req.params.itemId;
 
     if (!itemId) {
-      throw new AppError("Item ID is required", 400);
+      throw new AppError('Item ID is required', 400);
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError('User not found', 404);
     }
     const item = user.effectsLib?.find(
       (item) => item._id!.toString() === itemId
     );
     if (!item) {
-      throw new AppError("Item not found", 404);
+      throw new AppError('Item not found', 404);
     }
     user.effectsLib = user?.effectsLib?.filter(
       (item) => item._id!.toString() !== itemId
     );
     user.jobs = user?.jobs?.filter((j) => j.jobId !== item.jobId);
     await Job.findOneAndDelete({ jobId: item.jobId });
-    await user!.save();
+    await user.save();
     res.status(HTTP_STATUS_CODE.OK).json({
-      message: "User item deleted successfully",
+      message: 'User item deleted successfully',
       data: {
         item: ItemDTO.toDTO(item),
       },
@@ -386,19 +389,19 @@ const userController = {
   getNotifications: catchError(async (req, res) => {
     const userId = req.user!.id;
     if (!req.query.category) {
-      throw new AppError("Category filter is required", 400);
+      throw new AppError('Category filter is required', 400);
     }
     const filter: string[] = (req.query.category as string)
       .trim()
       .toLowerCase()
-      .split(",");
+      .split(',');
     const user = await User.findById(userId).lean();
 
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError('User not found', 404);
     }
     let filteredNotifications = user.notifications || [];
-    if (!filter.includes("all")) {
+    if (!filter.includes('all')) {
       filteredNotifications = user.notifications!.filter((notification) => {
         return filter.includes(notification.category!);
       });
@@ -406,7 +409,7 @@ const userController = {
 
     const sortedNotifications =
       filteredNotifications.length > 0
-        ? Sorting.sortItems(filteredNotifications, "newest")
+        ? Sorting.sortItems(filteredNotifications, 'newest')
         : [];
 
     const validNotifications = sortedNotifications.filter((notification) => {
@@ -417,13 +420,13 @@ const userController = {
     });
 
     let notificationStatus,
-      notificationType = "";
-    const userLang = req.headers["accept-language"] || "en";
+      notificationType = '';
+    const userLang = req.headers['accept-language'] || 'en';
     const translatedNotifications = validNotifications.map((notification) => {
       ({ status: notificationStatus, type: notificationType } =
         NotificationService.getNotificationStatusAndType(notification));
       console.log(
-        "Notificaion Status , and type",
+        'Notificaion Status , and type',
         notificationStatus,
         notificationType
       );
@@ -431,19 +434,19 @@ const userController = {
         ...notification,
         title: translationService.translateText(
           `notifications.${notificationType}.${notificationStatus}`,
-          "title",
+          'title',
           userLang
         ),
         message: translationService.translateText(
           `notifications.${notificationType}.${notificationStatus}`,
-          "message",
+          'message',
           userLang,
-          { credits: (notification.data as any)?.amount || "" }
+          { credits: (notification.data as any)?.amount || '' }
         ),
       };
     });
     res.status(200).json({
-      message: "User notifications retrieved successfully",
+      message: 'User notifications retrieved successfully',
       data: {
         notifications: translatedNotifications,
       },
@@ -454,40 +457,40 @@ const userController = {
     const userId = req.user?.id;
     if (!userId) {
       throw new AppError(
-        "User not authenticated",
+        'User not authenticated',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
     const { page = 1, limit = 10, status, isFav, types } = req.query;
     let generations = [];
     if (!types) {
-      throw new AppError("Types parameter is required", 400);
+      throw new AppError('Types parameter is required', 400);
     }
     const typesList = types
       .toString()
-      .split(",")
+      .split(',')
       .map((type) => type.trim());
-    console.log("LIST TYPES", typesList);
-    console.log("Query parameters:", { status, isFav, types });
+    console.log('LIST TYPES', typesList);
+    console.log('Query parameters:', { status, isFav, types });
 
-    if (typesList[0].toLowerCase() !== "all") {
-      if (typesList.includes("videoEffects")) {
-        console.log("Fetching video generations...");
+    if (typesList[0].toLowerCase() !== 'all') {
+      if (typesList.includes('videoEffects')) {
+        console.log('Fetching video generations...');
         const videoGenerations =
           await generationLibService.getUserVideoGenerations(userId, {
             status: status as string,
             isFav: isFav as string,
           });
-        console.log("Video generations found:", videoGenerations.length);
+        console.log('Video generations found:', videoGenerations.length);
         generations.push(...videoGenerations);
       }
-      if (typesList.includes("imageEffects")) {
+      if (typesList.includes('imageEffects')) {
         const imageGenerations =
           await generationLibService.getUserImageGenerations(userId, {
             status: status as string,
             isFav: isFav as string,
           });
-        console.log("Image generations found:", imageGenerations.length);
+        console.log('Image generations found:', imageGenerations.length);
         generations.push(...imageGenerations);
       }
     } else {
@@ -495,10 +498,10 @@ const userController = {
         status: status as string,
         isFav: isFav as string,
       });
-      console.log("All generations found:", generations.length);
+      console.log('All generations found:', generations.length);
     }
-    console.log("Final generations count:", generations.length);
-    console.log("Sample generation:", generations[0]);
+    console.log('Final generations count:', generations.length);
+    console.log('Sample generation:', generations[0]);
     const paginatedGenerations = paginator(
       generations,
       Number(page),
@@ -506,7 +509,7 @@ const userController = {
     );
     res.status(200).json({
       success: true,
-      message: "Generations retrieved successfully",
+      message: 'Generations retrieved successfully',
       data: {
         items: paginatedGenerations,
         paginationData: {
@@ -522,21 +525,21 @@ const userController = {
     const userId = req.user?.id;
     if (!userId) {
       throw new AppError(
-        "User not authenticated",
+        'User not authenticated',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
 
     const { id } = req.params;
     if (!id) {
-      throw new AppError("Generation ID is required", 400);
+      throw new AppError('Generation ID is required', 400);
     }
 
     const generation = await generationLibService.getGenerationById(userId, id);
 
     res.status(200).json({
       success: true,
-      message: "Generation retrieved successfully",
+      message: 'Generation retrieved successfully',
       data: generation,
     });
   }),
@@ -545,7 +548,7 @@ const userController = {
     const userId = req.user?.id;
     if (!userId) {
       throw new AppError(
-        "User not authenticated",
+        'User not authenticated',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
@@ -553,7 +556,7 @@ const userController = {
     const { generationId } = req.body;
 
     if (!generationId) {
-      throw new AppError("Generation ID is required", 400);
+      throw new AppError('Generation ID is required', 400);
     }
 
     const updatedGeneration = await generationLibService.updateFavoriteStatus(
@@ -563,7 +566,7 @@ const userController = {
 
     res.status(200).json({
       success: true,
-      message: "Favorite status updated successfully",
+      message: 'Favorite status updated successfully',
       data: updatedGeneration,
     });
   }),
@@ -572,21 +575,21 @@ const userController = {
     const userId = req.user?.id;
     if (!userId) {
       throw new AppError(
-        "User not authenticated",
+        'User not authenticated',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
 
     const { id } = req.params;
     if (!id) {
-      throw new AppError("Generation ID is required", 400);
+      throw new AppError('Generation ID is required', 400);
     }
 
     await generationLibService.deleteGeneration(userId, id);
 
     res.status(200).json({
       success: true,
-      message: "Generation deleted successfully",
+      message: 'Generation deleted successfully',
     });
   }),
 
@@ -595,12 +598,12 @@ const userController = {
     const { language } = req.body;
     if (!userId) {
       throw new AppError(
-        "User not authenticated",
+        'User not authenticated',
         HTTP_STATUS_CODE.UNAUTHORIZED
       );
     }
-    if (!language || (language.trim() !== "en" && language.trim() !== "ar")) {
-      throw new AppError("Language is required with values en or ar", 400);
+    if (!language || (language.trim() !== 'en' && language.trim() !== 'ar')) {
+      throw new AppError('Language is required with values en or ar', 400);
     }
     const user = await User.findByIdAndUpdate(
       req.user?.id,
@@ -609,11 +612,124 @@ const userController = {
     );
 
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError('User not found', 404);
     }
     res.status(200).json({
-      message: "Language updated successfully",
+      message: 'Language updated successfully',
       data: user.preferredLanguage,
+    });
+  }),
+
+  deleteBulkStories: catchError(async (req, res) => {
+    const userId = req.user!.id;
+    const { storyIds } = req.body;
+
+    if (!storyIds || !Array.isArray(storyIds) || storyIds.length === 0) {
+      throw new AppError('storyIds array is required', 400);
+    }
+
+    const stories = await storyRepository.findUserStories(userId, storyIds);
+
+    if (stories.length === 0) {
+      throw new AppError('No stories found for deletion', 404);
+    }
+
+    const foundStoryIds = stories.map((story) => (story._id as any).toString());
+    const jobIds = stories.map((story) => story.jobId).filter(Boolean);
+
+    await storyRepository.deleteManyByIds(userId, foundStoryIds);
+
+    await userRepository.removeMultipleFromStoriesLib(userId, foundStoryIds);
+
+    if (jobIds.length > 0) {
+      await jobRepository.deleteManyByJobIds(jobIds);
+      await userRepository.removeMultipleJobsByJobIds(userId, jobIds);
+    }
+
+    res.status(HTTP_STATUS_CODE.OK).json({
+      message: 'Stories deleted successfully',
+      data: {
+        deletedCount: stories.length,
+        deletedIds: foundStoryIds,
+      },
+    });
+  }),
+
+  deleteBulkGenerations: catchError(async (req, res) => {
+    const userId = req.user!.id;
+    const { generationIds } = req.body;
+
+    if (
+      !generationIds ||
+      !Array.isArray(generationIds) ||
+      generationIds.length === 0
+    ) {
+      throw new AppError('generationIds array is required', 400);
+    }
+
+    const generationsToDelete = await userRepository.getGenerationsByIds(
+      userId,
+      generationIds
+    );
+
+    if (generationsToDelete.length === 0) {
+      throw new AppError('No matching generations found for deletion', 404);
+    }
+
+    const jobIds = generationsToDelete
+      .map((item) => item.jobId)
+      .filter(Boolean);
+    const deletedIds = generationsToDelete.map((item) => item._id!.toString());
+
+    await userRepository.removeMultipleFromGenerationLib(userId, generationIds);
+
+    if (jobIds.length > 0) {
+      await jobRepository.deleteManyByJobIds(jobIds);
+      await userRepository.removeMultipleJobsByJobIds(userId, jobIds);
+    }
+
+    res.status(HTTP_STATUS_CODE.OK).json({
+      message: 'Generations deleted successfully',
+      data: {
+        deletedCount: generationsToDelete.length,
+        deletedIds: deletedIds,
+      },
+    });
+  }),
+
+  deleteBulkEffects: catchError(async (req, res) => {
+    const userId = req.user!.id;
+    const { effectIds } = req.body;
+
+    if (!effectIds || !Array.isArray(effectIds) || effectIds.length === 0) {
+      throw new AppError('effectIds array is required', 400);
+    }
+
+    const effectsToDelete = await userRepository.getEffectsByIds(
+      userId,
+      effectIds
+    );
+
+    if (effectsToDelete.length === 0) {
+      throw new AppError('No matching effects found for deletion', 404);
+    }
+
+    const jobIds = effectsToDelete.map((item) => item.jobId).filter(Boolean);
+    const deletedIds = effectsToDelete.map((item) => item._id!.toString());
+
+    await userRepository.removeMultipleFromEffectsLib(userId, effectIds);
+
+    if (jobIds.length > 0) {
+      await jobRepository.deleteManyByJobIds(jobIds);
+      await userRepository.removeMultipleJobsByJobIds(userId, jobIds);
+    }
+
+    res.status(HTTP_STATUS_CODE.OK).json({
+      message: 'Effects deleted successfully',
+      data: {
+        deletedCount: effectsToDelete.length,
+        deletedIds: deletedIds,
+      },
     });
   }),
 };

@@ -1,47 +1,61 @@
-import { Router } from "express";
-import userController from "../Controllers/user.controller";
-import { authMiddle, optionalAuth } from "../Middlewares/auth.middleware";
-import { imageUpload, upload } from "../Config/multer";
+import { Router } from 'express';
+import userController from '../Controllers/user.controller';
+import { authMiddle, optionalAuth } from '../Middlewares/auth.middleware';
+import { imageUpload, upload } from '../Config/multer';
 const userRouter = Router();
 
 userRouter
-  .route("/")
+  .route('/')
   .get(authMiddle, userController.getProfile)
   .patch(
     authMiddle,
-    imageUpload.single("profilePicture"),
+    imageUpload.single('profilePicture'),
     userController.updateProfile
   );
+
 userRouter
-  .route("/effect/fav")
+  .route('/effect/fav')
   .post(authMiddle, userController.toggleEffectFav);
-userRouter.route("/story/fav").post(authMiddle, userController.toggleStoryFav);
-userRouter.route("/generation/fav").post(authMiddle, userController.toggleGenerationFav);
+
+userRouter.route('/story/fav').post(authMiddle, userController.toggleStoryFav);
+
 userRouter
-  .route("/notifications")
+  .route('/generation/fav')
+  .post(authMiddle, userController.toggleGenerationFav);
+
+userRouter
+  .route('/notifications')
   .get(authMiddle, userController.getNotifications);
 
-userRouter.route("/lib/effects").get(authMiddle, userController.getUserEffectsLib);
 userRouter
-  .route("/lib/effects/:itemId")
+  .route('/lib/effects')
+  .get(authMiddle, userController.getUserEffectsLib)
+  .delete(authMiddle, userController.deleteBulkEffects);
+
+userRouter
+  .route('/lib/effects/:itemId')
   .delete(authMiddle, userController.deleteItem);
 
 userRouter
-  .route("/lib/stories")
-  .get(authMiddle, userController.getUserStoriesLib);
+  .route('/lib/stories')
+  .get(authMiddle, userController.getUserStoriesLib)
+  .delete(authMiddle, userController.deleteBulkStories);
 
 userRouter
-  .route("/lib/stories/:storyId")
+  .route('/lib/stories/:storyId')
   .get(optionalAuth, userController.getUserStory)
   .delete(authMiddle, userController.deleteUserStory);
 
 userRouter
-  .route("/lib/generations")
-  .get(authMiddle, userController.getUserGenerationsLib);
+  .route('/lib/generations')
+  .get(authMiddle, userController.getUserGenerationsLib)
+  .delete(authMiddle, userController.deleteBulkGenerations);
 
 userRouter
-  .route("/lib/generations/:id")
+  .route('/lib/generations/:id')
   .get(authMiddle, userController.getGenerationById)
   .delete(authMiddle, userController.deleteGeneration);
-userRouter.post("/changeLanguage", authMiddle, userController.changeLanguage);
+
+userRouter.post('/changeLanguage', authMiddle, userController.changeLanguage);
+
 export default userRouter;

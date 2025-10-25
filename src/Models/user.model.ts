@@ -3,6 +3,7 @@ import { IUser } from "../Interfaces/user.interface";
 import effectItemSchema from "./effectItem.model";
 import generationLibSchema from "./generationLib.model";
 import notificationSchema from "./notification.model";
+import { HydratedDocument } from "mongoose";
 
 const userSchema = new Schema<IUser>({
   username: { type: String, select: true },
@@ -30,7 +31,7 @@ const userSchema = new Schema<IUser>({
     default: [],
   },
   storiesLib: [{ type: Schema.Types.ObjectId, ref: "Story" }],
-  isActive: { type: Boolean, default: true },
+  isVerified: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
@@ -43,8 +44,8 @@ const userSchema = new Schema<IUser>({
   },
   preferredLanguage: { type: String, default: "en" },
 });
-userSchema.on("delete", (doc) => {
-  console.log("User deleted:", doc);
+userSchema.on("delete", (doc: HydratedDocument<IUser>) => {
+  
 });
 const User = model<IUser>("User", userSchema);
 export default User;

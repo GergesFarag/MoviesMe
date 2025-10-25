@@ -30,7 +30,6 @@ const authController = {
         firebaseUid: uid,
         createdAt: new Date(),
         updatedAt: new Date(),
-        isActive: true,
         isAdmin: false,
         credits: 10,
       });
@@ -79,7 +78,6 @@ const authController = {
         firebaseUid: uid || null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        isActive: true,
         isAdmin: false,
         credits: 10,
       });

@@ -213,4 +213,25 @@ export class StoryRepository extends BaseRepository<IStory> {
       throw error;
     }
   }
+
+  async findUserStories(userId: string, storyIds: string[]): Promise<IStory[]> {
+    return this.model
+      .find({
+        _id: { $in: storyIds },
+        userId: userId,
+      })
+      .lean()
+      .exec();
+  }
+
+  async deleteManyByIds(
+    userId: string,
+    storyIds: string[]
+  ): Promise<{ deletedCount: number }> {
+    const result = await this.model.deleteMany({
+      _id: { $in: storyIds },
+      userId: userId,
+    });
+    return { deletedCount: result.deletedCount || 0 };
+  }
 }

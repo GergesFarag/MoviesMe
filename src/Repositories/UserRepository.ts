@@ -3,7 +3,7 @@ import User from '../Models/user.model';
 import { LibraryType } from '../types/libraries';
 import { BaseRepository } from './BaseRepository';
 import { IEffectItem } from '../Interfaces/effectItem.interface';
-import { ObjectId } from 'mongoose';
+import mongoose, { ObjectId } from 'mongoose';
 
 export class UserRepository extends BaseRepository<IUser> {
   private static instance: UserRepository;
@@ -123,5 +123,66 @@ export class UserRepository extends BaseRepository<IUser> {
       (item: IEffectItem) => item.jobId === jobId
     );
     return item || null;
+  }
+
+  async removeMultipleFromStoriesLib(
+    userId: string,
+    storyIds: string[]
+  ): Promise<IUser | null> {
+    return this.findByIdAndUpdate(userId, {
+      $pull: { storiesLib: { $in: storyIds } },
+    });
+  }
+
+  async removeMultipleFromGenerationLib(
+    userId: string,
+    generationIds: string[]
+  ): Promise<IUser | null> {
+    const objectIds = generationIds.map(
+      (id) => new mongoose.Types.ObjectId(id)
+    );
+    return this.findByIdAndUpdate(userId, {
+      $pull: { generationLib: { _id: { $in: objectIds } } },
+    });
+  }
+
+  async removeMultipleFromEffectsLib(
+    userId: string,
+    effectIds: string[]
+  ): Promise<IUser | null> {
+    const objectIds = effectIds.map((id) => new mongoose.Types.ObjectId(id));
+    return this.findByIdAndUpdate(userId, {
+      $pull: { effectsLib: { _id: { $in: objectIds } } },
+    });
+  }
+
+  async removeMultipleJobsByJobIds(
+    userId: string,
+    jobIds: string[]
+  ): Promise<IUser | null> {
+    return this.findByIdAndUpdate(userId, {
+      $pull: { jobs: { jobId: { $in: jobIds } } },
+    });
+  }
+
+  async getGenerationsByIds(
+    userId: string,
+    generationIds: string[]
+  ): Promise<any[]> {
+    const user = await this.findById(userId, 'generationLib');
+    if (!user || !user.generationLib) return [];
+
+    return user.generationLib.filter((item) =>
+      generationIds.includes(item._id!.toString())
+    );
+  }
+
+  async getEffectsByIds(userId: string, effectIds: string[]): Promise<any[]> {
+    const user = await this.findById(userId, 'effectsLib');
+    if (!user || !user.effectsLib) return [];
+
+    return user.effectsLib.filter((item) =>
+      effectIds.includes(item._id!.toString())
+    );
   }
 }

@@ -7,7 +7,7 @@ export interface IUser {
   _id: mongoose.Types.ObjectId;
   username: string;
   isAdmin: boolean;
-  isActive: boolean;
+  isVerified: boolean;
   firebaseUid: string;
   credits: number;
   phoneNumber?: string | null;
