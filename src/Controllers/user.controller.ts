@@ -168,7 +168,6 @@ const userController = {
       paginatedItems = paginator(userLib, page, limit);
     }
     const itemsDTO = ItemDTO.toListDTO(paginatedItems);
-    console.log('Last item', itemsDTO[0]);
     res.status(200).json({
       message: 'User items retrieved successfully',
       data: {
@@ -508,7 +507,6 @@ const userController = {
       Number(limit)
     );
     res.status(200).json({
-      success: true,
       message: 'Generations retrieved successfully',
       data: {
         items: paginatedGenerations,
@@ -622,24 +620,24 @@ const userController = {
 
   deleteBulkStories: catchError(async (req, res) => {
     const userId = req.user!.id;
-    const { storyIds } = req.body;
+    const { ids } = req.body;
 
-    if (!storyIds || !Array.isArray(storyIds) || storyIds.length === 0) {
-      throw new AppError('storyIds array is required', 400);
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      throw new AppError('ids array is required', 400);
     }
 
-    const stories = await storyRepository.findUserStories(userId, storyIds);
+    const stories = await storyRepository.findUserStories(userId, ids);
 
     if (stories.length === 0) {
       throw new AppError('No stories found for deletion', 404);
     }
 
-    const foundStoryIds = stories.map((story) => (story._id as any).toString());
+    const foundids = stories.map((story) => (story._id as any).toString());
     const jobIds = stories.map((story) => story.jobId).filter(Boolean);
 
-    await storyRepository.deleteManyByIds(userId, foundStoryIds);
+    await storyRepository.deleteManyByIds(userId, foundids);
 
-    await userRepository.removeMultipleFromStoriesLib(userId, foundStoryIds);
+    await userRepository.removeMultipleFromStoriesLib(userId, foundids);
 
     if (jobIds.length > 0) {
       await jobRepository.deleteManyByJobIds(jobIds);
@@ -650,26 +648,26 @@ const userController = {
       message: 'Stories deleted successfully',
       data: {
         deletedCount: stories.length,
-        deletedIds: foundStoryIds,
+        deletedIds: foundids,
       },
     });
   }),
 
   deleteBulkGenerations: catchError(async (req, res) => {
     const userId = req.user!.id;
-    const { generationIds } = req.body;
+    const { ids } = req.body;
 
     if (
-      !generationIds ||
-      !Array.isArray(generationIds) ||
-      generationIds.length === 0
+      !ids ||
+      !Array.isArray(ids) ||
+      ids.length === 0
     ) {
-      throw new AppError('generationIds array is required', 400);
+      throw new AppError('ids array is required', 400);
     }
 
     const generationsToDelete = await userRepository.getGenerationsByIds(
       userId,
-      generationIds
+      ids
     );
 
     if (generationsToDelete.length === 0) {
@@ -681,7 +679,7 @@ const userController = {
       .filter(Boolean);
     const deletedIds = generationsToDelete.map((item) => item._id!.toString());
 
-    await userRepository.removeMultipleFromGenerationLib(userId, generationIds);
+    await userRepository.removeMultipleFromGenerationLib(userId, ids);
 
     if (jobIds.length > 0) {
       await jobRepository.deleteManyByJobIds(jobIds);
@@ -699,15 +697,15 @@ const userController = {
 
   deleteBulkEffects: catchError(async (req, res) => {
     const userId = req.user!.id;
-    const { effectIds } = req.body;
+    const { ids } = req.body;
 
-    if (!effectIds || !Array.isArray(effectIds) || effectIds.length === 0) {
-      throw new AppError('effectIds array is required', 400);
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      throw new AppError('ids array is required', 400);
     }
 
     const effectsToDelete = await userRepository.getEffectsByIds(
       userId,
-      effectIds
+      ids
     );
 
     if (effectsToDelete.length === 0) {
@@ -717,7 +715,7 @@ const userController = {
     const jobIds = effectsToDelete.map((item) => item.jobId).filter(Boolean);
     const deletedIds = effectsToDelete.map((item) => item._id!.toString());
 
-    await userRepository.removeMultipleFromEffectsLib(userId, effectIds);
+    await userRepository.removeMultipleFromEffectsLib(userId, ids);
 
     if (jobIds.length > 0) {
       await jobRepository.deleteManyByJobIds(jobIds);
