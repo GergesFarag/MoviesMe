@@ -136,3 +136,6 @@ Provide narrative text only, without any scene descriptions or instructions.
 Ensure that the narrative flows naturally, with appropriate pacing to fit within the time constraints.
 Structure the output as ${numOfScenes} sentences or short phrases, each representing one scene.`;
 };
+
+export const videoPrompt = `Generate a short realistic video motion of the given image. Apply only subtle and natural motion suitable for the scene. Keep all objects and subjects exactly as they are — do not invent or reconstruct unseen areas. Avoid unrealistic deformations or hallucinations. Maintain lighting, texture, and perspective consistency. Add gentle camera motion or environmental movement only if appropriate. Output should feel like a natural short video, not an artificial animation
+`;
