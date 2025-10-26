@@ -68,7 +68,6 @@ export class StoryProcessorService {
         '🚀 Starting parallel processing: Voice Over + Image Generation'
       );
       logger.info({ seedreamPrompt });
-
       let [voiceOver, imageUrls]: [
         IProcessedVoiceOver | null,
         string[] | null
@@ -520,7 +519,7 @@ export class StoryProcessorService {
   private async processVoiceOverWithProgress(
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string },
-    seedreamPrompt: string
+    toVoiceGenerationPrompt: string
   ): Promise<IProcessedVoiceOver | null> {
     if (!jobData.voiceOver) {
       console.log('⏭️ No voice over requested, skipping...');
@@ -562,7 +561,7 @@ export class StoryProcessorService {
           );
         }
         voiceOverText = await openAIService.generateNarrativeText(
-          seedreamPrompt,
+          toVoiceGenerationPrompt,
           language?.name.split(' ')[1] || 'English',
           accent?.name || null,
           jobData.numOfScenes

@@ -260,7 +260,8 @@ export class OpenAIService {
         temperature: 0.7,
       });
       const responseContent = response.choices[0]?.message?.content as string;
-      if (responseContent === rejectionJSON) {
+      console.log("Content Response:",responseContent);
+      if (responseContent.includes(`"error": "Invalid input"`)) {
         throw new AppError('Invalid input', HTTP_STATUS_CODE.BAD_REQUEST);
       }
       const toVoiceGenerationText = responseContent;
