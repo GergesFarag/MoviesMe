@@ -5,6 +5,7 @@ import {
   generateSysPrompt,
   generateSystemSeedreamPrompt,
   generateVoiceSysPrompt,
+  rejectionJSON,
 } from '../Utils/Format/generateSysPrompt';
 import { Validator } from './validation.service';
 import { mapLanguageAccent } from '../Utils/Format/languageUtils';
@@ -14,9 +15,7 @@ export class OpenAIService {
   private client: OpenAI;
   // private SYSTEM_PROMPT: string;
   // private validator: Validator;
-  constructor() // numOfScenes: number,
-  // storyTitle?: string,
-  // storyStyle?: string,
+  constructor() // storyStyle?: string, // storyTitle?: string, // numOfScenes: number,
   // storyGenere?: string,
   // storyLocation?: string
   {
@@ -222,12 +221,6 @@ export class OpenAIService {
       });
 
       const narrativeText = response.choices[0]?.message?.content;
-      console.log(
-        'Narrative Text: ',
-        narrativeText,
-        '\n with system prompt : ',
-        SYSTEM_PROMPT
-      );
 
       if (!narrativeText) {
         throw new AppError('No narrative text generated from OpenAI', 500);
@@ -244,7 +237,7 @@ export class OpenAIService {
     storyStyle: string = 'realistic',
     storyGenre?: string,
     storyLocation?: string
-  ): Promise<string> {
+  ): Promise<{ narrativeText: string; toVoiceGenerationText: string }> {
     try {
       const response = await this.client.chat.completions.create({
         model: 'gpt-4.1-mini',
@@ -267,17 +260,17 @@ export class OpenAIService {
         temperature: 0.7,
       });
       const responseContent = response.choices[0]?.message?.content as string;
-      const responseContentHasError = JSON.parse(responseContent);
-      if (responseContentHasError['error']) {
-        throw new AppError(responseContentHasError['error'],HTTP_STATUS_CODE.BAD_REQUEST);
+      if (responseContent === rejectionJSON) {
+        throw new AppError('Invalid input', HTTP_STATUS_CODE.BAD_REQUEST);
       }
-      let narrativeText = `GENERATE ${numOfScenes} SEPARATE IMAGES !!DO NOT MIX IMAGES IN ONE IMAGE!! \n${responseContent}`;
+      const toVoiceGenerationText = responseContent;
+      let narrativeText = `GENERATE ${numOfScenes} SEPARATE IMAGES !!DO NOT MIX IMAGES IN ONE IMAGE!! ${responseContent}`;
       console.log('Narrative Text: ', narrativeText);
       if (!narrativeText) {
         throw new AppError('No narrative text generated from OpenAI', 500);
       }
 
-      return narrativeText;
+      return { narrativeText, toVoiceGenerationText };
     } catch (err: any) {
       throw new AppError(err.message, err.status || 500);
     }

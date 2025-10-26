@@ -91,7 +91,12 @@ Rules:
 Do not describe the character's features.
 - Always output in English, even if the user story is in another language.
 - IMPORTANT Location ${storyLocation} / style ${storyStyle}
-- Accept only Stories and Advertisement phrases as input otherwise respond with following JSON:
+
+Validation:
+- Consider the input valid if:
+  * It tells a narrative (story, scene, or sequence of events), OR
+  * It promotes or describes a product, brand, or service (an advertisement)
+- Otherwise, respond exactly with:
 {
   "error": "Invalid story input"
 }
@@ -138,4 +143,11 @@ Structure the output as ${numOfScenes} sentences or short phrases, each represen
 };
 
 export const videoPrompt = `Generate a short realistic video motion of the given image. Apply only subtle and natural motion suitable for the scene. Keep all objects and subjects exactly as they are — do not invent or reconstruct unseen areas. Avoid unrealistic deformations or hallucinations. Maintain lighting, texture, and perspective consistency. Add gentle camera motion or environmental movement only if appropriate. Output should feel like a natural short video, not an artificial animation
+`;
+
+export const rejectionJSON =
+`
+{
+  "error": "Invalid input"
+}
 `;

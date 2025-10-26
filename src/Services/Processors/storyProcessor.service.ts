@@ -18,6 +18,7 @@ import {
 } from '../../Utils/APIs/cloudinary';
 import { StoryProcessingResult } from '../../Interfaces/story.interface';
 import StoryGenerationInfo from '../../Models/storyGenerationInfo.model';
+import logger from '../../Config/logger';
 
 export const PROGRESS_STEPS = {
   VALIDATION: 10,
@@ -61,10 +62,13 @@ export class StoryProcessorService {
         return existingResult;
       }
 
-      const { story, seedreamPrompt } = await this.generateStory(job, jobData);
+      const { story, seedreamPrompt, toVoiceGenerationText } =
+        await this.generateStory(job, jobData);
       console.log(
         '🚀 Starting parallel processing: Voice Over + Image Generation'
       );
+      logger.info({ seedreamPrompt });
+
       let [voiceOver, imageUrls]: [
         IProcessedVoiceOver | null,
         string[] | null
@@ -72,7 +76,11 @@ export class StoryProcessorService {
 
       if (jobData.voiceOver) {
         [voiceOver, imageUrls] = await Promise.all([
-          this.processVoiceOverWithProgress(job, jobData,seedreamPrompt),
+          this.processVoiceOverWithProgress(
+            job,
+            jobData,
+            toVoiceGenerationText
+          ),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
       } else {
@@ -143,7 +151,6 @@ export class StoryProcessorService {
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<void> {
-
     updateJobProgress(
       job,
       PROGRESS_STEPS.VALIDATION,
@@ -189,7 +196,11 @@ export class StoryProcessorService {
   private async generateStory(
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
-  ): Promise<{ story: IStoryResponse; seedreamPrompt: string }> {
+  ): Promise<{
+    story: IStoryResponse;
+    seedreamPrompt: string;
+    toVoiceGenerationText: string;
+  }> {
     updateJobProgress(
       job,
       PROGRESS_STEPS.STORY_GENERATION,
@@ -201,33 +212,34 @@ export class StoryProcessorService {
     const openAIService = new OpenAIService();
 
     try {
-      const story:IStoryResponse = {
-        title: jobData.title || "Untitled Story",
-        scenes : Array.from({length : jobData.numOfScenes} , (_,i) => {
+      const story: IStoryResponse = {
+        title: jobData.title || 'Untitled Story',
+        scenes: Array.from({ length: jobData.numOfScenes }, (_, i) => {
           return {
-            sceneNumber : i+1,
+            sceneNumber: i + 1,
             sceneDescription: null,
             image: null,
             videoDescription: null,
             imageDescription: null,
             narration: null,
             scenePrompt: null,
-          }
-        })
-      }
+          };
+        }),
+      };
 
       console.log('🎯 Generating Seedream prompt...');
-      const seedreamPrompt = await openAIService.generateSeedreamPrompt(
-        jobData.prompt,
-        jobData.numOfScenes,
-        jobData.style,
-        jobData.genere,
-        jobData.location
-      );
+      const { narrativeText: seedreamPrompt, toVoiceGenerationText } =
+        await openAIService.generateSeedreamPrompt(
+          jobData.prompt,
+          jobData.numOfScenes,
+          jobData.style,
+          jobData.genere,
+          jobData.location
+        );
       console.log(
         `✅ Story generated successfully with ${story.scenes.length} scenes`
       );
-      return { story, seedreamPrompt };
+      return { story, seedreamPrompt, toVoiceGenerationText };
     } catch (openAIError) {
       console.error('❌ OpenAI service error:', openAIError);
       throw new AppError('Failed to generate story scenes with OpenAI', 500);
@@ -508,7 +520,7 @@ export class StoryProcessorService {
   private async processVoiceOverWithProgress(
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string },
-    seedreamPrompt:string
+    seedreamPrompt: string
   ): Promise<IProcessedVoiceOver | null> {
     if (!jobData.voiceOver) {
       console.log('⏭️ No voice over requested, skipping...');
@@ -556,6 +568,7 @@ export class StoryProcessorService {
           jobData.numOfScenes
         );
       }
+      logger.info({ voiceOverText });
       // Generate voice over audio
       const voiceOverData = { ...jobData.voiceOver, text: voiceOverText };
       const voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
