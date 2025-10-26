@@ -18,10 +18,9 @@ import { cleanupRedisJobs } from './Utils/Cache/redisCleanup';
 import './Queues/generationLib.queue';
 import './Queues/story.queue';
 import './Queues/model.queue';
-import User from './Models/user.model';
-
 const app = express();
 dotenv.config({ quiet: true });
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cookieParser());
