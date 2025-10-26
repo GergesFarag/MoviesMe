@@ -1,25 +1,25 @@
-import OpenAI from "openai";
-import AppError from "../Utils/Errors/AppError";
-import { IStoryResponse } from "../Interfaces/storyResponse.interface";
+import OpenAI from 'openai';
+import AppError from '../Utils/Errors/AppError';
+import { IStoryResponse } from '../Interfaces/storyResponse.interface';
 import {
   generateSysPrompt,
   generateSystemSeedreamPrompt,
   generateVoiceSysPrompt,
-} from "../Utils/Format/generateSysPrompt";
-import { Validator } from "./validation.service";
-import { mapLanguageAccent } from "../Utils/Format/languageUtils";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+} from '../Utils/Format/generateSysPrompt';
+import { Validator } from './validation.service';
+import { mapLanguageAccent } from '../Utils/Format/languageUtils';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 export class OpenAIService {
   private client: OpenAI;
   // private SYSTEM_PROMPT: string;
   // private validator: Validator;
-  constructor(
-    // numOfScenes: number,
-    // storyTitle?: string,
-    // storyStyle?: string,
-    // storyGenere?: string,
-    // storyLocation?: string
-  ) {
+  constructor() // numOfScenes: number,
+  // storyTitle?: string,
+  // storyStyle?: string,
+  // storyGenere?: string,
+  // storyLocation?: string
+  {
     this.client = new OpenAI({ apiKey: OPENAI_API_KEY });
     // this.SYSTEM_PROMPT = generateSysPrompt(
     //   numOfScenes,
@@ -188,14 +188,13 @@ export class OpenAIService {
   //   }
   // }
 
-
   async generateNarrativeText(
     prompt: string,
     language: string,
     voiceAccent: string | null,
     numOfScenes: number
   ): Promise<string> {
-    console.log("language:", language);
+    console.log('language:', language);
 
     const targetWordsPerScene = 7;
     const totalTargetWords = (numOfScenes - 1) * targetWordsPerScene;
@@ -207,29 +206,31 @@ export class OpenAIService {
     );
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-5",
+        model: 'gpt-5',
         messages: [
           {
-            role: "system",
+            role: 'system',
             content: SYSTEM_PROMPT,
           },
           {
-            role: "user",
-            content: `${prompt}\nIMPORTANT: Generate exactly ${totalTargetWords} words (±${tolerance} words tolerance) for ${numOfScenes} scenes. Each scene should be approximately ${targetWordsPerScene} words.\nEnsure that the narration is in ${language} ${voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ""}.`,
+            role: 'user',
+            content: `${prompt}\nIMPORTANT: Generate exactly ${totalTargetWords} words (±${tolerance} words tolerance) for ${numOfScenes} scenes. Each scene should be approximately ${targetWordsPerScene} words.\nEnsure that the narration is in ${language} ${
+              voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ''
+            }.`,
           },
         ],
       });
 
       const narrativeText = response.choices[0]?.message?.content;
       console.log(
-        "Narrative Text: ",
+        'Narrative Text: ',
         narrativeText,
-        "\n with system prompt : ",
+        '\n with system prompt : ',
         SYSTEM_PROMPT
       );
 
       if (!narrativeText) {
-        throw new AppError("No narrative text generated from OpenAI", 500);
+        throw new AppError('No narrative text generated from OpenAI', 500);
       }
       return narrativeText;
     } catch (err: any) {
@@ -240,16 +241,16 @@ export class OpenAIService {
   async generateSeedreamPrompt(
     prompt: string,
     numOfScenes: number,
-    storyStyle: string = "realistic",
+    storyStyle: string = 'realistic',
     storyGenre?: string,
     storyLocation?: string
   ): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4.1-mini",
+        model: 'gpt-4.1-mini',
         messages: [
           {
-            role: "system",
+            role: 'system',
             content: generateSystemSeedreamPrompt(
               numOfScenes,
               storyStyle,
@@ -258,18 +259,22 @@ export class OpenAIService {
             ),
           },
           {
-            role: "user",
+            role: 'user',
             content: prompt,
           },
         ],
         max_completion_tokens: 1000,
         temperature: 0.7,
       });
-      const responseContent = response.choices[0]?.message?.content;
+      const responseContent = response.choices[0]?.message?.content as string;
+      const responseContentHasError = JSON.parse(responseContent);
+      if (responseContentHasError['error']) {
+        throw new AppError(responseContentHasError['error'],HTTP_STATUS_CODE.BAD_REQUEST);
+      }
       let narrativeText = `GENERATE ${numOfScenes} SEPARATE IMAGES !!DO NOT MIX IMAGES IN ONE IMAGE!! \n${responseContent}`;
-      console.log("Narrative Text: ", narrativeText);
+      console.log('Narrative Text: ', narrativeText);
       if (!narrativeText) {
-        throw new AppError("No narrative text generated from OpenAI", 500);
+        throw new AppError('No narrative text generated from OpenAI', 500);
       }
 
       return narrativeText;

@@ -91,7 +91,7 @@ Rules:
 Do not describe the character's features.
 - Always output in English, even if the user story is in another language.
 - IMPORTANT Location ${storyLocation} / style ${storyStyle}
--REJECT any input that is not a valid story or AD with the following JSON:
+- Accept only Stories and Advertisement phrases as input otherwise respond with following JSON:
 {
   "error": "Invalid story input"
 }
