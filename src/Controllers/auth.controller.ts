@@ -155,7 +155,6 @@ const authController = {
   }),
 
   addFcmToken: catchError(async (req: Request, res: Response) => {
-    console.log("Req Body" , req.body);
     const { FCMToken } = req.body;
 
     if (!FCMToken) {

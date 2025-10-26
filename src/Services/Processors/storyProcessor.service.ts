@@ -72,7 +72,7 @@ export class StoryProcessorService {
 
       if (jobData.voiceOver) {
         [voiceOver, imageUrls] = await Promise.all([
-          this.processVoiceOverWithProgress(job, jobData),
+          this.processVoiceOverWithProgress(job, jobData,seedreamPrompt),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
       } else {
@@ -507,7 +507,8 @@ export class StoryProcessorService {
   }
   private async processVoiceOverWithProgress(
     job: Job,
-    jobData: IStoryProcessingDTO & { userId: string; jobId: string }
+    jobData: IStoryProcessingDTO & { userId: string; jobId: string },
+    seedreamPrompt:string
   ): Promise<IProcessedVoiceOver | null> {
     if (!jobData.voiceOver) {
       console.log('⏭️ No voice over requested, skipping...');
@@ -527,7 +528,6 @@ export class StoryProcessorService {
     try {
       let voiceOverText: string;
 
-      // Use provided lyrics or generate narrative text
       if (
         jobData.voiceOver.voiceOverLyrics &&
         jobData.voiceOver.voiceOverLyrics !== 'null'
@@ -550,7 +550,7 @@ export class StoryProcessorService {
           );
         }
         voiceOverText = await openAIService.generateNarrativeText(
-          jobData.prompt,
+          seedreamPrompt,
           language?.name.split(' ')[1] || 'English',
           accent?.name || null,
           jobData.numOfScenes
