@@ -1,12 +1,12 @@
-import Bull from "bull";
-import { getIO, sendWebsocket } from "../../Sockets/socket";
-import AppError from "../Errors/AppError";
-import { formatModelName } from "../Format/modelNames";
-import { DefaultEventsMap, Server } from "socket.io";
+import Bull from 'bull';
+import { getIO, sendWebsocket } from '../../Sockets/socket';
+import AppError from '../Errors/AppError';
+import { formatModelName } from '../Format/modelNames';
+import { DefaultEventsMap, Server } from 'socket.io';
 import {
   IGenerationImageLibModel,
   IGenerationVideoLibModel,
-} from "../../Interfaces/aiModel.interface";
+} from '../../Interfaces/aiModel.interface';
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
 
 const safeJobUpdate = async (
@@ -107,7 +107,7 @@ export const updateJobProgress = async (
           }
         }
       } catch (err) {
-        console.error("❌ Error updating job progress via WebSocket:", err);
+        console.error('❌ Error updating job progress via WebSocket:', err);
       }
     }
   }
@@ -121,7 +121,7 @@ export const processModelData = async (
   const formattedModel = formatModelName(modelName, modelType);
   const url = `https://api.wavespeed.ai/api/v3/${formattedModel}`;
   const headers = {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
     Authorization: `Bearer ${WAVESPEED_API_KEY}`,
   };
 
@@ -130,16 +130,17 @@ export const processModelData = async (
 
 export const payloadBuilder = (data: {
   images: string[];
-  hasPrompt: boolean;
+  maxImages: number;
   size?: string;
   prompt?: string;
+  duration?: number;
 }) => {
   let payload = {
     enable_base64_output: false,
     enable_sync_mode: false,
   };
   if (data.images.length === 1) {
-    if (data.hasPrompt) {
+    if (data.maxImages === 1) {
       Object.assign(payload, { images: data.images });
     }
     Object.assign(payload, { image: data.images[0] });
@@ -151,6 +152,9 @@ export const payloadBuilder = (data: {
   }
   if (data.prompt) {
     Object.assign(payload, { prompt: data.prompt });
+  }
+  if (data.duration) {
+    Object.assign(payload, { duration: data.duration });
   }
   return payload;
 };
@@ -207,7 +211,7 @@ export const constructVideoGenerationPayload = (
     refImages
   );
   Object.assign(payload, {
-    duration: videoDuration ||5,
+    duration: videoDuration || 5,
   });
   return { url, payload };
 };

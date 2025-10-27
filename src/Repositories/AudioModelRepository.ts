@@ -61,7 +61,7 @@ export class AudioModelRepository extends BaseRepository<IAudioModel> {
 
     // Default to English if not supported
     if (voiceLanguage !== '68d963ffbf1a7f7cdefb689a') {
-      voiceLanguage = '68d963ffbf1a7f7cdefb6897';
+      voiceLanguage = '68d963ffbf1a7f7cdefb6897'; //FALLBACK
     }
 
     const items = await this.findByLanguage(voiceLanguage);
@@ -71,7 +71,9 @@ export class AudioModelRepository extends BaseRepository<IAudioModel> {
         HTTP_STATUS_CODE.NOT_FOUND
       );
     }
-
+    if (!voiceAccent && voiceLanguage === '68d963ffbf1a7f7cdefb689a') {
+      voiceAccent === '68d963ffbf1a7f7cdefb689b'; //FALLBACK
+    }
     const filteredItems = items.filter(
       (item) => item.accent === voiceAccent && item.gender === voiceGender
     );
