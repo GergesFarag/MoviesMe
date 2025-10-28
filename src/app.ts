@@ -50,10 +50,4 @@ app.use(/\/(.*)/, (req, res, next) => {
   console.log('404 middleware triggered for:', req.originalUrl);
   res.status(404).json({ message: 'Route not found' });
 });
-
-setInterval(async () => {
-  console.log('Running periodic Redis cleanup...');
-  await cleanupRedisJobs();
-}, 2 * 60 * 60 * 1000); // Every 2 hours
-
 export default app;

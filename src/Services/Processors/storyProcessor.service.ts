@@ -152,23 +152,22 @@ export class StoryProcessorService {
           getIO(),
           QUEUE_EVENTS.STORY_PROGRESS
         );
-        clearInterval(storyInterval);
-        this.counter = 0;
       }
       return {
         finalVideoUrl,
         story: completedStory,
       };
     } catch (error) {
-      if (storyInterval) {
-        clearInterval(storyInterval);
-        this.counter = 0;
-      }
       console.error(
         `❌ Story processing failed for jobId: ${jobData.jobId}`,
         error
       );
       throw error;
+    } finally {
+      if (storyInterval) {
+        clearInterval(storyInterval);
+        this.counter = 0;
+      }
     }
   }
 

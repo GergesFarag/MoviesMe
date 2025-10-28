@@ -33,7 +33,7 @@ function getQueueHandlers(): StoryQueueHandlers {
 storyQueue.process(async (job) => {
   console.log(`🚀 QUEUE ENTRY: Processing job ${job.id} with jobId: ${job.data.jobId}`);
   console.log(`📊 Job data:`, JSON.stringify(job.data, null, 2));
-  
+
   try {
     const processor = getStoryProcessor();
     return await processor.processStory(job, job.data);
@@ -52,14 +52,7 @@ storyQueue.on("failed", (job, error) => {
   const handlers = getQueueHandlers();
   handlers.onFailed(job, error);
 });
-storyQueue.on("stalled", (job) => console.warn(`⚠️ Job ${job.id} stalled`));
 storyQueue.on("error", (error) => console.error("❌ Queue error:", error));
 
-
-// Queue monitoring
-setInterval(async () => {
-  const handlers = getQueueHandlers();
-  await handlers.getQueueStats(storyQueue);
-}, 45000);
 
 export default storyQueue;

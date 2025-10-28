@@ -1,6 +1,5 @@
 import logger from '../../Config/logger';
 import IAiModel from '../../Interfaces/aiModel.interface';
-import { IEffectProcessor } from '../../Interfaces/effectProcessor.interface';
 import { getIO } from '../../Sockets/socket';
 import { wavespeedBase } from '../../Utils/APIs/wavespeed_base';
 import AppError from '../../Utils/Errors/AppError';
@@ -25,8 +24,16 @@ export interface EffectProcessorOutputData {
   jobId: string;
   duration: number;
 }
-export class EffectProcessorService implements IEffectProcessor {
+export class EffectProcessorService {
   private WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
+  private static intance: EffectProcessorService;
+  private constructor() {}
+  static getInstance() {
+    if (!EffectProcessorService.intance) {
+      this.intance = new EffectProcessorService();
+    }
+    return this.intance;
+  }
   async processEffect(job: any): Promise<any> {
     try {
       const { modelData, userId, data, prompt } = job.data;

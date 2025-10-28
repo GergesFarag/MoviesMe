@@ -25,7 +25,7 @@ export class QueueMonitor {
     this.failActiveJobs();
     this.logActiveJobs();
   }
-
+  
   private async logActiveJobs() {
     const activeJobs = await this.getActiveJobsLength();
     logger.info({ 'Active Jobs:': activeJobs });
