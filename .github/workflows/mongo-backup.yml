@@ -23,7 +23,7 @@ jobs:
 
       - name: Dump MongoDB database
         env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MONGO_URI: ${{ secrets.MONGODB_URI }}
         run: |
           if [ -z "$MONGO_URI" ]; then
             echo "ERROR: MONGO_URI is not set!"
