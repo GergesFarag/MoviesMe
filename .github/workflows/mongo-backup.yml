@@ -2,7 +2,7 @@ name: mongoDB Backup
 on:
   schedule:
     #        Min Hour Day Month DayOfWeek
-    - cron: '30 14 * * *' # Runs daily at 14:20 UTC
+    - cron: '0 22 * * *' # Runs daily at 12:00 AM Egypt time (22:00 UTC)
   workflow_dispatch:
 jobs:
   backup:
