@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
           echo "Connecting to MongoDB..."
-          mongodump --uri="${MONGODB_URI}" --out="./backup/mongo_backup_$(date +'%Y-%m-%d_%H-%M-%S')"
+          mongodump --uri="${{ secrets.MONGODB_URI }}" --out="./backup/mongo_backup_$(date +'%Y-%m-%d_%H-%M-%S')"
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
