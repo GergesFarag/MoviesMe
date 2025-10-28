@@ -41,6 +41,7 @@ export class StoryProcessorService {
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
   private voiceGenerationService: VoiceGenerationService;
+  private counter: number = 0;
   constructor() {
     this.imageGenerationService = new ImageGenerationService(true);
     this.videoGenerationService = new VideoGenerationService();
@@ -50,6 +51,17 @@ export class StoryProcessorService {
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<StoryProcessingResult> {
+    const storyInterval = setInterval(() => {
+      this.counter += 1;
+      if (this.counter > 99) this.counter = 98;
+      updateJobProgress(
+        job,
+        this.counter,
+        `Processing story...`,
+        getIO(),
+        QUEUE_EVENTS.STORY_PROGRESS
+      );
+    }, 3000);
     try {
       console.log(
         `🚀 Starting story processing for job ${job.id} with jobId: ${jobData.jobId}`
@@ -132,12 +144,26 @@ export class StoryProcessorService {
       console.log(
         `✅ Story processing completed successfully for jobId: ${jobData.jobId}`
       );
-
+      if (storyInterval) {
+        updateJobProgress(
+          job,
+          100,
+          `Processing story...`,
+          getIO(),
+          QUEUE_EVENTS.STORY_PROGRESS
+        );
+        clearInterval(storyInterval);
+        this.counter = 0;
+      }
       return {
         finalVideoUrl,
         story: completedStory,
       };
     } catch (error) {
+      if (storyInterval) {
+        clearInterval(storyInterval);
+        this.counter = 0;
+      }
       console.error(
         `❌ Story processing failed for jobId: ${jobData.jobId}`,
         error
@@ -150,13 +176,6 @@ export class StoryProcessorService {
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<void> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.VALIDATION,
-      'Validating job data',
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
     if (!jobData.userId || !jobData.jobId) {
       console.log(`❌ VALIDATION FAILED: Missing userId or jobId`);
       throw new AppError('Missing required job data: userId or jobId', 400);
@@ -200,14 +219,6 @@ export class StoryProcessorService {
     seedreamPrompt: string;
     toVoiceGenerationText: string;
   }> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.STORY_GENERATION,
-      `Generating story with ${jobData.numOfScenes} scenes`,
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
-
     const openAIService = new OpenAIService();
 
     try {
@@ -248,14 +259,6 @@ export class StoryProcessorService {
     job: Job,
     imageUrls: string[]
   ): Promise<string[]> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.IMAGE_GENERATION,
-      'Generating videos for the story',
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
-
     console.log(
       '🎬 Generating videos from images using parallel processing...'
     );
@@ -326,14 +329,6 @@ export class StoryProcessorService {
     voiceOver: IProcessedVoiceOver | null,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<Buffer> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.VIDEO_GENERATION,
-      'Merging video scenes',
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
-
     console.log('🎞️ Merging video scenes...');
 
     try {
@@ -398,14 +393,6 @@ export class StoryProcessorService {
     videoBuffer: Buffer,
     jobId: string
   ): Promise<string> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.VIDEO_UPLOAD,
-      'Uploading final video',
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
-
     console.log('☁️ Uploading final video to cloud storage...');
 
     try {
@@ -434,14 +421,6 @@ export class StoryProcessorService {
     voiceOver: IProcessedVoiceOver | null,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<any> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.COMPLETION,
-      'Story processing completed',
-      getIO(),
-      QUEUE_EVENTS.STORY_COMPLETED
-    );
-
     console.log('💾 Saving completed story to database...');
 
     try {
@@ -526,14 +505,6 @@ export class StoryProcessorService {
       return null;
     }
 
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.VOICE_OVER,
-      'Starting voice over processing',
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
-
     console.log('🎙️ Processing voice over in parallel...');
 
     try {
@@ -596,20 +567,11 @@ export class StoryProcessorService {
       throw new AppError('Failed to generate voice over', 500);
     }
   }
-
   private async generateImagesWithProgress(
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string },
     seedreamPrompt: string
   ): Promise<string[]> {
-    updateJobProgress(
-      job,
-      PROGRESS_STEPS.IMAGE_GENERATION - 5,
-      'Starting image generation',
-      getIO(),
-      QUEUE_EVENTS.STORY_PROGRESS
-    );
-
     console.log('🎨 Generating images for story scenes in parallel...');
 
     try {
@@ -629,15 +591,6 @@ export class StoryProcessorService {
           [jobData.image]
         );
       }
-
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.IMAGE_GENERATION,
-        'Image generation completed',
-        getIO(),
-        QUEUE_EVENTS.STORY_PROGRESS
-      );
-
       // Validate generated images
       if (!imageUrls || imageUrls.length !== jobData.numOfScenes) {
         throw new AppError(
@@ -665,7 +618,6 @@ export class StoryProcessorService {
       );
       return imageUrls;
     } catch (imageGenError) {
-      console.error('❌ Image generation error:', imageGenError);
       throw new AppError('Failed to generate images for the story scenes', 500);
     }
   }

@@ -1,0 +1,29 @@
+name: mongoDB Backup
+on:
+  schedule:
+    - cron: '20 14 * * *' # Runs daily at 14:20 UTC
+  workflow_dispatch:
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up MongoDB Tools
+        run: sudo apt-get update && sudo apt-get install -y mongodb-database-tools
+
+      - name: Create backup folder
+        run: mkdir -p ./backup
+
+      - name: Dump MongoDB database
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: |
+          mongodump --uri="$MONGO_URI" --out="./backup/mongo_backup_$(date +'%Y-%m-%d_%H-%M-%S')"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mongo-backup
+          path: ./backup
