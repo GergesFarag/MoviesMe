@@ -47,8 +47,7 @@ export class EffectsQueueHandler {
 
       const modelType =
         modelTypeMapper[result.modelType as keyof typeof modelTypeMapper] ||
-        result.modelType ||
-        'unknown';
+        result.modelType;
 
       if (!result.resultURL) {
         console.error('Result URL is missing for jobId:', result.jobId);

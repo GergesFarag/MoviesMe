@@ -6,12 +6,25 @@ import { wavespeedBase } from '../../Utils/APIs/wavespeed_base';
 import AppError from '../../Utils/Errors/AppError';
 import {
   filterModelType,
+  ModelType,
   reverseModelTypeMapper,
 } from '../../Utils/Format/filterModelType';
+import { updateJobProgress } from '../../Utils/Model/model.utils';
 import {
-  payloadBuilder,
-  updateJobProgress,
-} from '../../Utils/Model/model.utils';
+  EffectsPayloadBuilderParams,
+  PayloadBuilder,
+} from '../../Utils/Model/payloadBuilder';
+export interface EffectProcessorOutputData {
+  userId: string;
+  modelType: ModelType;
+  resultURL: string | string[];
+  modelName: string;
+  isVideo: boolean;
+  modelThumbnail: string;
+  effectThumbnail: string;
+  jobId: string;
+  duration: number;
+}
 export class EffectProcessorService implements IEffectProcessor {
   private WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY as string;
   async processEffect(job: any): Promise<any> {
@@ -46,33 +59,32 @@ export class EffectProcessorService implements IEffectProcessor {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.WAVESPEED_API_KEY}`,
       };
-      const payload = payloadBuilder({
-        images: data.images || [data.image],
+      const params: EffectsPayloadBuilderParams = {
+        images: data.images ? data.images : [data.image],
         maxImages: modelData.maxImages,
-        size: '2227*3183',
+        size: data.size,
         prompt: prompt,
-        duration: modelData.isVideoEffect ? 5 : undefined,
-      });
+        duration: modelData.duration,
+      };
+      const payload = PayloadBuilder.buildEffectsPayload(params);
+      console.log('Model DData', modelData);
       let modelType = filterModelType(modelData as IAiModel);
+      modelType = reverseModelTypeMapper[modelType];
+      console.log('Model Type', modelType);
       if (!modelType) {
         throw new AppError('Invalid model type', 400);
       }
-      console.log("PAYLOAD:" , payload);
+      console.log('PAYLOAD:', payload);
       const result = await wavespeedBase(url, headers, payload);
       clearInterval(intervalId);
       if (!result) {
         throw new AppError('Model processing Result Failed', 500);
       }
-      modelType = modelType === 'bytedance' ? 'image-effects' : modelType;
-
       const effectThumbnail = modelData.isVideo ? modelData.thumbnail : result;
 
-      const dataToBeSent = {
+      const dataToBeSent: EffectProcessorOutputData = {
         userId,
-        modelType:
-          reverseModelTypeMapper[
-            modelType as keyof typeof reverseModelTypeMapper
-          ] || modelType,
+        modelType: modelType as ModelType,
         resultURL: result,
         modelName: modelData.name,
         isVideo: modelData.isVideo,

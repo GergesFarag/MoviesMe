@@ -7,8 +7,7 @@ import Job from '../Models/job.model';
 import { getCachedModel, getCachedUser } from '../Utils/Cache/caching';
 import {
   createQueueJobData,
-  processModelJobAsync,
-  processMultiImageJobAsync,
+  processModelJobAsync
 } from '../Services/applyModel.service';
 import {
   getModelsByType,
@@ -302,42 +301,15 @@ const modelsController = {
     });
 
     try {
-      const isMultiImage = files.length > 1;
-      if (isMultiImage) {
-        const result = await processMultiImageJobAsync({
-          user: user as UserWithId,
-          model,
-          modelId,
-          images: files,
-          payload,
-          jobId,
-        });
-
-        if (result.success) {
-          console.log(
-            `Model processing started successfully with job ID: ${result.jobId}`
-          );
-        } else {
-          console.error(`Failed to start model processing: ${result.error}`);
-        }
-      } else {
-        const result = await processModelJobAsync({
-          user: user as UserWithId,
-          model,
-          modelId,
-          image: files[0],
-          payload,
-          jobId,
-        });
-
-        if (result.success) {
-          console.log(
-            `Model processing started successfully with job ID: ${result.jobId}`
-          );
-        } else {
-          console.error(`Failed to start model processing: ${result.error}`);
-        }
-      }
+      const result = processModelJobAsync({
+        user: user as UserWithId,
+        model: model as IAiModel,
+        modelId: modelId,
+        payload,
+        images: files,
+        jobId
+      });
+      console.log(`Model processing initiated for job ${jobId}:`, {result});
     } catch (error) {
       console.error(`Unexpected error in model processing:`, error);
     }

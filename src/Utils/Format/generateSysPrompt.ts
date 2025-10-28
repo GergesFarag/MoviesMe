@@ -139,9 +139,11 @@ Ensure that the narrative flows naturally, with appropriate pacing to fit within
 Structure the output as ${numOfScenes} sentences or short phrases, each representing one scene.`;
 };
 
-export const videoPrompt = `Generate a short realistic video motion of the given image. Apply only subtle and natural motion suitable for the scene. Keep all objects and subjects exactly as they are — do not invent or reconstruct unseen areas. Avoid unrealistic deformations or hallucinations. Maintain lighting, texture, and perspective consistency. Add gentle camera motion or environmental movement only if appropriate. Output should feel like a natural short video, not an artificial animation
+export const videoPrompt = `Generate a short, realistic video with natural motion from the provided image. Apply subtle, organic movement that fits the scene: gentle camera drift, soft environmental motion like breeze or light sway, minor ambient shifts. Maintain original composition, lighting, subjects, and objects exactly as shown. Animate only visible elements in their current state.
 `;
 
+export const videoNegativePrompt = `hallucinations, generating hidden content, revealing occluded faces, completing partial objects, predicting unseen areas, showing back-facing people's faces, inventing new elements, unrealistic motion, synthetic animation effects, morphing, transformations, artificial movements, jerky motion, unnatural physics.
+`;
 export const rejectionJSON = ` {
   "error": "Invalid input"
 }`;

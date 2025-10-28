@@ -1,16 +1,10 @@
-import { Images } from "openai/resources/images";
-import { IScene } from "../Interfaces/scene.interface";
-import {
-  wavespeedBase,
-  wavespeedBaseOptimized,
-} from "../Utils/APIs/wavespeed_base";
-import { Validator } from "./validation.service";
-import AppError from "../Utils/Errors/AppError";
-import { IGenerationImageLibModel } from "../Interfaces/aiModel.interface";
-import { constructImageGenerationPayload } from "../Utils/Model/model.utils";
-
-const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
-const baseURL = "https://api.wavespeed.ai/api/v3";
+import { wavespeedBaseOptimized } from '../Utils/APIs/wavespeed_base';
+import { Validator } from './validation.service';
+import AppError from '../Utils/Errors/AppError';
+import { IGenerationImageLibModel } from '../Interfaces/aiModel.interface';
+import { PayloadBuilder } from '../Utils/Model/payloadBuilder';
+const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || '';
+const baseURL = 'https://api.wavespeed.ai/api/v3';
 
 export class ImageGenerationService {
   private enableContentSanitization: boolean;
@@ -29,15 +23,15 @@ export class ImageGenerationService {
 
     let url = `${baseURL}/bytedance/seedream-v4/sequential`;
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
     const payload = {
       enable_base64_output: false,
       enable_sync_mode: false,
-      output_format: "jpeg",
+      output_format: 'jpeg',
       max_images: 1,
-      size: "2048*2048",
+      size: '2048*2048',
       prompt: finalDescription,
     };
 
@@ -65,13 +59,13 @@ export class ImageGenerationService {
 
     let url = `${baseURL}/google/nano-banana/edit`;
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
     const payload = {
       enable_base64_output: false,
       enable_sync_mode: false,
-      output_format: "jpeg",
+      output_format: 'jpeg',
       images: [refImage],
       prompt: finalDescription,
     };
@@ -143,14 +137,14 @@ export class ImageGenerationService {
     numOfScenes: number,
     refImages?: string[]
   ): Promise<any> {
-    let url = "";
+    let url = '';
     if (!refImages) {
       url = `${baseURL}/bytedance/seedream-v4/sequential`;
     } else {
       url = `${baseURL}/bytedance/seedream-v4/edit-sequential`;
     }
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
     const payload = {
@@ -158,7 +152,7 @@ export class ImageGenerationService {
       enable_sync_mode: false,
       max_images: numOfScenes,
       prompt: seedreamPrompt,
-      size: "2048*2048",
+      size: '2048*2048',
     };
     if (refImages) {
       Object.assign(payload, { images: refImages });
@@ -178,8 +172,8 @@ export class ImageGenerationService {
       )) as string[];
 
       if (!resultUrls || !Array.isArray(resultUrls)) {
-        console.error("❌ Invalid response from image generation API");
-        throw new AppError("Invalid response from image generation API", 500);
+        console.error('❌ Invalid response from image generation API');
+        throw new AppError('Invalid response from image generation API', 500);
       }
 
       if (resultUrls.length !== numOfScenes) {
@@ -200,7 +194,7 @@ export class ImageGenerationService {
       console.error(`❌ Optimized image generation failed:`, error);
 
       // Fallback to original implementation if optimized version fails
-      console.log("🔄 Falling back to original polling implementation...");
+      console.log('🔄 Falling back to original polling implementation...');
       return await this.generateSeedreamImagesLegacy(
         seedreamPrompt,
         numOfScenes,
@@ -214,14 +208,14 @@ export class ImageGenerationService {
     numOfScenes: number,
     refImages?: string[]
   ): Promise<any> {
-    let url = "";
+    let url = '';
     if (!refImages) {
       url = `${baseURL}/bytedance/seedream-v4/sequential`;
     } else {
       url = `${baseURL}/bytedance/seedream-v4/edit-sequential`;
     }
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
     const payload = {
@@ -229,17 +223,17 @@ export class ImageGenerationService {
       enable_sync_mode: false,
       max_images: numOfScenes,
       prompt: seedreamPrompt,
-      size: "2048*2048",
+      size: '2048*2048',
     };
     if (refImages) {
       Object.assign(payload, { images: refImages });
     }
 
     try {
-      console.log("🔄 Using legacy polling implementation...");
+      console.log('🔄 Using legacy polling implementation...');
 
       const response = await fetch(url, {
-        method: "POST",
+        method: 'POST',
         headers: headers,
         body: JSON.stringify(payload),
       });
@@ -263,17 +257,17 @@ export class ImageGenerationService {
           if (response.ok) {
             const data = result.data;
             const status = data.status;
-            if (status === "completed") {
+            if (status === 'completed') {
               const resultUrls = data.outputs;
-              console.log("✅ Legacy polling completed. URLs:", resultUrls);
+              console.log('✅ Legacy polling completed. URLs:', resultUrls);
               return resultUrls;
-            } else if (status === "failed") {
-              console.error("❌ Legacy polling - Task failed:", data.error);
-              throw new AppError("Legacy image generation failed", 500);
+            } else if (status === 'failed') {
+              console.error('❌ Legacy polling - Task failed:', data.error);
+              throw new AppError('Legacy image generation failed', 500);
             }
           } else {
             console.error(
-              "❌ Legacy polling error:",
+              '❌ Legacy polling error:',
               response.status,
               JSON.stringify(result)
             );
@@ -306,15 +300,17 @@ export class ImageGenerationService {
     prompt?: string,
     refImages?: string[]
   ): Promise<string> {
-
-    const { url, payload } = constructImageGenerationPayload(
+    const BASE_URL = `https://api.wavespeed.ai/api/v3/`;
+    const url = `${BASE_URL}${model.wavespeedCall}`;
+    const payload = PayloadBuilder.buildGenerationPayload({
+      isVideo: false,
       model,
       prompt,
-      refImages
-    );
-    console.log("Payload for GenerationLib:", payload);
+      refImages,
+    });
+    console.log('Payload for GenerationLib:', payload);
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
 
@@ -347,7 +343,7 @@ export class ImageGenerationService {
       console.error(`❌ GenerationLib image generation failed:`, error);
       throw new AppError(
         `GenerationLib generation failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : 'Unknown error'
         }`,
         500
       );

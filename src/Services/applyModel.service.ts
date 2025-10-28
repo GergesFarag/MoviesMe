@@ -67,102 +67,39 @@ export const createQueueJobData = (
 });
 
 export const processModelJobAsync = async (
-  data: ProcessSingleImageJobData
+  data: ProcessSingleImageJobData | ProcessMultiImageJobData
 ): Promise<JobResult> => {
-  const { user, model, modelId, image, payload, jobId } = data;
+  const { user, model, modelId, payload, jobId } = data;
   const { ...rest } = payload;
   const userId = user._id.toString();
 
-  try {
-    const [imageUrl] = await uploadImages([image], userId);
-
-    const queueJobData = createQueueJobData(
-      model,
-      user._id.toString(),
-      { image: imageUrl, ...rest },
-      user.FCMToken || undefined
-    );
-
-    const job = await taskQueue.add(queueJobData, { jobId });
-
-    if (!job || !job.id) {
-      throw new AppError('Job creation failed', 500);
-    }
-
-    const modelType = filterModelType(model);
-    const finalModelType =
-      modelType === MODEL_TYPE.BYTEDANCE ? MODEL_TYPE.IMAGE_EFFECTS : modelType;
-
-    const itemData: EffectItemData = {
-      URL: imageUrl,
-      modelType: finalModelType,
-      jobId: job.id.toString(),
-      status: JOB_STATUS.PENDING,
-      previewURL: imageUrl,
-      isFav: false,
-      data: {
-        modelId: modelId,
-        images: [imageUrl],
-      },
-      modelName: model.name,
-      isVideo: model.isVideo,
-      modelThumbnail: model.thumbnail,
-      duration: 0,
-    };
-
-    const orchestrationService = RepositoryOrchestrationService.getInstance();
-    const createdJob = await orchestrationService.createJobAndUpdateUser(
-      userId,
-      {
-        jobId,
-        userId,
-        modelId,
-        status: JOB_STATUS.PENDING,
-      },
-      itemData
-    );
-    return {
-      success: true,
-      jobId: job.id.toString(),
-    };
-  } catch (error) {
-    console.error('Error in processModelJobAsync:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-    };
-  }
-};
-
-export const processMultiImageJobAsync = async (
-  data: ProcessMultiImageJobData
-): Promise<JobResult> => {
-  const { user, model, modelId, images, payload, jobId } = data;
-  const { ...rest } = payload;
-  const userId = user._id.toString();
+  const images = 'images' in data ? data.images : [data.image];
+  const isSingleImage = 'image' in data;
 
   try {
     const imageUrls = await uploadImages(images, userId);
 
     const queueJobData = createQueueJobData(
       model,
-      user._id.toString(),
-      { images: imageUrls, ...rest },
+      userId,
+      isSingleImage
+        ? { image: imageUrls[0], ...rest }
+        : { images: imageUrls, ...rest },
       user.FCMToken || undefined
     );
 
-    const job = await taskQueue.add(queueJobData, {
-      jobId,
-      removeOnComplete: true,
-      removeOnFail: true,
-    });
+    const jobOptions = { jobId, removeOnComplete: true, removeOnFail: true };
+
+    const job = await taskQueue.add(queueJobData, jobOptions);
 
     if (!job || !job.id) {
       throw new AppError('Job creation failed', 500);
     }
+
+    const modelType = filterModelType(model);
     const itemData: EffectItemData = {
       URL: imageUrls[0],
-      modelType: 'image-effects',
+      modelType: modelType,
       jobId: job.id.toString(),
       status: JOB_STATUS.PENDING,
       previewURL: imageUrls[0],
@@ -178,7 +115,7 @@ export const processMultiImageJobAsync = async (
     };
 
     const orchestrationService = RepositoryOrchestrationService.getInstance();
-    const createdJob = await orchestrationService.createJobAndUpdateUser(
+    await orchestrationService.createJobAndUpdateUser(
       userId,
       {
         jobId,
@@ -188,12 +125,13 @@ export const processMultiImageJobAsync = async (
       },
       itemData
     );
+
     return {
       success: true,
       jobId: job.id.toString(),
     };
   } catch (error) {
-    console.error('Error in processMultiImageJobAsync:', error);
+    console.error('Error in processModelJobAsync:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

@@ -1,49 +1,52 @@
-import path from "path";
+import path from 'path';
 import {
   wavespeedBase,
   wavespeedBaseOptimized,
-} from "../Utils/APIs/wavespeed_base";
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-import { IScene } from "../Interfaces/scene.interface";
-import fs from "fs";
-import { Readable } from "stream";
-import AppError from "../Utils/Errors/AppError";
-import { downloadFile } from "../Utils/Format/downloadFile";
-import { IGenerationVideoLibModel } from "../Interfaces/aiModel.interface";
-import { constructImageGenerationPayload, constructVideoGenerationPayload } from "../Utils/Model/model.utils";
-import { videoPrompt } from "../Utils/Format/generateSysPrompt";
+} from '../Utils/APIs/wavespeed_base';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import { IScene } from '../Interfaces/scene.interface';
+import fs from 'fs';
+import { Readable } from 'stream';
+import AppError from '../Utils/Errors/AppError';
+import { downloadFile } from '../Utils/Format/downloadFile';
+import { IGenerationVideoLibModel } from '../Interfaces/aiModel.interface';
+import {
+  videoNegativePrompt,
+  videoPrompt,
+} from '../Utils/Format/generateSysPrompt';
+import { PayloadBuilder } from '../Utils/Model/payloadBuilder';
 
-const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || "";
-const baseURL = "https://api.wavespeed.ai/api/v3";
+const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || '';
+const baseURL = 'https://api.wavespeed.ai/api/v3';
 
 export class VideoGenerationService {
   constructor() {
     // Configure FFmpeg path using the installer
     try {
       ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-      console.log("✅ FFmpeg configured successfully:", ffmpegInstaller.path);
+      console.log('✅ FFmpeg configured successfully:', ffmpegInstaller.path);
     } catch (error) {
-      throw new AppError("FFmpeg configuration failed", 500);
+      throw new AppError('FFmpeg configuration failed', 500);
     }
   }
 
   async generateVideoFromImage(
     refImageUrl: string,
-    duration: number,
+    duration: number
   ): Promise<string> {
-    let url = `${baseURL}/bytedance/seedance-v1-pro-i2v-480p`;
+    let url = `${baseURL}/kwaivgi/kling-v2.1-i2v-standard`;
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
     const payload = {
       duration,
       image: refImageUrl,
-      seed: -1,
-      prompt : videoPrompt
+      prompt: videoPrompt,
+      negative_prompt: videoNegativePrompt,
     };
-    console.log("Payload for video generation:", payload);
+    console.log('Payload for video generation:', payload);
     try {
       console.log(`🎥 Starting optimized video generation from image...`);
 
@@ -55,7 +58,7 @@ export class VideoGenerationService {
 
       if (!resultUrl) {
         throw new AppError(
-          "No video URL returned from optimized generation",
+          'No video URL returned from optimized generation',
           500
         );
       }
@@ -68,10 +71,10 @@ export class VideoGenerationService {
       );
       return resultUrl;
     } catch (error) {
-      console.error("❌ Optimized video generation failed:", error);
+      console.error('❌ Optimized video generation failed:', error);
 
       // Fallback to original implementation
-      console.log("🔄 Falling back to legacy video generation...");
+      console.log('🔄 Falling back to legacy video generation...');
       try {
         const resultUrl = (await wavespeedBase(
           url,
@@ -80,7 +83,7 @@ export class VideoGenerationService {
         )) as string;
         if (!resultUrl) {
           throw new AppError(
-            "Failed to generate video from image using fallback",
+            'Failed to generate video from image using fallback',
             500
           );
         }
@@ -92,9 +95,9 @@ export class VideoGenerationService {
         );
         return resultUrl;
       } catch (fallbackError) {
-        console.error("❌ Legacy video generation also failed:", fallbackError);
+        console.error('❌ Legacy video generation also failed:', fallbackError);
         throw new AppError(
-          "Video generation failed (both optimized and legacy methods)",
+          'Video generation failed (both optimized and legacy methods)',
           500
         );
       }
@@ -107,10 +110,10 @@ export class VideoGenerationService {
     numOfScenes: number
   ): Promise<Buffer> {
     if (!videoBuffer || videoBuffer.length === 0) {
-      throw new AppError("Valid video buffer is required", 400);
+      throw new AppError('Valid video buffer is required', 400);
     }
     if (!audioUrl) {
-      throw new AppError("Audio URL is required", 400);
+      throw new AppError('Audio URL is required', 400);
     }
 
     // Create a unique temporary directory for this operation
@@ -120,13 +123,13 @@ export class VideoGenerationService {
         .toString(36)
         .substr(2, 9)}`
     );
-    const outputPath = path.join(tempDir, "composed_video.mp4");
+    const outputPath = path.join(tempDir, 'composed_video.mp4');
 
     try {
       await fs.promises.mkdir(tempDir, { recursive: true });
 
       const [downloadedAudioBuffer] = await Promise.all([
-        downloadFile(audioUrl, "audio"),
+        downloadFile(audioUrl, 'audio'),
       ]);
 
       console.log(
@@ -134,11 +137,11 @@ export class VideoGenerationService {
       );
 
       if (!downloadedAudioBuffer || downloadedAudioBuffer.length === 0) {
-        throw new AppError("Downloaded audio buffer is empty", 500);
+        throw new AppError('Downloaded audio buffer is empty', 500);
       }
 
-      const tempVideoPath = path.join(tempDir, "input_video.mp4");
-      const tempAudioPath = path.join(tempDir, "input_audio.mp3");
+      const tempVideoPath = path.join(tempDir, 'input_video.mp4');
+      const tempAudioPath = path.join(tempDir, 'input_audio.mp3');
 
       await Promise.all([
         fs.promises.writeFile(tempVideoPath, videoBuffer),
@@ -149,10 +152,10 @@ export class VideoGenerationService {
       const audioStats = await fs.promises.stat(tempAudioPath);
 
       if (videoStats.size === 0) {
-        throw new Error("Video file is empty");
+        throw new Error('Video file is empty');
       }
       if (audioStats.size === 0) {
-        throw new Error("Audio file is empty");
+        throw new Error('Audio file is empty');
       }
 
       const videoDuration = numOfScenes * 5; // 5 seconds per scene
@@ -164,28 +167,28 @@ export class VideoGenerationService {
         const command = ffmpeg()
           .input(tempVideoPath)
           .input(tempAudioPath)
-          .videoCodec("copy")
-          .audioCodec("aac")
+          .videoCodec('copy')
+          .audioCodec('aac')
           .audioChannels(2)
           .audioFrequency(44100) // Standard audio frequency
           .outputOptions([
-            "-map",
-            "0:v:0", // Map first video stream
-            "-map",
-            "1:a:0", // Map first audio stream
-            "-c:v",
-            "copy", // Copy video without re-encoding
-            "-c:a",
-            "aac", // Encode audio as AAC
-            "-t",
+            '-map',
+            '0:v:0', // Map first video stream
+            '-map',
+            '1:a:0', // Map first audio stream
+            '-c:v',
+            'copy', // Copy video without re-encoding
+            '-c:a',
+            'aac', // Encode audio as AAC
+            '-t',
             videoDuration.toString(), // Cut to video duration (audio will be trimmed if longer)
-            "-avoid_negative_ts",
-            "make_zero",
-            "-fflags",
-            "+genpts",
-            "-movflags",
-            "+faststart",
-            "-y", // Overwrite output file if it exists
+            '-avoid_negative_ts',
+            'make_zero',
+            '-fflags',
+            '+genpts',
+            '-movflags',
+            '+faststart',
+            '-y', // Overwrite output file if it exists
           ])
           .output(outputPath);
 
@@ -194,24 +197,24 @@ export class VideoGenerationService {
         );
 
         command
-          .on("start", (commandLine) => {
+          .on('start', (commandLine) => {
             console.log(
-              "🎬 Started audio composition with video buffer, command:",
+              '🎬 Started audio composition with video buffer, command:',
               commandLine
             );
           })
-          .on("end", () => {
+          .on('end', () => {
             console.log(
-              "✅ Audio composition with video buffer completed successfully"
+              '✅ Audio composition with video buffer completed successfully'
             );
             resolve();
           })
-          .on("error", (err) => {
+          .on('error', (err) => {
             console.error(
-              "❌ FFmpeg error during audio composition with buffer:",
+              '❌ FFmpeg error during audio composition with buffer:',
               err
             );
-            console.error("❌ Error details:", {
+            console.error('❌ Error details:', {
               message: err.message,
               stack: err.stack,
             });
@@ -227,12 +230,12 @@ export class VideoGenerationService {
 
       // Verify output file exists and has content
       if (!fs.existsSync(outputPath)) {
-        throw new AppError("Composed video file was not created", 500);
+        throw new AppError('Composed video file was not created', 500);
       }
 
       const stats = await fs.promises.stat(outputPath);
       if (stats.size === 0) {
-        throw new AppError("Composed video file is empty", 500);
+        throw new AppError('Composed video file is empty', 500);
       }
 
       console.log(
@@ -244,32 +247,32 @@ export class VideoGenerationService {
 
       return composedVideoBuffer;
     } catch (error) {
-      console.error("Error in composeSoundWithVideoBuffer:", error);
+      console.error('Error in composeSoundWithVideoBuffer:', error);
       throw error;
     } finally {
       // Clean up temporary directory and all files
       try {
         if (fs.existsSync(tempDir)) {
           await fs.promises.rm(tempDir, { recursive: true, force: true });
-          console.log("Cleaned up temporary directory:", tempDir);
+          console.log('Cleaned up temporary directory:', tempDir);
         }
       } catch (cleanupError) {
-        console.warn("Failed to clean up temporary directory:", cleanupError);
+        console.warn('Failed to clean up temporary directory:', cleanupError);
       }
     }
   }
 
   async mergeScenes(sceneVideos: string[]): Promise<Buffer> {
     if (!sceneVideos || sceneVideos.length === 0) {
-      throw new Error("No video URLs provided for merging");
+      throw new Error('No video URLs provided for merging');
     }
 
     const tempDir = path.join(
       __dirname,
       `temp_merge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     );
-    const outputPath = path.join(tempDir, "merged_video.mp4");
-    const listFilePath = path.join(tempDir, "video_list.txt");
+    const outputPath = path.join(tempDir, 'merged_video.mp4');
+    const listFilePath = path.join(tempDir, 'video_list.txt');
 
     try {
       await fs.promises.mkdir(tempDir, { recursive: true });
@@ -303,39 +306,39 @@ export class VideoGenerationService {
       await Promise.all(downloadPromises);
 
       const listContent = tempVideoFiles
-        .map((filePath) => `file '${filePath.replace(/\\/g, "/")}'`)
-        .join("\n");
+        .map((filePath) => `file '${filePath.replace(/\\/g, '/')}'`)
+        .join('\n');
 
       await fs.promises.writeFile(listFilePath, listContent);
-      console.log("Created video list file:", listFilePath);
+      console.log('Created video list file:', listFilePath);
 
       // Merge videos using ffmpeg concat
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()
           .input(listFilePath)
-          .inputOptions(["-f", "concat", "-safe", "0"])
-          .videoCodec("libx264")
-          .audioCodec("aac")
+          .inputOptions(['-f', 'concat', '-safe', '0'])
+          .videoCodec('libx264')
+          .audioCodec('aac')
           .outputOptions([
-            "-preset",
-            "medium",
-            "-crf",
-            "23",
-            "-movflags",
-            "+faststart",
+            '-preset',
+            'medium',
+            '-crf',
+            '23',
+            '-movflags',
+            '+faststart',
           ])
           .output(outputPath);
 
         command
-          .on("start", (commandLine) => {
-            console.log("Started ffmpeg with command:", commandLine);
+          .on('start', (commandLine) => {
+            console.log('Started ffmpeg with command:', commandLine);
           })
-          .on("end", () => {
-            console.log("Video merging completed successfully");
+          .on('end', () => {
+            console.log('Video merging completed successfully');
             resolve();
           })
-          .on("error", (err) => {
-            console.error("FFmpeg error during video merge:", err);
+          .on('error', (err) => {
+            console.error('FFmpeg error during video merge:', err);
             reject(new AppError(`Video merge failed: ${err.message}`, 500));
           })
           .run();
@@ -343,12 +346,12 @@ export class VideoGenerationService {
 
       // Verify output file exists and has content
       if (!fs.existsSync(outputPath)) {
-        throw new AppError("Merged video file was not created", 500);
+        throw new AppError('Merged video file was not created', 500);
       }
 
       const stats = await fs.promises.stat(outputPath);
       if (stats.size === 0) {
-        throw new AppError("Merged video file is empty", 500);
+        throw new AppError('Merged video file is empty', 500);
       }
 
       console.log(
@@ -360,17 +363,17 @@ export class VideoGenerationService {
 
       return videoBuffer;
     } catch (error) {
-      console.error("Error in mergeScenes:", error);
+      console.error('Error in mergeScenes:', error);
       throw error;
     } finally {
       // Clean up temporary directory and all files
       try {
         if (fs.existsSync(tempDir)) {
           await fs.promises.rm(tempDir, { recursive: true, force: true });
-          console.log("Cleaned up temporary directory:", tempDir);
+          console.log('Cleaned up temporary directory:', tempDir);
         }
       } catch (cleanupError) {
-        console.warn("Failed to clean up temporary directory:", cleanupError);
+        console.warn('Failed to clean up temporary directory:', cleanupError);
       }
     }
   }
@@ -382,7 +385,7 @@ export class VideoGenerationService {
         const videoUrl = await this.generateVideoFromImage(image, 5);
         videoUrls.push(videoUrl);
       } catch (error) {
-        console.error("Error generating video for scene:", error);
+        console.error('Error generating video for scene:', error);
       }
     }
     return videoUrls;
@@ -390,7 +393,7 @@ export class VideoGenerationService {
 
   async generateVideosParallel(sceneImages: string[]): Promise<string[]> {
     if (!sceneImages || sceneImages.length === 0) {
-      throw new AppError("No scene images provided for video generation", 400);
+      throw new AppError('No scene images provided for video generation', 400);
     }
 
     console.log(`🎬 Generating ${sceneImages.length} videos in parallel...`);
@@ -408,8 +411,8 @@ export class VideoGenerationService {
 
         if (
           !videoUrl ||
-          typeof videoUrl !== "string" ||
-          !videoUrl.startsWith("http")
+          typeof videoUrl !== 'string' ||
+          !videoUrl.startsWith('http')
         ) {
           throw new AppError(
             `Invalid video URL generated for scene ${sceneNumber}`,
@@ -431,7 +434,7 @@ export class VideoGenerationService {
         );
         return {
           index,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
           success: false,
         };
       }
@@ -446,7 +449,7 @@ export class VideoGenerationService {
       const failedScenes: number[] = [];
 
       results.forEach((result, index) => {
-        if (result.status === "fulfilled") {
+        if (result.status === 'fulfilled') {
           const { index: sceneIndex, videoUrl, success, error } = result.value;
 
           if (success && videoUrl) {
@@ -465,7 +468,7 @@ export class VideoGenerationService {
       if (failedScenes.length > 0) {
         const errorMessage = `Failed to generate videos for ${
           failedScenes.length
-        } scene(s): ${failedScenes.join(", ")}`;
+        } scene(s): ${failedScenes.join(', ')}`;
         console.error(`❌ ${errorMessage}`);
         throw new AppError(errorMessage, 500);
       }
@@ -476,7 +479,7 @@ export class VideoGenerationService {
         .filter(Boolean);
       if (missingUrls.length > 0) {
         throw new AppError(
-          `Missing video URLs for scenes: ${missingUrls.join(", ")}`,
+          `Missing video URLs for scenes: ${missingUrls.join(', ')}`,
           500
         );
       }
@@ -486,13 +489,13 @@ export class VideoGenerationService {
       );
       return videoUrls;
     } catch (error) {
-      console.error("❌ Parallel video generation failed:", error);
+      console.error('❌ Parallel video generation failed:', error);
       if (error instanceof AppError) {
         throw error;
       }
       throw new AppError(
         `Parallel video generation failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : 'Unknown error'
         }`,
         500
       );
@@ -503,18 +506,30 @@ export class VideoGenerationService {
     refImages: string[] | undefined,
     duration: number,
     model: IGenerationVideoLibModel,
-    prompt?: string,
+    prompt?: string
   ): Promise<string> {
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
     };
-    const {url , payload} = constructVideoGenerationPayload(model , prompt , refImages,duration);
-    console.log("Payload for video generation:", payload);
-    console.log("URL for video generation:", url);
+    const BASE_URL = `https://api.wavespeed.ai/api/v3/`;
+    const url = `${BASE_URL}${model.wavespeedCall}`;
+    const payload = PayloadBuilder.buildGenerationPayload({
+      isVideo: true,
+      model,
+      prompt,
+      refImages,
+      duration,
+    });
+    console.log('Payload for video generation:', payload);
+    console.log('URL for video generation:', url);
     try {
-      const response = (await wavespeedBaseOptimized(url, headers, payload)) as string;
-      console.log("RESPONSE : " , response)
+      const response = (await wavespeedBaseOptimized(
+        url,
+        headers,
+        payload
+      )) as string;
+      console.log('RESPONSE : ', response);
       console.log(
         `✅ Video generated successfully for generation lib: ${url.substring(
           0,
@@ -523,10 +538,10 @@ export class VideoGenerationService {
       );
       return response;
     } catch (error) {
-      console.error("Error generating video for generation lib:", error);
+      console.error('Error generating video for generation lib:', error);
       throw new AppError(
         `Video generation failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : 'Unknown error'
         }`,
         500
       );
