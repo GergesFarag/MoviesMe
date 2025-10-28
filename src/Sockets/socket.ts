@@ -7,22 +7,41 @@ export function initSocket(server: http.Server) {
   io = new Server(server, {
     cors: {
       origin: '*',
-      methods: ['GET', 'POST'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['*'],
       credentials: true,
     },
-    transports: ['polling', 'websocket'],
+    path: '/socket.io/', // Explicit path for Flutter clients
+    transports: ['polling', 'websocket'], // Polling first for mobile compatibility
     pingInterval: 25000, // 25 seconds - more frequent to detect issues faster
-    pingTimeout: 60000, // 60 seconds - increased tolerance for slow networks
+    pingTimeout: 120000, // 120 seconds (2 minutes) - very tolerant for long operations
     connectTimeout: 45000, // 45 seconds
     upgradeTimeout: 30000, // 30 seconds
     maxHttpBufferSize: 1e8, // 100MB
-    allowUpgrades: true,
+    allowUpgrades: true, // Allow upgrade from polling to websocket
     httpCompression: true,
     perMessageDeflate: {
       threshold: 1024,
       concurrencyLimit: 10,
       windowBits: 13,
+    },
+    // Additional mobile-friendly options
+    serveClient: false, // Don't serve client files
+    cookie: false, // Disable cookies for mobile apps
+    // Allow requests validation
+    allowRequest: (req, callback) => {
+      // Log connection attempts for debugging
+      console.log(
+        `📱 Connection attempt from: ${req.headers.origin || 'Unknown'}`
+      );
+      console.log(
+        `   User-Agent: ${
+          req.headers['user-agent']?.substring(0, 50) || 'Unknown'
+        }...`
+      );
+
+      // Accept all requests (CORS is already configured above)
+      callback(null, true);
     },
   });
 
@@ -30,6 +49,8 @@ export function initSocket(server: http.Server) {
     console.log(
       `✅ Socket ${socket.id} connected (Total: ${io!.engine.clientsCount})`
     );
+    console.log(`   Transport: ${socket.conn.transport.name}`);
+    console.log(`   Handshake: ${JSON.stringify(socket.handshake.query)}`);
 
     // Log current rooms for debugging
     console.log(
@@ -109,6 +130,34 @@ export function initSocket(server: http.Server) {
     socket.on('ping', pingHandler);
     socket.on('health:check', healthCheckHandler);
     socket.on('error', errorHandler);
+
+    // Monitor transport upgrades
+    socket.conn.on('upgrade', (transport) => {
+      console.log(`🔄 Socket ${socket.id} upgraded to: ${transport.name}`);
+    });
+
+    socket.conn.on('packet', (packet) => {
+      // Log only important packets, not ping/pong
+      if (packet.type !== 'ping' && packet.type !== 'pong') {
+        console.log(`📦 Socket ${socket.id} packet: ${packet.type}`);
+      }
+    });
+
+    socket.conn.on('packetCreate', (packet) => {
+      // Debug outgoing packets for connection issues
+      if (packet.type !== 'ping' && packet.type !== 'pong') {
+        console.log(`📤 Socket ${socket.id} sending: ${packet.type}`);
+      }
+    });
+  });
+
+  // Global error handlers for the engine
+  io.engine.on('connection_error', (err) => {
+    console.error('❌ Engine connection error:', {
+      message: err.message,
+      code: err.code,
+      context: err.context,
+    });
   });
 
   console.log('🚀 Socket.io server initialized successfully');

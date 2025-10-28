@@ -19,6 +19,7 @@ import {
 import { StoryProcessingResult } from '../../Interfaces/story.interface';
 import StoryGenerationInfo from '../../Models/storyGenerationInfo.model';
 import logger from '../../Config/logger';
+import { DefaultEventsMap, Server } from 'socket.io';
 
 export const PROGRESS_STEPS = {
   VALIDATION: 10,
@@ -41,87 +42,39 @@ export class StoryProcessorService {
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
   private voiceGenerationService: VoiceGenerationService;
-  private heartbeatInterval: NodeJS.Timeout | null = null;
-
+  private io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
   constructor() {
     this.imageGenerationService = new ImageGenerationService(true);
     this.videoGenerationService = new VideoGenerationService();
     this.voiceGenerationService = new VoiceGenerationService();
-  }
-
-  private startHeartbeat(
-    jobData: IStoryProcessingDTO & { userId: string; jobId: string }
-  ): void {
-    // Send heartbeat every 30 seconds to prevent timeout
-    this.heartbeatInterval = setInterval(() => {
-      try {
-        const io = getIO();
-        const roomName = `user:${jobData.userId}`;
-        const room = io.sockets.adapter.rooms.get(roomName);
-
-        if (room && room.size > 0) {
-          io.to(roomName).emit('heartbeat', {
-            jobId: jobData.jobId,
-            timestamp: Date.now(),
-          });
-          console.log(`💓 Heartbeat sent to room ${roomName}`);
-        } else {
-          console.warn(
-            `⚠️ No active connections in room ${roomName}, heartbeat skipped`
-          );
-        }
-      } catch (error) {
-        console.error('❌ Error sending heartbeat:', error);
-      }
-    }, 30000); // 30 seconds interval
-  }
-
-  private stopHeartbeat(): void {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-      console.log('💓 Heartbeat stopped');
-    }
+    this.io = getIO();
   }
 
   public async processStory(
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<StoryProcessingResult> {
-    // Start heartbeat to keep connection alive
-    this.startHeartbeat(jobData);
-
     try {
       console.log(
         `🚀 Starting story processing for job ${job.id} with jobId: ${jobData.jobId}`
       );
-
-      // Get fresh IO instance for each update
-      let io = getIO();
 
       // Validation step
       updateJobProgress(
         job,
         PROGRESS_STEPS.VALIDATION,
         'Validating job data...',
-        io,
+        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       await this.validateJobData(job, jobData);
 
-      const existingResult = await this.checkExistingJob(jobData.jobId);
-      if (existingResult) {
-        this.stopHeartbeat();
-        return existingResult;
-      }
-
       // Story generation step
-      io = getIO(); // Refresh IO instance
       updateJobProgress(
         job,
         PROGRESS_STEPS.STORY_GENERATION,
         'Generating story...',
-        io,
+        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       const { story, seedreamPrompt, toVoiceGenerationText } =
@@ -138,12 +91,11 @@ export class StoryProcessorService {
 
       if (jobData.voiceOver) {
         // Voice over and image generation in parallel
-        io = getIO(); // Refresh IO instance
         updateJobProgress(
           job,
           PROGRESS_STEPS.VOICE_OVER,
           'Generating voice over and images...',
-          io,
+          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
         [voiceOver, imageUrls] = await Promise.all([
@@ -156,12 +108,11 @@ export class StoryProcessorService {
         ]);
       } else {
         // Only image generation
-        io = getIO(); // Refresh IO instance
         updateJobProgress(
           job,
           PROGRESS_STEPS.IMAGE_GENERATION,
           'Generating images...',
-          io,
+          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
         imageUrls = await this.generateImagesWithProgress(
@@ -177,12 +128,11 @@ export class StoryProcessorService {
       const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
 
       // Video generation step
-      io = getIO(); // Refresh IO instance
       updateJobProgress(
         job,
         PROGRESS_STEPS.VIDEO_GENERATION,
         'Generating videos...',
-        io,
+        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       const videoUrls = await this.generateVideos(job, imageUrls ?? []);
@@ -201,15 +151,7 @@ export class StoryProcessorService {
         };
       }
 
-      // Video merge step
-      io = getIO(); // Refresh IO instance
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.VIDEO_MERGE,
-        'Merging and composing video...',
-        io,
-        QUEUE_EVENTS.STORY_PROGRESS
-      );
+      // Video merge and composition step (handles its own progress updates internally)
       const finalVideoBuffer = await this.mergeAndComposeVideo(
         job,
         videoUrls,
@@ -218,12 +160,11 @@ export class StoryProcessorService {
       );
 
       // Video upload step
-      io = getIO(); // Refresh IO instance
       updateJobProgress(
         job,
         PROGRESS_STEPS.VIDEO_UPLOAD,
         'Uploading final video...',
-        io,
+        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       const finalVideoUrl = await this.uploadVideo(
@@ -241,12 +182,11 @@ export class StoryProcessorService {
       );
 
       // Completion step
-      io = getIO(); // Refresh IO instance
       updateJobProgress(
         job,
         PROGRESS_STEPS.COMPLETION,
         'Story completed successfully!',
-        io,
+        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
 
@@ -264,9 +204,6 @@ export class StoryProcessorService {
         error
       );
       throw error;
-    } finally {
-      // Always stop heartbeat when processing ends
-      this.stopHeartbeat();
     }
   }
 
@@ -401,7 +338,7 @@ export class StoryProcessorService {
           job,
           PROGRESS_STEPS.IMAGE_GENERATION,
           'Retrying with sequential video generation',
-          getIO(),
+          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
 
@@ -431,6 +368,15 @@ export class StoryProcessorService {
     console.log('🎞️ Merging video scenes...');
 
     try {
+      // Send progress update before starting merge
+      updateJobProgress(
+        job,
+        PROGRESS_STEPS.VIDEO_MERGE,
+        'Merging video scenes...',
+        this.io,
+        QUEUE_EVENTS.STORY_PROGRESS
+      );
+
       // Merge video scenes
       const mergedVideoBuffer = await this.videoGenerationService.mergeScenes(
         videoUrls
@@ -447,11 +393,12 @@ export class StoryProcessorService {
 
       // Compose with audio if voice over exists
       if (voiceOver && voiceOver.url) {
+        // Send progress update before audio composition
         updateJobProgress(
           job,
-          PROGRESS_STEPS.VIDEO_MERGE,
-          'Composing video with sound',
-          getIO(),
+          PROGRESS_STEPS.VIDEO_MERGE + 3, // 88% - between merge and upload
+          'Composing video with audio...',
+          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
 
@@ -471,6 +418,15 @@ export class StoryProcessorService {
         finalVideoBuffer = composedBuffer;
         console.log(
           `✅ Video composed with sound successfully, buffer size: ${finalVideoBuffer.length}`
+        );
+
+        // Send progress update after composition completes
+        updateJobProgress(
+          job,
+          PROGRESS_STEPS.VIDEO_MERGE + 7, // 92% - closer to upload
+          'Video composition completed',
+          this.io,
+          QUEUE_EVENTS.STORY_PROGRESS
         );
       } else {
         console.log('⏭️ Skipping audio composition - no voice over provided');
