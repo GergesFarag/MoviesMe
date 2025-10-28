@@ -23,14 +23,15 @@ jobs:
 
       - name: Dump MongoDB database
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGO_URI: ${{ secrets.MONGODB_URI }}
         run: |
-          if [ -z "$MONGODB_URI" ]; then
-            echo "ERROR: MONGODB_URI is not set!"
+          if [ -z "$MONGO_URI" ]; then
+            echo "ERROR: MONGODB_URI secret is not set in GitHub!"
+            echo "Please add it at: https://github.com/${{ github.repository }}/settings/secrets/actions"
             exit 1
           fi
           echo "Connecting to MongoDB..."
-          mongodump --uri="${{ secrets.MONGODB_URI }}" --out="./backup/mongo_backup_$(date +'%Y-%m-%d_%H-%M-%S')"
+          mongodump --uri="${MONGO_URI}" --out="./backup/mongo_backup_$(date +'%Y-%m-%d_%H-%M-%S')"
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
