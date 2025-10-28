@@ -81,21 +81,6 @@ export const updateJobProgress = async (
           console.log(
             `✅ Job progress sent to ${room.size} client(s) in room ${roomName}`
           );
-        } else {
-          // Fallback: Check if there are any connected sockets at all
-          const connectedCount = io.engine.clientsCount;
-
-          if (connectedCount > 0) {
-            console.warn(
-              `⚠️ No clients in room '${roomName}', but ${connectedCount} socket(s) connected. Broadcasting to all.`
-            );
-            // Send to all connected clients as fallback
-            sendWebsocket(io, event, payload);
-          } else {
-            console.log(
-              `⏭️ Skipping WebSocket emit - no connected clients at all`
-            );
-          }
         }
       } catch (err) {
         console.error('❌ Error updating job progress via WebSocket:', err);

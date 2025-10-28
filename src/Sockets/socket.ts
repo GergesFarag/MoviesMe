@@ -12,8 +12,8 @@ export function initSocket(server: http.Server) {
       credentials: true,
     },
     transports: ['polling', 'websocket'],
-    pingInterval: 90000, // 90 seconds
-    pingTimeout: 90000, // 90 seconds
+    pingInterval: 25000, // 25 seconds - more frequent to detect issues faster
+    pingTimeout: 60000, // 60 seconds - increased tolerance for slow networks
     connectTimeout: 45000, // 45 seconds
     upgradeTimeout: 30000, // 30 seconds
     maxHttpBufferSize: 1e8, // 100MB
@@ -83,6 +83,17 @@ export function initSocket(server: http.Server) {
       });
     };
 
+    // Health check handler
+    const healthCheckHandler = () => {
+      const rooms = Array.from(socket.rooms);
+      socket.emit('health:response', {
+        status: 'healthy',
+        socketId: socket.id,
+        rooms: rooms,
+        timestamp: Date.now(),
+      });
+    };
+
     // Error handler
     const errorHandler = (error: Error) => {
       console.error(`🚨 Socket ${socket.id} error:`, error.message);
@@ -96,6 +107,7 @@ export function initSocket(server: http.Server) {
     socket.on('join:user', joinUserHandler);
     socket.on('disconnect', disconnectHandler);
     socket.on('ping', pingHandler);
+    socket.on('health:check', healthCheckHandler);
     socket.on('error', errorHandler);
   });
 
