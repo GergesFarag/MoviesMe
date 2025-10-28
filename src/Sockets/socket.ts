@@ -64,16 +64,6 @@ export function initSocket(server: http.Server) {
       });
     };
 
-    // Health check handler
-    const healthCheckHandler = () => {
-      socket.emit('health:response', {
-        status: 'healthy',
-        socketId: socket.id,
-        connectedClients: io!.engine.clientsCount,
-        timestamp: Date.now(),
-      });
-    };
-
     // Error handler
     const errorHandler = (error: Error) => {
       console.error(`🚨 Socket ${socket.id} error:`, error.message);
@@ -89,7 +79,7 @@ export function initSocket(server: http.Server) {
     socket.on('ping', pingHandler);
     socket.on('error', errorHandler);
   });
-  
+
   console.log('🚀 Socket.io server initialized successfully');
   return io;
 }
@@ -112,25 +102,9 @@ export const sendWebsocket = (
       event: event,
     };
 
-    const activityInfo = {
-      event,
-      timestamp: Date.now(),
-      roomSize: to
-        ? io.sockets.adapter.rooms.get(to)?.size || 0
-        : io.engine.clientsCount,
-    };
-
     if (to) {
       const room = io.sockets.adapter.rooms.get(to);
       if (room && room.size > 0) {
-        room.forEach((socketId) => {
-          const socket = io.sockets.sockets.get(socketId);
-          if (socket) {
-            socket.data = socket.data || {};
-            socket.data.lastActivity = activityInfo;
-          }
-        });
-
         io.to(to).emit(event, payload);
         console.log(
           `📡 WebSocket event '${event}' sent to room '${to}' (${room.size} clients)`
@@ -139,11 +113,6 @@ export const sendWebsocket = (
         console.warn(`⚠️ No clients in room '${to}' for event '${event}'`);
       }
     } else {
-      io.sockets.sockets.forEach((socket) => {
-        socket.data = socket.data || {};
-        socket.data.lastActivity = activityInfo;
-      });
-
       io.emit(event, payload);
       console.log(
         `📡 WebSocket event '${event}' broadcast to all clients (${io.engine.clientsCount} total)`

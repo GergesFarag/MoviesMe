@@ -51,6 +51,8 @@ export class StoryProcessorService {
     job: Job,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<StoryProcessingResult> {
+    // Cache IO instance to prevent repeated getIO() calls
+    const io = getIO();
     const storyInterval = setInterval(() => {
       this.counter += 1;
       if (this.counter > 99) this.counter = 98;
@@ -58,10 +60,10 @@ export class StoryProcessorService {
         job,
         this.counter,
         `Processing story...`,
-        getIO(),
+        io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
-    }, 3000);
+    }, 5000); // Reduced frequency from 3s to 5s
     try {
       console.log(
         `🚀 Starting story processing for job ${job.id} with jobId: ${jobData.jobId}`
@@ -149,7 +151,7 @@ export class StoryProcessorService {
           job,
           100,
           `Processing story...`,
-          getIO(),
+          io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
       }
@@ -322,6 +324,7 @@ export class StoryProcessorService {
       }
     }
   }
+
   private async mergeAndComposeVideo(
     job: Job,
     videoUrls: string[],

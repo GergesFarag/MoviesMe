@@ -40,6 +40,8 @@ export class EffectProcessorService {
       if (!modelData) {
         throw new AppError('Model Data not found', 404);
       }
+      // Cache IO instance to prevent repeated getIO() calls
+      const io = getIO();
       let progress = 0;
       const intervalId = setInterval(async () => {
         if (job && progress < 95) {
@@ -49,11 +51,11 @@ export class EffectProcessorService {
             job,
             progress,
             'Still processing...',
-            getIO(),
+            io,
             'job:progress'
           );
         }
-      }, 2000);
+      }, 3000); // Reduced frequency from 2s to 3s
       if (!this.WAVESPEED_API_KEY) {
         console.error(
           'Your API_KEY is not set, you can check it in Access Keys'
@@ -100,13 +102,7 @@ export class EffectProcessorService {
         jobId: job.id,
         duration: modelData.isVideo ? 0 : 0,
       };
-      updateJobProgress(
-        job,
-        100,
-        'Processing completed',
-        getIO(),
-        'job:progress'
-      );
+      updateJobProgress(job, 100, 'Processing completed', io, 'job:progress');
       return dataToBeSent;
     } catch (error) {
       console.error(`Job ${job.id} failed:`, error);
