@@ -47,7 +47,7 @@ export const updateJobProgress = async (
   if (job) {
     try {
       await job.progress(progress);
-
+      console.log('Sending Progress:', progress, '%');
       const updatedData = {
         ...(job.data || {}),
         status,
