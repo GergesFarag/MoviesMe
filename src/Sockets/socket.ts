@@ -31,9 +31,28 @@ export function initSocket(server: http.Server) {
       `✅ Socket ${socket.id} connected (Total: ${io!.engine.clientsCount})`
     );
 
+    // Log current rooms for debugging
+    console.log(
+      '📋 Current rooms:',
+      Array.from(io!.sockets.adapter.rooms.keys())
+    );
+
     const joinUserHandler = (userId: string) => {
+      if (!userId) {
+        console.error('❌ Join user failed: userId is required');
+        socket.emit('socket:error', {
+          error: 'userId is required',
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
       socket.join(`user:${userId}`);
       console.log(`🔗 Socket ${socket.id} joined room: user:${userId}`);
+      console.log(
+        '📋 Updated rooms:',
+        Array.from(io!.sockets.adapter.rooms.keys())
+      );
 
       socket.emit('connection:confirmed', {
         socketId: socket.id,
@@ -110,7 +129,10 @@ export const sendWebsocket = (
           `📡 WebSocket event '${event}' sent to room '${to}' (${room.size} clients)`
         );
       } else {
-        console.warn(`⚠️ No clients in room '${to}' for event '${event}'`);
+        console.warn(
+          `⚠️ No clients in room '${to}' for event '${event}'. Available rooms:`,
+          Array.from(io.sockets.adapter.rooms.keys())
+        );
       }
     } else {
       io.emit(event, payload);

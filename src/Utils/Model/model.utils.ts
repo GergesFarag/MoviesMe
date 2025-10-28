@@ -72,18 +72,30 @@ export const updateJobProgress = async (
 
         const roomName = `user:${job.data.userId}`;
 
-        // Check if room has active connections before emitting
+        // Check if room has active connections
         const room = io.sockets.adapter.rooms.get(roomName);
+
         if (room && room.size > 0) {
+          // Room exists with clients - send to room
           sendWebsocket(io, event, payload, roomName);
           console.log(
-            `✅ Job progress sent to ${room.size} client(s) in room ${roomName}:`,
-            payload
+            `✅ Job progress sent to ${room.size} client(s) in room ${roomName}`
           );
         } else {
-          console.log(
-            `⏭️ Skipping WebSocket emit - no active clients in room ${roomName}`
-          );
+          // Fallback: Check if there are any connected sockets at all
+          const connectedCount = io.engine.clientsCount;
+
+          if (connectedCount > 0) {
+            console.warn(
+              `⚠️ No clients in room '${roomName}', but ${connectedCount} socket(s) connected. Broadcasting to all.`
+            );
+            // Send to all connected clients as fallback
+            sendWebsocket(io, event, payload);
+          } else {
+            console.log(
+              `⏭️ Skipping WebSocket emit - no connected clients at all`
+            );
+          }
         }
       } catch (err) {
         console.error('❌ Error updating job progress via WebSocket:', err);
