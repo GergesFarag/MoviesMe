@@ -1,7 +1,8 @@
 name: mongoDB Backup
 on:
   schedule:
-    - cron: '20 14 * * *' # Runs daily at 14:20 UTC
+  #        Min Hour Day Month DayOfWeek
+    - cron: '30 14 * * *'                   # Runs daily at 14:20 UTC
   workflow_dispatch:
 jobs:
   backup:
@@ -11,7 +12,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up MongoDB Tools
-        run: sudo apt-get update && sudo apt-get install -y mongodb-database-tools
+        run: |
+          wget -qO- https://www.mongodb.org/static/pgp/server-7.0.asc | sudo tee /etc/apt/trusted.gpg.d/mongodb.asc
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-database-tools
 
       - name: Create backup folder
         run: mkdir -p ./backup
