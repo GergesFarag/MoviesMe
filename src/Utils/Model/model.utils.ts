@@ -69,7 +69,7 @@ export const updateJobProgress = async (
           timestamp: Date.now(),
         };
 
-        const roomName = `${job.data.userId}`;
+        const roomName = `user:${job.data.userId}`;
           sendWebsocket(event, payload, roomName);
       } catch (err) {
         console.error('❌ Error updating job progress via WebSocket:', err);
