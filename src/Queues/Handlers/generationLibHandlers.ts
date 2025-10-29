@@ -70,7 +70,6 @@ export class GenerationLibQueueHandler {
             job,
             progress,
             'Generating...',
-            getIO(),
             'generationLib:progress'
           );
         }
@@ -80,7 +79,6 @@ export class GenerationLibQueueHandler {
         job,
         10,
         'Starting generation...',
-        getIO(),
         'generationLib:progress'
       );
       let result = null;
@@ -106,7 +104,6 @@ export class GenerationLibQueueHandler {
           job,
           95,
           'Finalizing...',
-          getIO(),
           'generationLib:progress'
         );
 
@@ -116,7 +113,6 @@ export class GenerationLibQueueHandler {
           job,
           100,
           'Completed',
-          getIO(),
           'generationLib:progress'
         );
 
@@ -152,7 +148,6 @@ export class GenerationLibQueueHandler {
           job,
           95,
           'Finalizing...',
-          getIO(),
           'generationLib:progress'
         );
         const thumbnail = refImages && refImages[0] ? refImages[0] : resultURL;
@@ -161,7 +156,6 @@ export class GenerationLibQueueHandler {
           job,
           100,
           'Completed',
-          getIO(),
           'generationLib:progress'
         );
 
@@ -194,7 +188,6 @@ export class GenerationLibQueueHandler {
         job,
         0,
         'Failed',
-        getIO(),
         'generationLib:failed'
       );
 

@@ -40,8 +40,6 @@ export class EffectProcessorService {
       if (!modelData) {
         throw new AppError('Model Data not found', 404);
       }
-      // Cache IO instance to prevent repeated getIO() calls
-      const io = getIO();
       let progress = 0;
       const intervalId = setInterval(async () => {
         if (job && progress < 95) {
@@ -51,7 +49,6 @@ export class EffectProcessorService {
             job,
             progress,
             'Still processing...',
-            io,
             'job:progress'
           );
         }
@@ -102,7 +99,7 @@ export class EffectProcessorService {
         jobId: job.id,
         duration: modelData.isVideo ? 0 : 0,
       };
-      updateJobProgress(job, 100, 'Processing completed', io, 'job:progress');
+      updateJobProgress(job, 100, 'Processing completed', 'job:progress');
       return dataToBeSent;
     } catch (error) {
       console.error(`Job ${job.id} failed:`, error);

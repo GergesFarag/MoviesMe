@@ -42,13 +42,10 @@ export class StoryProcessorService {
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
   private voiceGenerationService: VoiceGenerationService;
-  private io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
   constructor() {
     this.imageGenerationService = new ImageGenerationService(true);
     this.videoGenerationService = new VideoGenerationService();
-    this.voiceGenerationService = new VoiceGenerationService();
-    this.io = getIO();
-  }
+    this.voiceGenerationService = new VoiceGenerationService();  }
 
   public async processStory(
     job: Job,
@@ -64,7 +61,6 @@ export class StoryProcessorService {
         job,
         PROGRESS_STEPS.VALIDATION,
         'Validating job data...',
-        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       await this.validateJobData(job, jobData);
@@ -74,7 +70,6 @@ export class StoryProcessorService {
         job,
         PROGRESS_STEPS.STORY_GENERATION,
         'Generating story...',
-        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       const { story, seedreamPrompt, toVoiceGenerationText } =
@@ -95,7 +90,6 @@ export class StoryProcessorService {
           job,
           PROGRESS_STEPS.VOICE_OVER,
           'Generating voice over and images...',
-          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
         [voiceOver, imageUrls] = await Promise.all([
@@ -112,7 +106,6 @@ export class StoryProcessorService {
           job,
           PROGRESS_STEPS.IMAGE_GENERATION,
           'Generating images...',
-          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
         imageUrls = await this.generateImagesWithProgress(
@@ -132,7 +125,6 @@ export class StoryProcessorService {
         job,
         PROGRESS_STEPS.VIDEO_GENERATION,
         'Generating videos...',
-        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       const videoUrls = await this.generateVideos(job, imageUrls ?? []);
@@ -164,7 +156,6 @@ export class StoryProcessorService {
         job,
         PROGRESS_STEPS.VIDEO_UPLOAD,
         'Uploading final video...',
-        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
       const finalVideoUrl = await this.uploadVideo(
@@ -186,7 +177,6 @@ export class StoryProcessorService {
         job,
         PROGRESS_STEPS.COMPLETION,
         'Story completed successfully!',
-        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
 
@@ -338,7 +328,6 @@ export class StoryProcessorService {
           job,
           PROGRESS_STEPS.IMAGE_GENERATION,
           'Retrying with sequential video generation',
-          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
 
@@ -373,7 +362,6 @@ export class StoryProcessorService {
         job,
         PROGRESS_STEPS.VIDEO_MERGE,
         'Merging video scenes...',
-        this.io,
         QUEUE_EVENTS.STORY_PROGRESS
       );
 
@@ -398,7 +386,6 @@ export class StoryProcessorService {
           job,
           PROGRESS_STEPS.VIDEO_MERGE + 3, // 88% - between merge and upload
           'Composing video with audio...',
-          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
 
@@ -425,7 +412,6 @@ export class StoryProcessorService {
           job,
           PROGRESS_STEPS.VIDEO_MERGE + 7, // 92% - closer to upload
           'Video composition completed',
-          this.io,
           QUEUE_EVENTS.STORY_PROGRESS
         );
       } else {

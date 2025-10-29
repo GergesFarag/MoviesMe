@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      #events {
+        list-style-type: none;
+        padding: 0;
+        border: 1px solid #ccc;
+        margin-top: 20px;
+        height: 400px;
+        overflow-y: scroll;
+      }
+      #events li {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+      }
+      .event-name {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Test Client</h1>
+
+    <div>
+      <label for="userId">User ID:</label>
+      <input type="text" id="userId" value="some-user-id" />
+      <button id="joinRoom">Join Room</button>
+      <span id="connectionStatus">Disconnected</span>
+    </div>
+
+    <ul id="events"></ul>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+      const socket = io('http://localhost:3000', {
+        transports: ['websocket'],
+      });
+
+      const connectionStatus = document.getElementById('connectionStatus');
+      const eventsList = document.getElementById('events');
+      const userIdInput = document.getElementById('userId');
+      const joinRoomButton = document.getElementById('joinRoom');
+
+      socket.on('connect', () => {
+        connectionStatus.textContent = `Connected with id: ${socket.id}`;
+        connectionStatus.style.color = 'green';
+        addEventToList('connect', 'Connected to server');
+      });
+
+      socket.on('disconnect', (reason) => {
+        connectionStatus.textContent = 'Disconnected';
+        connectionStatus.style.color = 'red';
+        addEventToList('disconnect', `Disconnected: ${reason}`);
+      });
+
+      socket.on('socket:error', (data) => {
+        addEventToList('socket:error', JSON.stringify(data, null, 2), 'red');
+      });
+
+      joinRoomButton.addEventListener('click', () => {
+        const userId = userIdInput.value;
+        if (userId) {
+          socket.emit('join:user', userId);
+          addEventToList('join:user', `Sent join request for user: ${userId}`);
+        }
+      });
+
+      const eventsToListen = [
+        'job:progress',
+        'job:completed',
+        'story:progress',
+        'story:completed',
+        'generationLib:progress',
+      ];
+
+      eventsToListen.forEach((eventName) => {
+        socket.on(eventName, (data) => {
+          addEventToList(eventName, JSON.stringify(data, null, 2));
+        });
+      });
+
+      function addEventToList(eventName, data, color = 'black') {
+        const li = document.createElement('li');
+        li.style.color = color;
+        li.innerHTML = `<span class="event-name">[${eventName}]</span>: <pre>${data}</pre>`;
+        eventsList.appendChild(li);
+        eventsList.scrollTop = eventsList.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

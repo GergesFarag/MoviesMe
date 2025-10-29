@@ -41,7 +41,6 @@ export const updateJobProgress = async (
   job: Bull.Job,
   progress: number,
   status: string,
-  io?: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   event?: string
 ) => {
   if (job) {
@@ -60,7 +59,7 @@ export const updateJobProgress = async (
       console.error(`❌ Error updating job ${job.id} data:`, updateError);
     }
 
-    if (io && event) {
+    if (event) {
       try {
         const jobId = job.data.jobId || job.id;
         const payload = {
@@ -70,18 +69,8 @@ export const updateJobProgress = async (
           timestamp: Date.now(),
         };
 
-        const roomName = `user:${job.data.userId}`;
-
-        // Check if room has active connections
-        const room = io.sockets.adapter.rooms.get(roomName);
-
-        if (room && room.size > 0) {
-          // Room exists with clients - send to room
-          sendWebsocket(io, event, payload, roomName);
-          console.log(
-            `✅ Job progress sent to ${room.size} client(s) in room ${roomName}`
-          );
-        }
+        const roomName = `${job.data.userId}`;
+          sendWebsocket(event, payload, roomName);
       } catch (err) {
         console.error('❌ Error updating job progress via WebSocket:', err);
       }
