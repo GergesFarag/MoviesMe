@@ -23,7 +23,6 @@ export interface GeneratedPayloadBuilderParams {
 }
 
 export class PayloadBuilder {
-  
   static buildGenerationPayload(
     params: GeneratedPayloadBuilderParams
   ): Record<string, any> {
@@ -48,7 +47,7 @@ export class PayloadBuilder {
   ): Record<string, any> {
     const payload: Record<string, any> = {};
     this.addField(payload, 'prompt', params.prompt);
-    this.addImagesField(payload, params.images, params.maxImages);
+    this.addImagesField(payload, params.images, params.maxImages, params.prompt ? true : false);
     this.addField(payload, 'size', params.size);
     this.addField(payload, 'duration', params.duration);
     this.addField(payload, 'flags', params.flags);
@@ -117,10 +116,15 @@ export class PayloadBuilder {
   private static addImagesField(
     payload: Record<string, any>,
     images: string[],
-    maxImages: number
+    maxImages: number,
+    hasPrompt: boolean = false
   ) {
     if (images.length === 1 && maxImages === 1) {
-      payload['image'] = images[0];
+      if(hasPrompt){
+        payload['images'] = images; //CUSTOM EFFECTs only has prompt
+      }else{
+        payload['image'] = images[0];
+      }
     } else if (images.length > 0) {
       payload['images'] = images;
     }

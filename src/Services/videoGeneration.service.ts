@@ -1,7 +1,6 @@
 import path from 'path';
 import {
   wavespeedBase,
-  wavespeedBaseOptimized,
 } from '../Utils/APIs/wavespeed_base';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
@@ -49,11 +48,7 @@ export class VideoGenerationService {
     try {
       console.log(`🎥 Starting optimized video generation from image...`);
 
-      const resultUrl = (await wavespeedBaseOptimized(
-        url,
-        headers,
-        payload
-      )) as string;
+      const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
 
       if (!resultUrl) {
         throw new AppError(
@@ -523,11 +518,7 @@ export class VideoGenerationService {
     console.log('Payload for video generation:', payload);
     console.log('URL for video generation:', url);
     try {
-      const response = (await wavespeedBaseOptimized(
-        url,
-        headers,
-        payload
-      )) as string;
+      const response = (await wavespeedBase(url, headers, payload)) as string;
       console.log('RESPONSE : ', response);
       console.log(
         `✅ Video generated successfully for generation lib: ${url.substring(
