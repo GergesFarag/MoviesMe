@@ -1,4 +1,4 @@
-import { wavespeedBaseOptimized } from '../Utils/APIs/wavespeed_base';
+import { wavespeedBase } from '../Utils/APIs/wavespeed_base';
 import { Validator } from './validation.service';
 import AppError from '../Utils/Errors/AppError';
 import { IGenerationImageLibModel } from '../Interfaces/aiModel.interface';
@@ -36,11 +36,7 @@ export class ImageGenerationService {
     };
 
     // Use optimized polling for better performance
-    const resultUrl = (await wavespeedBaseOptimized(
-      url,
-      headers,
-      payload
-    )) as string;
+    const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from description: ${finalDescription}`
@@ -71,11 +67,7 @@ export class ImageGenerationService {
     };
 
     // Use optimized polling for better performance
-    const resultUrl = (await wavespeedBaseOptimized(
-      url,
-      headers,
-      payload
-    )) as string;
+    const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
     if (!resultUrl) {
       throw new Error(
         `Failed to generate image from reference image: ${finalDescription}`
@@ -163,8 +155,7 @@ export class ImageGenerationService {
         `🎨 Starting optimized image generation for ${numOfScenes} scenes...`
       );
 
-      // Use the optimized polling mechanism instead of custom implementation
-      const resultUrls = (await wavespeedBaseOptimized(
+      const resultUrls = (await wavespeedBase(
         url,
         headers,
         payload,
@@ -322,11 +313,7 @@ export class ImageGenerationService {
         )}...`
       );
 
-      const resultUrl = (await wavespeedBaseOptimized(
-        url,
-        headers,
-        payload
-      )) as string;
+      const resultUrl = (await wavespeedBase(url, headers, payload)) as string;
 
       if (!resultUrl) {
         throw new AppError(
