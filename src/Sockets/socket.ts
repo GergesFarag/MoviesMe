@@ -28,8 +28,9 @@ export const initSocket = (
     },
     pingInterval: 25000,
     pingTimeout: 12000,
-    transports: ['websocket'],
+    transports: ['polling','websocket'],
     maxHttpBufferSize: 1e8,
+    allowUpgrades: true
   });
 
   io.on('connection', (socket) => {
