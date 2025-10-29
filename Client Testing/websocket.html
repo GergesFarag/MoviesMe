@@ -318,8 +318,11 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
       const socket = io('http://localhost:3000', {
-        transports: ['polling', 'websocket'],
-        upgrade: true,
+        transports: ['websocket'], // Start directly with WebSocket, no polling/upgrade
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
       });
 
       const connectionStatus = document.getElementById('connectionStatus');
@@ -363,7 +366,7 @@
         );
       });
 
-      // Connection confirmed event
+      // Connection confirmed event from server
       socket.on('connection:confirmed', (data) => {
         addEventToList('connection:confirmed', data, 'success');
       });
@@ -418,16 +421,6 @@
         addEventToList('generationLib:completed', data, 'completed');
       });
 
-      // Transport upgrade
-      socket.io.engine.on('upgrade', () => {
-        updateTransportInfo();
-        addEventToList(
-          'upgrade',
-          { message: 'Transport upgraded to WebSocket' },
-          'success'
-        );
-      });
-
       // Button event listeners
       joinRoomButton.addEventListener('click', () => {
         const userId = userIdInput.value.trim();
@@ -453,8 +446,13 @@
       });
 
       pingServerButton.addEventListener('click', () => {
-        socket.emit('ping', { timestamp: Date.now() });
-        addEventToList('ping [SENT]', { message: 'Pinging server' }, 'info');
+        const startTime = Date.now();
+        socket.emit('ping');
+        addEventToList(
+          'ping [SENT]',
+          { message: 'Pinging server', timestamp: startTime },
+          'info'
+        );
       });
 
       clearEventsButton.addEventListener('click', () => {
@@ -518,6 +516,16 @@
               'info'
             );
           }, 500);
+        }
+      });
+
+      // Listen for connection events to auto-join if not already
+      socket.on('connect', () => {
+        const userId = userIdInput.value.trim();
+        if (userId) {
+          setTimeout(() => {
+            socket.emit('join:user', userId);
+          }, 200);
         }
       });
     </script>

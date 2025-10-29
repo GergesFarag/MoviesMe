@@ -10,48 +10,19 @@ export function initSocket(server: http.Server) {
       allowedHeaders: ['*'],
       credentials: true,
     },
-    transports: ['polling', 'websocket'],
+    transports: ['websocket'],
     pingInterval: 90000, // 90 seconds (1.5 minutes) - when to check if idle
     pingTimeout: 90000, // 90 seconds (1.5 minutes) - how long to wait for pong
     // Total idle timeout = pingInterval + pingTimeout = 180 seconds (3 minutes)
     connectTimeout: 45000, // 45 seconds for initial connection
-    upgradeTimeout: 30000, // 30 seconds for transport upgrade
     maxHttpBufferSize: 1e8, // 100MB for large data transfers
-    allowUpgrades: true,
-    httpCompression: true,
-    perMessageDeflate: {
-      threshold: 1024,
-      concurrencyLimit: 10,
-      windowBits: 13,
-    },
   });
 
   io.on('connection', (socket) => {
-    console.log(`✅ New socket connection established: ${socket.id}`);
-    console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
-
-    // Log initial connection details
-    console.log(`🔍 Connection details:`, {
-      transport: socket.conn?.transport?.name,
-      upgraded: socket.conn?.upgraded,
-      readyState: socket.conn?.readyState,
-      handshake: {
-        address: socket.handshake.address,
-        time: new Date(socket.handshake.time).toISOString(),
-        headers: {
-          userAgent: socket.handshake.headers['user-agent'],
-          origin: socket.handshake.headers.origin,
-          connection: socket.handshake.headers.connection,
-          upgrade: socket.handshake.headers.upgrade,
-        },
-      },
-    });
-
     socket.on('join:user', (userId: string) => {
       socket.join(`user:${userId}`);
       console.log(`🔗 Socket ${socket.id} joined user room: user:${userId}`);
 
-      // Send connection confirmation
       socket.emit('connection:confirmed', {
         socketId: socket.id,
         userId: userId,
