@@ -10,7 +10,7 @@ export function initSocket(server: http.Server) {
       allowedHeaders: ['*'],
       credentials: true,
     },
-    transports: ['polling', 'websocket'], // Allow both polling and websocket
+    transports: ['polling', 'websocket'],
     allowUpgrades: true, // Allow upgrade from polling to websocket
     pingInterval: 90000, // 90 seconds (1.5 minutes) - when to check if idle
     pingTimeout: 90000, // 90 seconds (1.5 minutes) - how long to wait for pong
@@ -35,12 +35,11 @@ export function initSocket(server: http.Server) {
       });
     });
 
+
     socket.on('disconnect', (reason: string) => {
+
       console.log(`❌ Socket ${socket.id} disconnected. Reason: ${reason}`);
       console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
-
-      // Log which rooms this socket was in
-      console.log(`📍 Socket was in rooms:`, Array.from(socket.rooms));
 
       if (reason === 'transport close') {
         console.warn(`⚠️ Transport closed for socket ${socket.id}`);
@@ -142,7 +141,6 @@ export function initSocket(server: http.Server) {
       });
     });
 
-    // Note: No periodic keep-alive messages
     // Connection will timeout after 3 minutes of true inactivity
     // (90s idle + 90s waiting for pong = 180s total)
   });

@@ -7,8 +7,6 @@ import { ImageGenerationService } from '../imageGeneration.service';
 import { OpenAIService } from '../openAi.service';
 import { VideoGenerationService } from '../videoGeneration.service';
 import { VoiceGenerationService } from '../voiceGeneration.service';
-import { getIO } from '../../Sockets/socket';
-import { updateJobProgress } from '../../Utils/Model/model.utils';
 import { IStoryResponse } from '../../Interfaces/storyResponse.interface';
 import { IProcessedVoiceOver } from '../../Interfaces/audioModel.interface';
 import { RepositoryOrchestrationService } from '../../Services/repositoryOrchestration.service';
@@ -19,18 +17,7 @@ import {
 import { StoryProcessingResult } from '../../Interfaces/story.interface';
 import StoryGenerationInfo from '../../Models/storyGenerationInfo.model';
 import logger from '../../Config/logger';
-import { DefaultEventsMap, Server } from 'socket.io';
-
-export const PROGRESS_STEPS = {
-  VALIDATION: 10,
-  STORY_GENERATION: 30,
-  VOICE_OVER: 45,
-  IMAGE_GENERATION: 60,
-  VIDEO_GENERATION: 80,
-  VIDEO_MERGE: 85,
-  VIDEO_UPLOAD: 95,
-  COMPLETION: 100,
-} as const;
+import { sendWebsocket } from '../../Sockets/socket';
 
 export const QUEUE_EVENTS = {
   STORY_PROGRESS: 'story:progress',
@@ -42,10 +29,74 @@ export class StoryProcessorService {
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
   private voiceGenerationService: VoiceGenerationService;
+  private progressIntervals: Map<string, NodeJS.Timeout> = new Map();
+
   constructor() {
     this.imageGenerationService = new ImageGenerationService(true);
     this.videoGenerationService = new VideoGenerationService();
-    this.voiceGenerationService = new VoiceGenerationService();  }
+    this.voiceGenerationService = new VoiceGenerationService();
+  }
+
+  private startProgressUpdates(
+    userId: string,
+    jobId: string,
+    startProgress: number,
+    endProgress: number,
+    step: string
+  ): void {
+    this.stopProgressUpdates(jobId);
+
+    let currentProgress = startProgress;
+    const interval = setInterval(() => {
+      if (currentProgress < endProgress) {
+        currentProgress += 1;
+
+        sendWebsocket(
+          QUEUE_EVENTS.STORY_PROGRESS,
+          {
+            jobId,
+            progress: currentProgress,
+            step,
+            message: `${step}: ${currentProgress}%`,
+          },
+          `user:${userId}`
+        );
+
+        console.log(
+          `📊 Progress update sent: ${jobId} - ${step} - ${currentProgress}%`
+        );
+      }
+    }, 3000);
+
+    this.progressIntervals.set(jobId, interval);
+  }
+
+  private stopProgressUpdates(jobId: string): void {
+    const interval = this.progressIntervals.get(jobId);
+    if (interval) {
+      clearInterval(interval);
+      this.progressIntervals.delete(jobId);
+    }
+  }
+
+  private sendProgressUpdate(
+    userId: string,
+    jobId: string,
+    progress: number,
+    step: string
+  ): void {
+    sendWebsocket(
+      QUEUE_EVENTS.STORY_PROGRESS,
+      {
+        jobId,
+        progress,
+        step,
+        message: `${step}: ${progress}%`,
+      },
+      `user:${userId}`
+    );
+    console.log(`📊 Progress update: ${jobId} - ${step} - ${progress}%`);
+  }
 
   public async processStory(
     job: Job,
@@ -56,24 +107,31 @@ export class StoryProcessorService {
         `🚀 Starting story processing for job ${job.id} with jobId: ${jobData.jobId}`
       );
 
-      // Validation step
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.VALIDATION,
-        'Validating job data...',
-        QUEUE_EVENTS.STORY_PROGRESS
+      this.sendProgressUpdate(
+        jobData.userId,
+        jobData.jobId,
+        0,
+        'Starting story processing'
       );
+
       await this.validateJobData(job, jobData);
 
-      // Story generation step
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.STORY_GENERATION,
-        'Generating story...',
-        QUEUE_EVENTS.STORY_PROGRESS
+      this.startProgressUpdates(
+        jobData.userId,
+        jobData.jobId,
+        0,
+        10,
+        'Generating story'
       );
       const { story, seedreamPrompt, toVoiceGenerationText } =
         await this.generateStory(job, jobData);
+      this.stopProgressUpdates(jobData.jobId);
+      this.sendProgressUpdate(
+        jobData.userId,
+        jobData.jobId,
+        10,
+        'Story generated'
+      );
 
       console.log(
         '🚀 Starting parallel processing: Voice Over + Image Generation'
@@ -85,12 +143,12 @@ export class StoryProcessorService {
       ] = [null, null];
 
       if (jobData.voiceOver) {
-        // Voice over and image generation in parallel
-        updateJobProgress(
-          job,
-          PROGRESS_STEPS.VOICE_OVER,
-          'Generating voice over and images...',
-          QUEUE_EVENTS.STORY_PROGRESS
+        this.startProgressUpdates(
+          jobData.userId,
+          jobData.jobId,
+          10,
+          40,
+          'Generating voice over and images'
         );
         [voiceOver, imageUrls] = await Promise.all([
           this.processVoiceOverWithProgress(
@@ -100,18 +158,32 @@ export class StoryProcessorService {
           ),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
+        this.stopProgressUpdates(jobData.jobId);
+        this.sendProgressUpdate(
+          jobData.userId,
+          jobData.jobId,
+          40,
+          'Voice over and images generated'
+        );
       } else {
-        // Only image generation
-        updateJobProgress(
-          job,
-          PROGRESS_STEPS.IMAGE_GENERATION,
-          'Generating images...',
-          QUEUE_EVENTS.STORY_PROGRESS
+        this.startProgressUpdates(
+          jobData.userId,
+          jobData.jobId,
+          10,
+          35,
+          'Generating images'
         );
         imageUrls = await this.generateImagesWithProgress(
           job,
           jobData,
           seedreamPrompt
+        );
+        this.stopProgressUpdates(jobData.jobId);
+        this.sendProgressUpdate(
+          jobData.userId,
+          jobData.jobId,
+          35,
+          'Images generated'
         );
       }
 
@@ -120,14 +192,23 @@ export class StoryProcessorService {
       );
       const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
 
-      // Video generation step
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.VIDEO_GENERATION,
-        'Generating videos...',
-        QUEUE_EVENTS.STORY_PROGRESS
+      const videoStartProgress = jobData.voiceOver ? 40 : 35;
+      const videoEndProgress = jobData.voiceOver ? 70 : 65;
+      this.startProgressUpdates(
+        jobData.userId,
+        jobData.jobId,
+        videoStartProgress,
+        videoEndProgress,
+        'Generating videos'
       );
       const videoUrls = await this.generateVideos(job, imageUrls ?? []);
+      this.stopProgressUpdates(jobData.jobId);
+      this.sendProgressUpdate(
+        jobData.userId,
+        jobData.jobId,
+        videoEndProgress,
+        'Videos generated'
+      );
 
       if (jobData.audio) {
         console.log('⏭️ Using provided audio, skipping voice over generation');
@@ -143,27 +224,60 @@ export class StoryProcessorService {
         };
       }
 
-      // Video merge and composition step (handles its own progress updates internally)
+      const mergeStartProgress = jobData.voiceOver ? 70 : 65;
+      const mergeEndProgress = jobData.voiceOver ? 85 : 80;
+      this.startProgressUpdates(
+        jobData.userId,
+        jobData.jobId,
+        mergeStartProgress,
+        mergeEndProgress,
+        'Merging and composing video'
+      );
       const finalVideoBuffer = await this.mergeAndComposeVideo(
         job,
         videoUrls,
         voiceOver,
         jobData
       );
+      this.stopProgressUpdates(jobData.jobId);
+      this.sendProgressUpdate(
+        jobData.userId,
+        jobData.jobId,
+        mergeEndProgress,
+        'Video merged and composed'
+      );
 
-      // Video upload step
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.VIDEO_UPLOAD,
-        'Uploading final video...',
-        QUEUE_EVENTS.STORY_PROGRESS
+      const uploadStartProgress = jobData.voiceOver ? 85 : 80;
+      const uploadEndProgress = jobData.voiceOver ? 95 : 90;
+      this.startProgressUpdates(
+        jobData.userId,
+        jobData.jobId,
+        uploadStartProgress,
+        uploadEndProgress,
+        'Uploading video'
       );
       const finalVideoUrl = await this.uploadVideo(
         job,
         finalVideoBuffer,
         jobData.jobId
       );
+      this.stopProgressUpdates(jobData.jobId);
+      this.sendProgressUpdate(
+        jobData.userId,
+        jobData.jobId,
+        uploadEndProgress,
+        'Video uploaded'
+      );
 
+      // Save to database: 95-100%
+      const saveStartProgress = jobData.voiceOver ? 95 : 90;
+      this.startProgressUpdates(
+        jobData.userId,
+        jobData.jobId,
+        saveStartProgress,
+        99,
+        'Saving story'
+      );
       const completedStory = await this.saveCompletedStory(
         job,
         updatedStory,
@@ -171,13 +285,22 @@ export class StoryProcessorService {
         voiceOver,
         jobData
       );
+      this.stopProgressUpdates(jobData.jobId);
 
-      // Completion step
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.COMPLETION,
-        'Story completed successfully!',
-        QUEUE_EVENTS.STORY_PROGRESS
+      this.sendProgressUpdate(
+        jobData.userId,
+        jobData.jobId,
+        100,
+        'Story completed'
+      );
+      sendWebsocket(
+        QUEUE_EVENTS.STORY_COMPLETED,
+        {
+          jobId: jobData.jobId,
+          story: completedStory,
+          videoUrl: finalVideoUrl,
+        },
+        `user:${jobData.userId}`
       );
 
       console.log(
@@ -193,6 +316,17 @@ export class StoryProcessorService {
         `❌ Story processing failed for jobId: ${jobData.jobId}`,
         error
       );
+
+      this.stopProgressUpdates(jobData.jobId);
+      sendWebsocket(
+        QUEUE_EVENTS.STORY_FAILED,
+        {
+          jobId: jobData.jobId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        `user:${jobData.userId}`
+      );
+
       throw error;
     }
   }
@@ -212,28 +346,6 @@ export class StoryProcessorService {
     }
 
     console.log(`✅ Starting story processing for jobId: ${jobData.jobId}`);
-  }
-
-  private async checkExistingJob(jobId: string): Promise<any> {
-    const existingJob = await JobModel.findOne({ jobId });
-    if (existingJob) {
-      console.log(`🔍 EXISTING JOB FOUND: Status = ${existingJob.status}`);
-      if (existingJob.status === 'completed') {
-        console.log(`⏭️ Job ${jobId} already completed, skipping`);
-        return { message: 'Job already completed', jobId };
-      }
-    } else {
-      console.log(`🆕 No existing job found, proceeding with new processing`);
-    }
-
-    const existingStory = await Story.findOne({ jobId });
-    if (existingStory) {
-      console.log(`🔍 EXISTING STORY FOUND: Status = ${existingStory.status}`);
-      if (existingStory.status === 'completed') {
-        console.log(`⏭️ Story ${jobId} already completed, skipping`);
-        return { message: 'Story already completed', jobId };
-      }
-    }
   }
 
   private async generateStory(
@@ -324,13 +436,6 @@ export class StoryProcessorService {
       // Fallback to sequential processing if parallel fails
       console.log('🔄 Falling back to sequential video generation...');
       try {
-        updateJobProgress(
-          job,
-          PROGRESS_STEPS.IMAGE_GENERATION,
-          'Retrying with sequential video generation',
-          QUEUE_EVENTS.STORY_PROGRESS
-        );
-
         const fallbackVideoUrls =
           await this.videoGenerationService.generateVideos(imageUrls);
 
@@ -357,14 +462,6 @@ export class StoryProcessorService {
     console.log('🎞️ Merging video scenes...');
 
     try {
-      // Send progress update before starting merge
-      updateJobProgress(
-        job,
-        PROGRESS_STEPS.VIDEO_MERGE,
-        'Merging video scenes...',
-        QUEUE_EVENTS.STORY_PROGRESS
-      );
-
       // Merge video scenes
       const mergedVideoBuffer = await this.videoGenerationService.mergeScenes(
         videoUrls
@@ -381,14 +478,6 @@ export class StoryProcessorService {
 
       // Compose with audio if voice over exists
       if (voiceOver && voiceOver.url) {
-        // Send progress update before audio composition
-        updateJobProgress(
-          job,
-          PROGRESS_STEPS.VIDEO_MERGE + 3, // 88% - between merge and upload
-          'Composing video with audio...',
-          QUEUE_EVENTS.STORY_PROGRESS
-        );
-
         console.log('🎵 Composing video with voice over...');
 
         const composedBuffer =
@@ -405,14 +494,6 @@ export class StoryProcessorService {
         finalVideoBuffer = composedBuffer;
         console.log(
           `✅ Video composed with sound successfully, buffer size: ${finalVideoBuffer.length}`
-        );
-
-        // Send progress update after composition completes
-        updateJobProgress(
-          job,
-          PROGRESS_STEPS.VIDEO_MERGE + 7, // 92% - closer to upload
-          'Video composition completed',
-          QUEUE_EVENTS.STORY_PROGRESS
         );
       } else {
         console.log('⏭️ Skipping audio composition - no voice over provided');
