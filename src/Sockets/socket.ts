@@ -10,15 +10,20 @@ export function initSocket(server: http.Server) {
       allowedHeaders: ['*'],
       credentials: true,
     },
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'], // Allow both polling and websocket
+    allowUpgrades: true, // Allow upgrade from polling to websocket
     pingInterval: 90000, // 90 seconds (1.5 minutes) - when to check if idle
     pingTimeout: 90000, // 90 seconds (1.5 minutes) - how long to wait for pong
     // Total idle timeout = pingInterval + pingTimeout = 180 seconds (3 minutes)
     connectTimeout: 45000, // 45 seconds for initial connection
+    upgradeTimeout: 30000, // 30 seconds for transport upgrade
     maxHttpBufferSize: 1e8, // 100MB for large data transfers
   });
 
   io.on('connection', (socket) => {
+    console.log(`✅ New client connected: ${socket.id}`);
+    console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
+
     socket.on('join:user', (userId: string) => {
       socket.join(`user:${userId}`);
       console.log(`🔗 Socket ${socket.id} joined user room: user:${userId}`);
@@ -33,6 +38,10 @@ export function initSocket(server: http.Server) {
     socket.on('disconnect', (reason: string) => {
       console.log(`❌ Socket ${socket.id} disconnected. Reason: ${reason}`);
       console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
+
+      // Log which rooms this socket was in
+      console.log(`📍 Socket was in rooms:`, Array.from(socket.rooms));
+
       if (reason === 'transport close') {
         console.warn(`⚠️ Transport closed for socket ${socket.id}`);
 
