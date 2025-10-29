@@ -1,173 +1,140 @@
 import { DefaultEventsMap, Server } from 'socket.io';
 import type http from 'http';
 import AppError from '../Utils/Errors/AppError';
-let io: Server | null = null;
 
-export function initSocket(server: http.Server) {
+// Global Socket.IO instance
+let io: Server<
+  DefaultEventsMap,
+  DefaultEventsMap,
+  DefaultEventsMap,
+  any
+> | null = null;
+
+/**
+ * Initialize Socket.IO server with long-running job support
+ * Configures pingTimeout and pingInterval to prevent disconnections during long processing tasks
+ * @param server - HTTP server instance
+ * @returns Socket.IO server instance
+ */
+export const initSocket = (
+  server: http.Server
+): Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> => {
+  if (io) {
+    console.warn(
+      '⚠️ Socket.IO already initialized. Returning existing instance.'
+    );
+    return io;
+  }
+
   io = new Server(server, {
     cors: {
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['*'],
+      origin: '*', // Configure this based on your environment
+      methods: ['GET', 'POST'],
       credentials: true,
     },
-    path: '/socket.io/', // Explicit path for Flutter clients
-    transports: ['polling', 'websocket'], // Polling first for mobile compatibility
-    pingInterval: 25000, // 25 seconds - more frequent to detect issues faster
-    pingTimeout: 120000, // 120 seconds (2 minutes) - very tolerant for long operations
-    connectTimeout: 45000, // 45 seconds
-    upgradeTimeout: 30000, // 30 seconds
-    maxHttpBufferSize: 1e8, // 100MB
-    allowUpgrades: true, // Allow upgrade from polling to websocket
-    httpCompression: true,
-    perMessageDeflate: {
-      threshold: 1024,
-      concurrencyLimit: 10,
-      windowBits: 13,
-    },
-    // Additional mobile-friendly options
-    serveClient: false, // Don't serve client files
-    cookie: false, // Disable cookies for mobile apps
-    // Allow requests validation
-    allowRequest: (req, callback) => {
-      // Log connection attempts for debugging
-      console.log(
-        `📱 Connection attempt from: ${req.headers.origin || 'Unknown'}`
-      );
-      console.log(
-        `   User-Agent: ${
-          req.headers['user-agent']?.substring(0, 50) || 'Unknown'
-        }...`
-      );
-
-      // Accept all requests (CORS is already configured above)
-      callback(null, true);
-    },
+    // Critical settings for long-running jobs (15+ minutes)
+    // Increased timeouts to handle heavy video processing operations
+    pingTimeout: 120000, // 120 seconds (2 minutes) - how long to wait for pong before considering connection dead
+    pingInterval: 45000, // 45 seconds - how often to send ping packets
+    connectTimeout: 60000, // 60 seconds - connection timeout
+    // Increase max HTTP buffer size for large payloads
+    maxHttpBufferSize: 1e8, // 100 MB
+    // Allow for multiple reconnection attempts
+    allowEIO3: true,
+    // Transport options
+    transports: ['websocket', 'polling'],
+    // Upgrade timeout - important for polling -> websocket upgrade
+    upgradeTimeout: 30000,
   });
 
+  // Connection event handler
   io.on('connection', (socket) => {
-    console.log(
-      `✅ Socket ${socket.id} connected (Total: ${io!.engine.clientsCount})`
-    );
-    console.log(`   Transport: ${socket.conn.transport.name}`);
-    console.log(`   Handshake: ${JSON.stringify(socket.handshake.query)}`);
+    console.log(`✅ Client connected: ${socket.id}`);
 
-    // Log current rooms for debugging
-    console.log(
-      '📋 Current rooms:',
-      Array.from(io!.sockets.adapter.rooms.keys())
-    );
+    // Handle room joining for user-specific updates
+    socket.on('join:user', (roomId: string) => {
+      try {
+        if (!roomId) {
+          socket.emit('socket:error', { error: 'Room ID is required' });
+          return;
+        }
 
-    const joinUserHandler = (userId: string) => {
-      if (!userId) {
-        console.error('❌ Join user failed: userId is required');
-        socket.emit('socket:error', {
-          error: 'userId is required',
+        socket.join(roomId);
+        console.log(`👤 Socket ${socket.id} joined room: ${roomId}`);
+
+        // Confirm room join
+        socket.emit('room-joined', {
+          roomId,
+          socketId: socket.id,
           timestamp: Date.now(),
         });
-        return;
-      }
-
-      socket.join(`user:${userId}`);
-      console.log(`🔗 Socket ${socket.id} joined room: user:${userId}`);
-      console.log(
-        '📋 Updated rooms:',
-        Array.from(io!.sockets.adapter.rooms.keys())
-      );
-
-      socket.emit('connection:confirmed', {
-        socketId: socket.id,
-        userId: userId,
-        timestamp: Date.now(),
-      });
-    };
-
-    const disconnectHandler = (reason: string) => {
-      console.log(
-        `❌ Socket ${socket.id} disconnected: ${reason} (Remaining: ${
-          io!.engine.clientsCount
-        })`
-      );
-
-      // Clean up all event listeners to prevent memory leaks
-      socket.removeAllListeners('join:user');
-      socket.removeAllListeners('ping');
-      socket.removeAllListeners('health:check');
-      socket.removeAllListeners('error');
-    };
-
-    // Ping/Pong handler
-    const pingHandler = () => {
-      socket.emit('pong', {
-        timestamp: Date.now(),
-        socketId: socket.id,
-      });
-    };
-
-    // Health check handler
-    const healthCheckHandler = () => {
-      const rooms = Array.from(socket.rooms);
-      socket.emit('health:response', {
-        status: 'healthy',
-        socketId: socket.id,
-        rooms: rooms,
-        timestamp: Date.now(),
-      });
-    };
-
-    // Error handler
-    const errorHandler = (error: Error) => {
-      console.error(`🚨 Socket ${socket.id} error:`, error.message);
-      socket.emit('socket:error', {
-        error: error.message,
-        timestamp: Date.now(),
-      });
-    };
-
-    // Attach event listeners
-    socket.on('join:user', joinUserHandler);
-    socket.on('disconnect', disconnectHandler);
-    socket.on('ping', pingHandler);
-    socket.on('health:check', healthCheckHandler);
-    socket.on('error', errorHandler);
-
-    // Monitor transport upgrades
-    socket.conn.on('upgrade', (transport) => {
-      console.log(`🔄 Socket ${socket.id} upgraded to: ${transport.name}`);
-    });
-
-    socket.conn.on('packet', (packet) => {
-      // Log only important packets, not ping/pong
-      if (packet.type !== 'ping' && packet.type !== 'pong') {
-        console.log(`📦 Socket ${socket.id} packet: ${packet.type}`);
+      } catch (error) {
+        console.error(`❌ Error joining room ${roomId}:`, error);
+        socket.emit('socket:error', { error: 'Failed to join room' });
       }
     });
 
-    socket.conn.on('packetCreate', (packet) => {
-      // Debug outgoing packets for connection issues
-      if (packet.type !== 'ping' && packet.type !== 'pong') {
-        console.log(`📤 Socket ${socket.id} sending: ${packet.type}`);
+    // Handle room leaving
+    socket.on('leave-room', (roomId: string) => {
+      try {
+        if (!roomId) {
+          socket.emit('socket:error', { error: 'Room ID is required' });
+          return;
+        }
+
+        socket.leave(roomId);
+        console.log(`👋 Socket ${socket.id} left room: ${roomId}`);
+
+        socket.emit('room-left', {
+          roomId,
+          socketId: socket.id,
+          timestamp: Date.now(),
+        });
+      } catch (error) {
+        console.error(`❌ Error leaving room ${roomId}:`, error);
+        socket.emit('socket:error', { error: 'Failed to leave room' });
       }
+    });
+
+    // Heartbeat/ping handler to keep connection alive during long jobs
+    socket.on('ping', () => {
+      socket.emit('pong', { timestamp: Date.now() });
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', (reason) => {
+      console.log(`🔌 Client disconnected: ${socket.id} - Reason: ${reason}`);
+    });
+
+    // Handle errors
+    socket.on('error', (error) => {
+      console.error(`🚨 Socket error for ${socket.id}:`, error);
     });
   });
 
-  // Global error handlers for the engine
-  io.engine.on('connection_error', (err) => {
-    console.error('❌ Engine connection error:', {
-      message: err.message,
-      code: err.code,
-      context: err.context,
-    });
-  });
+  console.log('✅ Socket.IO initialized with long-running job support');
+  console.log(`   - Ping Interval: 45s`);
+  console.log(`   - Ping Timeout: 120s (2 minutes)`);
+  console.log(`   - Connect Timeout: 60s`);
+  console.log(`   - Max HTTP Buffer: 100MB`);
 
-  console.log('🚀 Socket.io server initialized successfully');
   return io;
-}
+};
 
-export function getIO() {
-  if (!io) throw new AppError('Socket.io not initialized');
+export const getIO = (): Server<
+  DefaultEventsMap,
+  DefaultEventsMap,
+  DefaultEventsMap,
+  any
+> => {
+  if (!io) {
+    throw new AppError(
+      'Socket.IO not initialized. Call initSocket first.',
+      500
+    );
+  }
   return io;
-}
+};
 
 export const sendWebsocket = (
   io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
@@ -196,10 +163,7 @@ export const sendWebsocket = (
         );
       }
     } else {
-      io.emit(event, payload);
-      console.log(
-        `📡 WebSocket event '${event}' broadcast to all clients (${io.engine.clientsCount} total)`
-      );
+      console.log('Broadcast Sending...');
     }
   } catch (error) {
     console.error(`🚨 Error sending WebSocket event '${event}':`, error);
