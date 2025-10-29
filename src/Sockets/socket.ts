@@ -28,25 +28,50 @@ export const initSocket = (
     },
     pingInterval: 25000,
     pingTimeout: 12000,
-    transports: ['polling','websocket'],
+    transports: ['polling', 'websocket'],
     maxHttpBufferSize: 1e8,
-    allowUpgrades: true
+    allowUpgrades: true,
   });
 
   io.on('connection', (socket) => {
     console.log(`✅ Client connected: ${socket.id}`);
 
-    socket.on('join:user', (userId: string) => {
+    socket.on('join:user', (userId: string, callback?: any) => {
       try {
+        console.log(
+          `🔍 Received join:user request - userId:`,
+          userId,
+          `type:`,
+          typeof userId
+        );
+
         if (!userId) {
-          socket.emit('socket:error', { error: 'userId is required' });
+          const errorMsg = { error: 'userId is required', received: userId };
+          console.error('❌ Join failed:', errorMsg);
+          socket.emit('socket:error', errorMsg);
+          if (callback && typeof callback === 'function') {
+            callback({ success: false, error: 'userId is required' });
+          }
           return;
         }
 
         socket.join(userId);
         console.log(`👤 Socket ${socket.id} joined room: ${userId}`);
+
+        // Send confirmation back to the client
+        socket.emit('user:joined', { userId, socketId: socket.id });
+
+        // If callback is provided (acknowledgment pattern)
+        if (callback && typeof callback === 'function') {
+          callback({ success: true, userId, socketId: socket.id });
+        }
       } catch (error) {
-        socket.emit('socket:error', { error: 'Failed to join room' });
+        console.error('❌ Error in join:user handler:', error);
+        const errorMsg = { error: 'Failed to join room', details: error };
+        socket.emit('socket:error', errorMsg);
+        if (callback && typeof callback === 'function') {
+          callback({ success: false, error: 'Failed to join room' });
+        }
       }
     });
 
