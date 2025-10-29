@@ -18,84 +18,22 @@ import { StoryProcessingResult } from '../../Interfaces/story.interface';
 import StoryGenerationInfo from '../../Models/storyGenerationInfo.model';
 import logger from '../../Config/logger';
 import { sendWebsocket } from '../../Sockets/socket';
-
-export const QUEUE_EVENTS = {
-  STORY_PROGRESS: 'story:progress',
-  STORY_COMPLETED: 'story:completed',
-  STORY_FAILED: 'story:failed',
-} as const;
+import {
+  QUEUE_EVENTS,
+  startProgressUpdates,
+  stopProgressUpdates,
+  sendProgressUpdate,
+} from '../generateStory.service';
 
 export class StoryProcessorService {
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
   private voiceGenerationService: VoiceGenerationService;
-  private progressIntervals: Map<string, NodeJS.Timeout> = new Map();
 
   constructor() {
     this.imageGenerationService = new ImageGenerationService(true);
     this.videoGenerationService = new VideoGenerationService();
     this.voiceGenerationService = new VoiceGenerationService();
-  }
-
-  private startProgressUpdates(
-    userId: string,
-    jobId: string,
-    startProgress: number,
-    endProgress: number,
-    step: string
-  ): void {
-    this.stopProgressUpdates(jobId);
-
-    let currentProgress = startProgress;
-    const interval = setInterval(() => {
-      if (currentProgress < endProgress) {
-        currentProgress += 1;
-
-        sendWebsocket(
-          QUEUE_EVENTS.STORY_PROGRESS,
-          {
-            jobId,
-            progress: currentProgress,
-            step,
-            message: `${step}: ${currentProgress}%`,
-          },
-          `user:${userId}`
-        );
-
-        console.log(
-          `📊 Progress update sent: ${jobId} - ${step} - ${currentProgress}%`
-        );
-      }
-    }, 3000);
-
-    this.progressIntervals.set(jobId, interval);
-  }
-
-  private stopProgressUpdates(jobId: string): void {
-    const interval = this.progressIntervals.get(jobId);
-    if (interval) {
-      clearInterval(interval);
-      this.progressIntervals.delete(jobId);
-    }
-  }
-
-  private sendProgressUpdate(
-    userId: string,
-    jobId: string,
-    progress: number,
-    step: string
-  ): void {
-    sendWebsocket(
-      QUEUE_EVENTS.STORY_PROGRESS,
-      {
-        jobId,
-        progress,
-        step,
-        message: `${step}: ${progress}%`,
-      },
-      `user:${userId}`
-    );
-    console.log(`📊 Progress update: ${jobId} - ${step} - ${progress}%`);
   }
 
   public async processStory(
@@ -107,7 +45,7 @@ export class StoryProcessorService {
         `🚀 Starting story processing for job ${job.id} with jobId: ${jobData.jobId}`
       );
 
-      this.sendProgressUpdate(
+      sendProgressUpdate(
         jobData.userId,
         jobData.jobId,
         0,
@@ -116,7 +54,7 @@ export class StoryProcessorService {
 
       await this.validateJobData(job, jobData);
 
-      this.startProgressUpdates(
+      startProgressUpdates(
         jobData.userId,
         jobData.jobId,
         0,
@@ -125,13 +63,8 @@ export class StoryProcessorService {
       );
       const { story, seedreamPrompt, toVoiceGenerationText } =
         await this.generateStory(job, jobData);
-      this.stopProgressUpdates(jobData.jobId);
-      this.sendProgressUpdate(
-        jobData.userId,
-        jobData.jobId,
-        10,
-        'Story generated'
-      );
+      stopProgressUpdates(jobData.jobId);
+      sendProgressUpdate(jobData.userId, jobData.jobId, 10, 'Story generated');
 
       console.log(
         '🚀 Starting parallel processing: Voice Over + Image Generation'
@@ -143,7 +76,7 @@ export class StoryProcessorService {
       ] = [null, null];
 
       if (jobData.voiceOver) {
-        this.startProgressUpdates(
+        startProgressUpdates(
           jobData.userId,
           jobData.jobId,
           10,
@@ -158,15 +91,15 @@ export class StoryProcessorService {
           ),
           this.generateImagesWithProgress(job, jobData, seedreamPrompt),
         ]);
-        this.stopProgressUpdates(jobData.jobId);
-        this.sendProgressUpdate(
+        stopProgressUpdates(jobData.jobId);
+        sendProgressUpdate(
           jobData.userId,
           jobData.jobId,
           40,
           'Voice over and images generated'
         );
       } else {
-        this.startProgressUpdates(
+        startProgressUpdates(
           jobData.userId,
           jobData.jobId,
           10,
@@ -178,8 +111,8 @@ export class StoryProcessorService {
           jobData,
           seedreamPrompt
         );
-        this.stopProgressUpdates(jobData.jobId);
-        this.sendProgressUpdate(
+        stopProgressUpdates(jobData.jobId);
+        sendProgressUpdate(
           jobData.userId,
           jobData.jobId,
           35,
@@ -194,7 +127,7 @@ export class StoryProcessorService {
 
       const videoStartProgress = jobData.voiceOver ? 40 : 35;
       const videoEndProgress = jobData.voiceOver ? 70 : 65;
-      this.startProgressUpdates(
+      startProgressUpdates(
         jobData.userId,
         jobData.jobId,
         videoStartProgress,
@@ -202,8 +135,8 @@ export class StoryProcessorService {
         'Generating videos'
       );
       const videoUrls = await this.generateVideos(job, imageUrls ?? []);
-      this.stopProgressUpdates(jobData.jobId);
-      this.sendProgressUpdate(
+      stopProgressUpdates(jobData.jobId);
+      sendProgressUpdate(
         jobData.userId,
         jobData.jobId,
         videoEndProgress,
@@ -226,7 +159,7 @@ export class StoryProcessorService {
 
       const mergeStartProgress = jobData.voiceOver ? 70 : 65;
       const mergeEndProgress = jobData.voiceOver ? 85 : 80;
-      this.startProgressUpdates(
+      startProgressUpdates(
         jobData.userId,
         jobData.jobId,
         mergeStartProgress,
@@ -239,8 +172,8 @@ export class StoryProcessorService {
         voiceOver,
         jobData
       );
-      this.stopProgressUpdates(jobData.jobId);
-      this.sendProgressUpdate(
+      stopProgressUpdates(jobData.jobId);
+      sendProgressUpdate(
         jobData.userId,
         jobData.jobId,
         mergeEndProgress,
@@ -249,7 +182,7 @@ export class StoryProcessorService {
 
       const uploadStartProgress = jobData.voiceOver ? 85 : 80;
       const uploadEndProgress = jobData.voiceOver ? 95 : 90;
-      this.startProgressUpdates(
+      startProgressUpdates(
         jobData.userId,
         jobData.jobId,
         uploadStartProgress,
@@ -261,8 +194,8 @@ export class StoryProcessorService {
         finalVideoBuffer,
         jobData.jobId
       );
-      this.stopProgressUpdates(jobData.jobId);
-      this.sendProgressUpdate(
+      stopProgressUpdates(jobData.jobId);
+      sendProgressUpdate(
         jobData.userId,
         jobData.jobId,
         uploadEndProgress,
@@ -271,7 +204,7 @@ export class StoryProcessorService {
 
       // Save to database: 95-100%
       const saveStartProgress = jobData.voiceOver ? 95 : 90;
-      this.startProgressUpdates(
+      startProgressUpdates(
         jobData.userId,
         jobData.jobId,
         saveStartProgress,
@@ -285,14 +218,9 @@ export class StoryProcessorService {
         voiceOver,
         jobData
       );
-      this.stopProgressUpdates(jobData.jobId);
+      stopProgressUpdates(jobData.jobId);
 
-      this.sendProgressUpdate(
-        jobData.userId,
-        jobData.jobId,
-        100,
-        'Story completed'
-      );
+      sendProgressUpdate(jobData.userId, jobData.jobId, 100, 'Story completed');
       sendWebsocket(
         QUEUE_EVENTS.STORY_COMPLETED,
         {
@@ -317,7 +245,7 @@ export class StoryProcessorService {
         error
       );
 
-      this.stopProgressUpdates(jobData.jobId);
+      stopProgressUpdates(jobData.jobId);
       sendWebsocket(
         QUEUE_EVENTS.STORY_FAILED,
         {

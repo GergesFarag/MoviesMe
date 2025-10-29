@@ -6,8 +6,86 @@ import { StoryProcessingDTO } from '../DTOs/storyRequest.dto';
 import AppError from '../Utils/Errors/AppError';
 import Job from '../Models/job.model';
 import { JobRepository } from '../Repositories/JobRepository';
+import { sendWebsocket } from '../Sockets/socket';
 
 const jobRepository = JobRepository.getInstance();
+
+export const QUEUE_EVENTS = {
+  STORY_PROGRESS: 'story:progress',
+  STORY_COMPLETED: 'story:completed',
+  STORY_FAILED: 'story:failed',
+} as const;
+
+const progressIntervals: Map<string, NodeJS.Timeout> = new Map();
+
+export const startProgressUpdates = (
+  userId: string,
+  jobId: string,
+  startProgress: number,
+  endProgress: number,
+  step: string
+): void => {
+  stopProgressUpdates(jobId);
+
+  let currentProgress = startProgress;
+  const interval = setInterval(() => {
+    if (currentProgress < endProgress) {
+      currentProgress += 1;
+
+      sendWebsocket(
+        QUEUE_EVENTS.STORY_PROGRESS,
+        {
+          jobId,
+          progress: currentProgress,
+          step,
+          message: `${step}: ${currentProgress}%`,
+        },
+        `user:${userId}`
+      );
+
+      console.log(
+        `📊 Progress update sent: ${jobId} - ${step} - ${currentProgress}%`
+      );
+    }
+  }, 3000);
+
+  progressIntervals.set(jobId, interval);
+};
+
+export const stopProgressUpdates = (jobId: string): void => {
+  const interval = progressIntervals.get(jobId);
+  if (interval) {
+    clearInterval(interval);
+    progressIntervals.delete(jobId);
+    console.log(`🛑 Stopped progress updates for job: ${jobId}`);
+  }
+};
+
+/**
+ * Send immediate progress update
+ * @param userId - The user ID to send updates to
+ * @param jobId - The job ID
+ * @param progress - Current progress percentage
+ * @param step - The step name/description
+ */
+export const sendProgressUpdate = (
+  userId: string,
+  jobId: string,
+  progress: number,
+  step: string
+): void => {
+  sendWebsocket(
+    QUEUE_EVENTS.STORY_PROGRESS,
+    {
+      jobId,
+      progress,
+      step,
+      message: `${step}: ${progress}%`,
+    },
+    `user:${userId}`
+  );
+  console.log(`📊 Progress update: ${jobId} - ${step} - ${progress}%`);
+};
 
 export const processStoryJobAsnc = async (
   storyData: IStoryRequest,
