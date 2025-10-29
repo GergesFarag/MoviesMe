@@ -9,6 +9,7 @@ import AppError from '../Utils/Errors/AppError';
 import { downloadFile } from '../Utils/Format/downloadFile';
 import { IGenerationVideoLibModel } from '../Interfaces/aiModel.interface';
 import {
+  videoNegativePrompt,
   videoPrompt,
 } from '../Utils/Format/generateSysPrompt';
 import { PayloadBuilder } from '../Utils/Model/payloadBuilder';
@@ -31,7 +32,7 @@ export class VideoGenerationService {
     refImageUrl: string,
     duration: number
   ): Promise<string> {
-    let url = `${baseURL}/bytedance/seedance-v1-pro-i2v-480p`;
+    let url = `${baseURL}/kwaivgi/kling-v2.1-i2v-standard`;
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
@@ -40,6 +41,7 @@ export class VideoGenerationService {
       duration,
       image: refImageUrl,
       prompt: videoPrompt,
+      negative_prompt:videoNegativePrompt
     };
     console.log('Payload for video generation:', payload);
     try {
