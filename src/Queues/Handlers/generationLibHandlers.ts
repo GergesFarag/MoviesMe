@@ -231,6 +231,7 @@ export class GenerationLibQueueHandler {
         existingItem.thumbnail = result.thumbnail || result.resultURL;
         existingItem.duration = result.duration || 0;
         existingItem.updatedAt = new Date();
+        existingItem.createdAt = new Date();
       } else {
         const newGenerationItem = {
           _id: new Types.ObjectId(),

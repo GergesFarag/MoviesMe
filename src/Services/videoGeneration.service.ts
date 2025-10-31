@@ -6,7 +6,10 @@ import fs from 'fs';
 import AppError from '../Utils/Errors/AppError';
 import { downloadFile } from '../Utils/Format/downloadFile';
 import { IGenerationVideoLibModel } from '../Interfaces/aiModel.interface';
-import { videoPrompt } from '../Utils/Format/generateSysPrompt';
+import {
+  videoNegativePrompt,
+  videoPrompt,
+} from '../Utils/Format/generateSysPrompt';
 import { PayloadBuilder } from '../Utils/Model/payloadBuilder';
 import cloudinary from '../Config/cloudinary';
 import { cloudUploadURL } from '../Utils/APIs/cloudinary';
@@ -18,19 +21,20 @@ const baseURL = 'https://api.wavespeed.ai/api/v3';
 export class VideoGenerationService {
   constructor() {
     // Configure FFmpeg path using the installer
-    try {
-      ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-      console.log('✅ FFmpeg configured successfully:', ffmpegInstaller.path);
-    } catch (error) {
-      throw new AppError('FFmpeg configuration failed', 500);
-    }
+    // try {
+    //   ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+    //   console.log('✅ FFmpeg configured successfully:', ffmpegInstaller.path);
+    // } catch (error) {
+    //   throw new AppError('FFmpeg configuration failed', 500);
+    // }
   }
 
   async generateVideoFromImage(
     refImageUrl: string,
     duration: number
   ): Promise<string> {
-    let url = `${baseURL}/bytedance/seedance-v1-pro-i2v-480p`;
+    let url = `${baseURL}/kwaivgi/kling-v2.1-i2v-standard`;
+    // let url = `${baseURL}/bytedance/seedance-v1-pro-i2v-480p`;
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
@@ -39,6 +43,7 @@ export class VideoGenerationService {
       duration,
       image: refImageUrl,
       prompt: videoPrompt,
+      negative_prompt: videoNegativePrompt,
     };
     console.log('Payload for video generation:', payload);
     try {
@@ -390,7 +395,6 @@ export class VideoGenerationService {
       {
         resource_type: 'video',
         type: 'upload',
-        eager_async: true, //! VERY IMPORTANT TO SET ASYNC [NO MEM LEAKS]
         eager: [
           {
             transformation: [
@@ -402,7 +406,7 @@ export class VideoGenerationService {
         ],
       }
     );
-    console.log('RESULT:', result.eager[0].secure_url);
+    console.log('RESULT:', result);
     const hashedVideoId = `merged_video_${Date.now()}`;
     const uploadResult = await cloudUploadURL(
       result.eager[0].secure_url,
@@ -420,7 +424,6 @@ export class VideoGenerationService {
       const result = await cloudinary.uploader.explicit(mergedVideo.PID, {
         resource_type: 'video',
         type: 'upload',
-        eager_async: true, //! VERY IMPORTANT TO SET ASYNC [NO MEM LEAKS]
         eager: [
           {
             transformation: [

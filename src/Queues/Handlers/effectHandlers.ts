@@ -67,6 +67,7 @@ export class EffectsQueueHandler {
         existingEffect.modelType = modelType;
         existingEffect.duration = result.duration || 0;
         existingEffect.updatedAt = new Date();
+        existingEffect.createdAt = new Date();
       } else {
         const newEffect = {
           jobId: result.jobId,
