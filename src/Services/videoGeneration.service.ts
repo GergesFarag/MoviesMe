@@ -1,17 +1,16 @@
 import path from 'path';
-import {
-  wavespeedBase,
-} from '../Utils/APIs/wavespeed_base';
+import { wavespeedBase } from '../Utils/APIs/wavespeed_base';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import fs from 'fs';
 import AppError from '../Utils/Errors/AppError';
 import { downloadFile } from '../Utils/Format/downloadFile';
 import { IGenerationVideoLibModel } from '../Interfaces/aiModel.interface';
-import {
-  videoPrompt,
-} from '../Utils/Format/generateSysPrompt';
+import { videoPrompt } from '../Utils/Format/generateSysPrompt';
 import { PayloadBuilder } from '../Utils/Model/payloadBuilder';
+import cloudinary from '../Config/cloudinary';
+import { cloudUploadURL } from '../Utils/APIs/cloudinary';
+import { CLOUDINAT_FOLDERS, OUTRO_VIDEO_PID } from '../Constants/cloud';
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || '';
 const baseURL = 'https://api.wavespeed.ai/api/v3';
@@ -367,6 +366,74 @@ export class VideoGenerationService {
         console.warn('Failed to clean up temporary directory:', cleanupError);
       }
     }
+  }
+
+  async mergeScenesWithCloudinary(
+    sceneVideosWithPID: { video: string; PID: string }[],
+    userId: string
+  ): Promise<{ video: string; PID: string }> {
+    console.log('Scene Videos PIDs : ', sceneVideosWithPID);
+    let transformationObjects = sceneVideosWithPID.slice(1).map(({ PID }) => {
+      return {
+        overlay: `video:${PID.split('/').join(':')}`,
+        flags: 'splice' as const,
+      };
+    });
+    transformationObjects.push({
+      overlay: `video:${OUTRO_VIDEO_PID}`,
+      flags: 'splice' as const,
+    });
+    console.log('Transformation Objects: ', transformationObjects);
+
+    const result = await cloudinary.uploader.explicit(
+      sceneVideosWithPID[0].PID,
+      {
+        resource_type: 'video',
+        type: 'upload',
+        eager: [
+          {
+            transformation: [
+              ...transformationObjects,
+              { height: 640, width: 640, crop: 'fill' },
+              { flags: 'layer_apply' },
+            ],
+          },
+        ],
+      }
+    );
+    console.log('RESULT:', result.eager[0].secure_url);
+    const hashedVideoId = `merged_video_${Date.now()}`;
+    const uploadResult = await cloudUploadURL(
+      result.eager[0].secure_url,
+      `user_${userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
+      hashedVideoId
+    );
+    return { video: uploadResult.secure_url, PID: uploadResult.public_id };
+  }
+
+  async composeSoundWithCloudinary(
+    mergedVideo: { video: string; PID: string },
+    voiceOverPID: string
+  ): Promise<string> {
+    try {
+      const result = await cloudinary.uploader.explicit(mergedVideo.PID, {
+        resource_type: 'video',
+        type: 'upload',
+        eager: [
+          {
+            transformation: [
+              { effect: 'volume:-70' }, // 0.3 = 30% volume
+              { overlay: `audio:${voiceOverPID.split('/').join(':')}` },
+              { flags: 'layer_apply' },
+            ],
+          },
+        ],
+      });
+      return result.eager[0].secure_url;
+    } catch (error) {
+      console.error('❌ Failed to compose video with voiceover:', error);
+    }
+    return '';
   }
 
   async generateVideos(sceneImages: string[]): Promise<string[]> {

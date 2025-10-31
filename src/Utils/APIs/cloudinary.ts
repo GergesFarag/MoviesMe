@@ -1,7 +1,7 @@
-import { UploadApiOptions, UploadApiResponse } from "cloudinary";
-import cloudinary from "../../Config/cloudinary";
-import AppError from "../Errors/AppError";
-import crypto from "crypto";
+import { UploadApiOptions, UploadApiResponse } from 'cloudinary';
+import cloudinary from '../../Config/cloudinary';
+import AppError from '../Errors/AppError';
+import crypto from 'crypto';
 
 export const cloudUpload = async (
   imageBuffer: Buffer,
@@ -11,24 +11,24 @@ export const cloudUpload = async (
 ): Promise<UploadApiResponse> => {
   return new Promise((resolve, reject) => {
     const uploadOptions: UploadApiOptions = {
-      resource_type: "auto" as const,
+      resource_type: 'auto' as const,
       public_id: publicId,
       overwrite: false,
-      quality: "auto:good",
-      fetch_format: "auto",
+      quality: 'auto:good',
+      fetch_format: 'auto',
       timeout: 60000,
       folder,
-      ...opts
+      ...opts,
     };
 
     const stream = cloudinary.uploader.upload_stream(
       uploadOptions,
       (error, result) => {
         if (error) {
-          console.log("Cloudinary Upload Error:", error);
-          reject(new AppError("Cloudinary upload failed", 500));
+          console.log('Cloudinary Upload Error:', error);
+          reject(new AppError('Cloudinary upload failed', 500));
         } else if (!result) {
-          reject(new AppError("Cloudinary upload returned no result", 500));
+          reject(new AppError('Cloudinary upload returned no result', 500));
         } else {
           resolve(result as UploadApiResponse);
         }
@@ -40,24 +40,25 @@ export const cloudUpload = async (
 };
 
 export const cloudUploadURL = async (
-  imageUrl: string,
+  url: string,
   folder: string,
-  publicId?: string
+  publicId?: string,
+  resourceType?: 'video' | 'image' | 'auto' | 'raw' | undefined
 ): Promise<UploadApiResponse> => {
   return new Promise((resolve, reject) => {
     const uploadOptions = {
-      resource_type: "auto" as const,
+      resource_type: resourceType ?? 'auto',
       public_id: publicId,
       overwrite: false,
-      quality: "auto:good",
+      quality: 'auto:good',
       folder,
     };
-    cloudinary.uploader.upload(imageUrl, uploadOptions, (error, result) => {
+    cloudinary.uploader.upload(url, uploadOptions, (error, result) => {
       if (error) {
-        console.log("Cloudinary URL Upload Error:", error);
-        reject(new AppError("Cloudinary URL upload failed", 500));
+        console.log('Cloudinary URL Upload Error:', error);
+        reject(new AppError('Cloudinary URL upload failed', 500));
       } else if (!result) {
-        reject(new AppError("Cloudinary URL upload returned no result", 500));
+        reject(new AppError('Cloudinary URL upload returned no result', 500));
       } else {
         resolve(result as UploadApiResponse);
       }
@@ -72,11 +73,11 @@ export const cloudUploadAudio = async (
 ): Promise<UploadApiResponse> => {
   return new Promise((resolve, reject) => {
     const uploadOptions = {
-      resource_type: "video" as const,
+      resource_type: 'video' as const,
       public_id: publicId,
       overwrite: false,
       timeout: 60000,
-      format: "mp3",
+      format: 'mp3',
       folder,
     };
 
@@ -84,11 +85,11 @@ export const cloudUploadAudio = async (
       uploadOptions,
       (error, result) => {
         if (error) {
-          console.log("Cloudinary Audio Upload Error:", error);
-          reject(new AppError("Cloudinary audio upload failed", 500));
+          console.log('Cloudinary Audio Upload Error:', error);
+          reject(new AppError('Cloudinary audio upload failed', 500));
         } else if (!result) {
           reject(
-            new AppError("Cloudinary audio upload returned no result", 500)
+            new AppError('Cloudinary audio upload returned no result', 500)
           );
         } else {
           resolve(result as UploadApiResponse);
@@ -107,7 +108,7 @@ export const cloudUploadVideo = async (
 ): Promise<UploadApiResponse> => {
   return new Promise((resolve, reject) => {
     const uploadOptions = {
-      resource_type: "video" as const,
+      resource_type: 'video' as const,
       public_id: publicId,
       overwrite: false,
       timeout: 60000,
@@ -118,11 +119,11 @@ export const cloudUploadVideo = async (
       uploadOptions,
       (error, result) => {
         if (error) {
-          console.log("Cloudinary Video Upload Error:", error);
-          reject(new AppError("Cloudinary video upload failed", 500));
+          console.log('Cloudinary Video Upload Error:', error);
+          reject(new AppError('Cloudinary video upload failed', 500));
         } else if (!result) {
           reject(
-            new AppError("Cloudinary video upload returned no result", 500)
+            new AppError('Cloudinary video upload returned no result', 500)
           );
         } else {
           resolve(result as UploadApiResponse);
@@ -135,12 +136,12 @@ export const cloudUploadVideo = async (
 };
 
 export const generateHashFromBuffer = (buffer: Buffer): string => {
-  return crypto.createHash("md5").update(buffer).digest("hex");
+  return crypto.createHash('md5').update(buffer).digest('hex');
 };
 
 export const deleteCloudinaryResource = async (
   publicId: string,
-  resourceType: "image" | "video" | "raw" = "image"
+  resourceType: 'image' | 'video' | 'raw' = 'image'
 ) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId, {
@@ -151,5 +152,38 @@ export const deleteCloudinaryResource = async (
   } catch (error) {
     console.error(`Failed to delete Cloudinary resource ${publicId}:`, error);
     throw error;
+  }
+};
+
+export const composeVideoWithAudio = async (
+  videoPublicId: string,
+  audioPublicId: string,
+  folder?: string
+) => {
+  try {
+    const result = await cloudinary.uploader.explicit(
+      'user_68dc6b7e0dfbb81d538692ab/processing_videos/custom_video_1761868361827',
+      {
+        resource_type: 'video',
+        type: 'upload',
+        eager: [
+          {
+            transformation: [
+              {
+                overlay:
+                  'video:user_68dc6b7e0dfbb81d538692ab:processing_videos:custom_video_1761868340796',
+                flags: 'splice',
+              },
+              { flags: 'layer_apply' },
+            ],
+          },
+        ],
+      }
+    );
+
+    console.log(result.eager);
+  } catch (error) {
+    console.error('Failed to compose video with audio:', error);
+    throw new AppError('Video composition failed', 500);
   }
 };

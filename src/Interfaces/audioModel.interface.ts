@@ -10,6 +10,7 @@ export interface IAudioModel {
 
 export interface IProcessedVoiceOver {
   url: string|null;
+  PID: string|null;
   text: string|null;
   data: any|null;
 }
