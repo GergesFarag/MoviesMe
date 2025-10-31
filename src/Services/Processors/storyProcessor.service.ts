@@ -308,7 +308,7 @@ export class StoryProcessorService {
 
     try {
       const story: IStoryResponse = {
-        title: jobData.title || await openAIService.generateTitle(jobData.prompt, jobData.voiceOver?.voiceLanguage || "English"),
+        title: await openAIService.generateTitle(jobData.prompt, jobData.voiceOver?.voiceLanguage || "English"),
         scenes: Array.from({ length: jobData.numOfScenes }, (_, i) => {
           return {
             sceneNumber: i + 1,
