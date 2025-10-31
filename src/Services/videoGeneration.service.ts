@@ -7,6 +7,7 @@ import AppError from '../Utils/Errors/AppError';
 import { downloadFile } from '../Utils/Format/downloadFile';
 import { IGenerationVideoLibModel } from '../Interfaces/aiModel.interface';
 import {
+  videoNegativePrompt,
   videoPrompt,
 } from '../Utils/Format/generateSysPrompt';
 import { PayloadBuilder } from '../Utils/Model/payloadBuilder';
