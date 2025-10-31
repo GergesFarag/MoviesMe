@@ -37,7 +37,6 @@ export class EffectsQueueHandler {
         console.error('User not found for userId:', result.userId);
         return;
       }
-      // Initialize effectsLib if it doesn't exist (but don't overwrite existing data)
       if (!user.effectsLib) {
         console.warn(
           `User effectsLib is undefined for userId: ${result.userId}, initializing...`

@@ -17,7 +17,7 @@ import { CLOUDINAT_FOLDERS, OUTRO_VIDEO_PID } from '../Constants/cloud';
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || '';
 const baseURL = 'https://api.wavespeed.ai/api/v3';
-
+const environment = process.env.NODE_ENV || 'development';
 export class VideoGenerationService {
   constructor() {
     // Configure FFmpeg path using the installer
@@ -33,8 +33,12 @@ export class VideoGenerationService {
     refImageUrl: string,
     duration: number
   ): Promise<string> {
-    let url = `${baseURL}/kwaivgi/kling-v2.1-i2v-standard`;
-    // let url = `${baseURL}/bytedance/seedance-v1-pro-i2v-480p`;
+    let url: string = '';
+    if (environment === 'development') {
+      url = `${baseURL}/bytedance/seedance-v1-pro-i2v-480p`;
+    } else {
+      url = `${baseURL}/kwaivgi/kling-v2.1-i2v-standard`;
+    }
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${WAVESPEED_API_KEY}`,
@@ -43,7 +47,7 @@ export class VideoGenerationService {
       duration,
       image: refImageUrl,
       prompt: videoPrompt,
-      negative_prompt: videoNegativePrompt,
+      ...(environment === 'production' ? { negative_prompt: videoNegativePrompt } : {}),
     };
     try {
       console.log(`🎥 Starting optimized video generation from image...`);

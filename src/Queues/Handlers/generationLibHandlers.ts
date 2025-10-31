@@ -1,19 +1,19 @@
-import { Job } from 'bull';
-import User from '../../Models/user.model';
-import JobModel from '../../Models/job.model';
-import { ImageGenerationService } from '../../Services/imageGeneration.service';
-import { NotificationService } from '../../Services/notification.service';
-import { getIO } from '../../Sockets/socket';
-import { updateJobProgress } from '../../Utils/Model/model.utils';
-import AppError from '../../Utils/Errors/AppError';
-import { getUserLangFromDB } from '../../Utils/Format/languageUtils';
-import { translationService } from '../../Services/translation.service';
-import { Types } from 'mongoose';
-import { VideoGenerationService } from '../../Services/videoGeneration.service';
-import GenerationInfo from '../../Models/generation.model';
-import { IGenerationImageLibModel } from '../../Interfaces/aiModel.interface';
-import { CreditService } from '../../Services/credits.service';
-import { INotification } from '../../Interfaces/notification.interface';
+import { Job } from "bull";
+import User from "../../Models/user.model";
+import JobModel from "../../Models/job.model";
+import { ImageGenerationService } from "../../Services/imageGeneration.service";
+import { NotificationService } from "../../Services/notification.service";
+import { getIO } from "../../Sockets/socket";
+import { updateJobProgress } from "../../Utils/Model/model.utils";
+import AppError from "../../Utils/Errors/AppError";
+import { getUserLangFromDB } from "../../Utils/Format/languageUtils";
+import { translationService } from "../../Services/translation.service";
+import { Types } from "mongoose";
+import { VideoGenerationService } from "../../Services/videoGeneration.service";
+import GenerationInfo from "../../Models/generation.model";
+import { IGenerationImageLibModel } from "../../Interfaces/aiModel.interface";
+import { CreditService } from "../../Services/credits.service";
+import { INotification } from "../../Interfaces/notification.interface";
 
 export interface IGenerationLibJobData {
   userId: string;
@@ -29,13 +29,13 @@ export interface IGenerationLibJobData {
 
 export class GenerationLibQueueHandler {
   private notificationService: NotificationService;
-  private imageGenerationService: ImageGenerationService;
-  private videoGenerationService: VideoGenerationService;
   private creditService: CreditService;
-  constructor() {
+  constructor(
+    private imageGenerationService: ImageGenerationService,
+    private videoGenerationService: VideoGenerationService
+  ) {
     this.notificationService = NotificationService.getInstance();
-    this.imageGenerationService = new ImageGenerationService();
-    this.videoGenerationService = new VideoGenerationService();
+
     this.creditService = CreditService.getInstance();
   }
 
@@ -58,7 +58,7 @@ export class GenerationLibQueueHandler {
 
       await JobModel.findOneAndUpdate(
         { jobId: jobId },
-        { status: 'processing' }
+        { status: "processing" }
       );
 
       let progress = 10;
@@ -69,8 +69,8 @@ export class GenerationLibQueueHandler {
           await updateJobProgress(
             job,
             progress,
-            'Generating...',
-            'generationLib:progress'
+            "Generating...",
+            "generationLib:progress"
           );
         }
       }, 2000);
@@ -78,20 +78,20 @@ export class GenerationLibQueueHandler {
       await updateJobProgress(
         job,
         10,
-        'Starting generation...',
-        'generationLib:progress'
+        "Starting generation...",
+        "generationLib:progress"
       );
       let result = null;
       const generationInfo = await GenerationInfo.findOne();
       if (!generationInfo) {
-        throw new AppError('No Generation Data Found', 404);
+        throw new AppError("No Generation Data Found", 404);
       }
       if (!isVideo) {
         const model = generationInfo.imageModels.find(
           (m: any) => m._id.toString() === modelId
         );
         if (!model) {
-          throw new AppError('Model not found in imageModels', 404);
+          throw new AppError("Model not found in imageModels", 404);
         }
         const resultURL =
           await this.imageGenerationService.generateForGenerationLib(
@@ -103,8 +103,8 @@ export class GenerationLibQueueHandler {
         await updateJobProgress(
           job,
           95,
-          'Finalizing...',
-          'generationLib:progress'
+          "Finalizing...",
+          "generationLib:progress"
         );
 
         const thumbnail = resultURL;
@@ -112,8 +112,8 @@ export class GenerationLibQueueHandler {
         await updateJobProgress(
           job,
           100,
-          'Completed',
-          'generationLib:progress'
+          "Completed",
+          "generationLib:progress"
         );
 
         result = {
@@ -132,7 +132,7 @@ export class GenerationLibQueueHandler {
           (m: any) => m._id.toString() === modelId
         );
         if (!model) {
-          throw new AppError('Model not found in videoModels', 404);
+          throw new AppError("Model not found in videoModels", 404);
         }
         const resultURL =
           await this.videoGenerationService.generateVideoForGenerationLib(
@@ -142,21 +142,21 @@ export class GenerationLibQueueHandler {
             prompt
           );
         if (!resultURL) {
-          throw new AppError('Video generation failed', 500);
+          throw new AppError("Video generation failed", 500);
         }
         await updateJobProgress(
           job,
           95,
-          'Finalizing...',
-          'generationLib:progress'
+          "Finalizing...",
+          "generationLib:progress"
         );
         const thumbnail = refImages && refImages[0] ? refImages[0] : resultURL;
 
         await updateJobProgress(
           job,
           100,
-          'Completed',
-          'generationLib:progress'
+          "Completed",
+          "generationLib:progress"
         );
 
         result = {
@@ -182,14 +182,9 @@ export class GenerationLibQueueHandler {
         clearInterval(intervalId);
       }
 
-      await JobModel.findOneAndUpdate({ jobId: jobId }, { status: 'failed' });
+      await JobModel.findOneAndUpdate({ jobId: jobId }, { status: "failed" });
 
-      await updateJobProgress(
-        job,
-        0,
-        'Failed',
-        'generationLib:failed'
-      );
+      await updateJobProgress(job, 0, "Failed", "generationLib:failed");
 
       throw error;
     }
@@ -200,12 +195,12 @@ export class GenerationLibQueueHandler {
       const locale = await getUserLangFromDB(result.userId);
       await JobModel.findOneAndUpdate(
         { jobId: result.jobId },
-        { status: 'completed' }
+        { status: "completed" }
       );
 
       const user = await User.findById(result.userId);
       if (!user) {
-        console.error('User not found for userId:', result.userId);
+        console.error("User not found for userId:", result.userId);
         return;
       }
       if (!user.generationLib) {
@@ -216,8 +211,8 @@ export class GenerationLibQueueHandler {
       }
 
       if (!result.resultURL) {
-        console.error('Result URL is missing for jobId:', result.jobId);
-        throw new AppError('Result URL is missing', 500);
+        console.error("Result URL is missing for jobId:", result.jobId);
+        throw new AppError("Result URL is missing", 500);
       }
 
       const existingItemIndex = user.generationLib.findIndex(
@@ -227,7 +222,7 @@ export class GenerationLibQueueHandler {
       if (existingItemIndex >= 0) {
         const existingItem = user.generationLib[existingItemIndex];
         existingItem.URL = result.resultURL;
-        existingItem.status = 'completed';
+        existingItem.status = "completed";
         existingItem.thumbnail = result.thumbnail || result.resultURL;
         existingItem.duration = result.duration || 0;
         existingItem.updatedAt = new Date();
@@ -237,7 +232,7 @@ export class GenerationLibQueueHandler {
           _id: new Types.ObjectId(),
           jobId: result.jobId,
           URL: result.resultURL,
-          status: 'completed',
+          status: "completed",
           thumbnail: result.thumbnail || result.resultURL,
           duration: result.duration || 0,
           createdAt: new Date(),
@@ -266,7 +261,7 @@ export class GenerationLibQueueHandler {
       const io = getIO();
       const payload = {
         jobId: result.jobId,
-        status: 'completed',
+        status: "completed",
         progress: 100,
         result: { success: true, data: result },
         resultURL: result.resultURL,
@@ -275,7 +270,7 @@ export class GenerationLibQueueHandler {
       };
 
       const roomName = `user:${result.userId}`;
-      io.to(roomName).emit('generationLib:completed', payload);
+      io.to(roomName).emit("generationLib:completed", payload);
 
       const generationItem = user.generationLib.find(
         (item) => item.jobId === result.jobId
@@ -283,33 +278,33 @@ export class GenerationLibQueueHandler {
 
       if (generationItem) {
         const rawNotificationData: INotification = {
-          title: 'Generation Complete',
-          message: 'Your generation has been completed successfully!',
+          title: "Generation Complete",
+          message: "Your generation has been completed successfully!",
           data: {
             generationId: generationItem._id.toString(),
             jobId: result.jobId,
             userId: result.userId,
-            status: 'completed',
+            status: "completed",
             resultURL: result.resultURL,
-            type: 'generation',
+            type: "generation",
           },
-          redirectTo: '/generationLib',
-          category: 'activities',
+          redirectTo: "/generationLib",
+          category: "activities",
         };
 
         const translatedNotificationData: INotification = {
           title:
             translationService.translateText(
-              'notifications.generation.completion',
-              'title',
+              "notifications.generation.completion",
+              "title",
               locale
-            ) || 'Generation Complete',
+            ) || "Generation Complete",
           message:
             translationService.translateText(
-              'notifications.generation.completion',
-              'message',
+              "notifications.generation.completion",
+              "message",
               locale
-            ) || 'Your generation has been completed successfully!',
+            ) || "Your generation has been completed successfully!",
           data: rawNotificationData.data,
           redirectTo: rawNotificationData.redirectTo,
           category: rawNotificationData.category,
@@ -366,7 +361,7 @@ export class GenerationLibQueueHandler {
 
       await JobModel.findOneAndUpdate(
         { jobId: jobId },
-        { status: 'failed', error: err.message }
+        { status: "failed", error: err.message }
       );
 
       const user = await User.findById(userId);
@@ -375,7 +370,7 @@ export class GenerationLibQueueHandler {
         Number(credits)
       );
       if (!refund) {
-        console.error('Failed to refund credits for userId:', userId);
+        console.error("Failed to refund credits for userId:", userId);
       } else {
         const transactionNotificationData = {
           userCredits: await this.creditService.getCredits(job.data.userId),
@@ -391,7 +386,7 @@ export class GenerationLibQueueHandler {
           (item) => item.jobId === jobId
         );
         if (itemIndex >= 0) {
-          user.generationLib[itemIndex].status = 'failed';
+          user.generationLib[itemIndex].status = "failed";
           user.generationLib[itemIndex].updatedAt = new Date();
           await user.save();
         }
@@ -400,7 +395,7 @@ export class GenerationLibQueueHandler {
       const io = getIO();
       const payload = {
         jobId: jobId,
-        status: 'failed',
+        status: "failed",
         progress: job.progress() ?? 0,
         result: { success: false, data: null },
         failedReason: err?.message,
@@ -408,38 +403,38 @@ export class GenerationLibQueueHandler {
       };
 
       const roomName = `user:${userId}`;
-      io.to(roomName).emit('generationLib:failed', payload);
+      io.to(roomName).emit("generationLib:failed", payload);
 
       // Send failure notification using existing notification service
       if (user) {
         // Raw notification data (not translated) to save in user
         const rawNotificationData: INotification = {
-          title: 'Generation Failed',
-          message: 'Your generation has failed. Please try again.',
+          title: "Generation Failed",
+          message: "Your generation has failed. Please try again.",
           data: {
             jobId: jobId,
             userId: userId,
-            status: 'failed',
+            status: "failed",
             error: err.message,
-            type: 'generation',
+            type: "generation",
           },
           redirectTo: null,
-          category: 'activities',
+          category: "activities",
         };
 
         const translatedNotificationData: INotification = {
           title:
             translationService.translateText(
-              'notifications.generation.failure',
-              'title',
-              user.preferredLanguage || locale || 'en'
-            ) || 'Generation Failed',
+              "notifications.generation.failure",
+              "title",
+              user.preferredLanguage || locale || "en"
+            ) || "Generation Failed",
           message:
             translationService.translateText(
-              'notifications.generation.failure',
-              'message',
-              user.preferredLanguage || locale || 'en'
-            ) || 'Your image generation has failed. Please try again.',
+              "notifications.generation.failure",
+              "message",
+              user.preferredLanguage || locale || "en"
+            ) || "Your image generation has failed. Please try again.",
           data: rawNotificationData.data,
           redirectTo: rawNotificationData.redirectTo,
           category: rawNotificationData.category,

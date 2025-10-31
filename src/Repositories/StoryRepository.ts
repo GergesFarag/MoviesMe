@@ -234,4 +234,19 @@ export class StoryRepository extends BaseRepository<IStory> {
     });
     return { deletedCount: result.deletedCount || 0 };
   }
+  async updateVoiceOver(jobId: string, voiceOver: any): Promise<boolean> {
+    const story = await this.findByJobId(jobId);
+    if (!story) {
+      throw new AppError("Story not found", HTTP_STATUS_CODE.NOT_FOUND);
+    }
+    const updatedStory = await this.model.findOneAndUpdate(
+      { _id: story._id },
+      { voiceOver },
+      { new: true }
+    );
+    if (!updatedStory) {
+      throw new AppError("Failed to update voice over", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
+    }
+    return true;
+  }
 }

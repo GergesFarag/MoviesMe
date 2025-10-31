@@ -7,19 +7,15 @@ const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || '';
 const baseURL = 'https://api.wavespeed.ai/api/v3';
 
 export class ImageGenerationService {
-  private enableContentSanitization: boolean;
   private validator: Validator;
-  constructor(enableContentSanitization: boolean = true) {
-    this.enableContentSanitization = enableContentSanitization;
+  constructor() {
     this.validator = new Validator();
   }
 
   async generateImageFromDescription(
     imageDescription: string
   ): Promise<string> {
-    const finalDescription = this.enableContentSanitization
-      ? this.validator.TextValidator.sanitizeImageDescription(imageDescription)
-      : imageDescription;
+    const finalDescription = this.validator.TextValidator.sanitizeImageDescription(imageDescription);
 
     let url = `${baseURL}/bytedance/seedream-v4/sequential`;
     const headers = {
@@ -49,9 +45,7 @@ export class ImageGenerationService {
     refImage: string,
     imageDescription: string
   ): Promise<string> {
-    const finalDescription = this.enableContentSanitization
-      ? this.validator.TextValidator.sanitizeImageDescription(imageDescription)
-      : imageDescription;
+    const finalDescription = this.validator.TextValidator.sanitizeImageDescription(imageDescription);
 
     let url = `${baseURL}/google/nano-banana/edit`;
     const headers = {

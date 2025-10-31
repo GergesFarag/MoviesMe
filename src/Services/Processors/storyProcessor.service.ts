@@ -1,47 +1,44 @@
-import { Job } from 'bull';
-import { IStoryProcessingDTO } from '../../DTOs/storyRequest.dto';
-import JobModel from '../../Models/job.model';
-import Story from '../../Models/story.model';
-import AppError from '../../Utils/Errors/AppError';
-import { ImageGenerationService } from '../imageGeneration.service';
-import { OpenAIService } from '../openAi.service';
-import { VideoGenerationService } from '../videoGeneration.service';
-import { VoiceGenerationService } from '../voiceGeneration.service';
-import { IStoryResponse } from '../../Interfaces/storyResponse.interface';
-import { IProcessedVoiceOver } from '../../Interfaces/audioModel.interface';
-import { RepositoryOrchestrationService } from '../../Services/repositoryOrchestration.service';
+import { Job } from "bull";
+import { IStoryProcessingDTO } from "../../DTOs/storyRequest.dto";
+import JobModel from "../../Models/job.model";
+import Story from "../../Models/story.model";
+import AppError from "../../Utils/Errors/AppError";
+import { ImageGenerationService } from "../imageGeneration.service";
+import { OpenAIService } from "../openAi.service";
+import { VideoGenerationService } from "../videoGeneration.service";
+import { VoiceGenerationService } from "../voiceGeneration.service";
+import { IStoryResponse } from "../../Interfaces/storyResponse.interface";
+import { IProcessedVoiceOver } from "../../Interfaces/audioModel.interface";
+import { RepositoryOrchestrationService } from "../../Services/repositoryOrchestration.service";
 import {
   cloudUploadURL,
   cloudUploadVideo,
   generateHashFromBuffer,
-} from '../../Utils/APIs/cloudinary';
-import { StoryProcessingResult } from '../../Interfaces/story.interface';
-import StoryGenerationInfo from '../../Models/storyGenerationInfo.model';
-import logger from '../../Config/logger';
-import { sendWebsocket } from '../../Sockets/socket';
+} from "../../Utils/APIs/cloudinary";
+import { StoryProcessingResult } from "../../Interfaces/story.interface";
+import StoryGenerationInfo from "../../Models/storyGenerationInfo.model";
+import logger from "../../Config/logger";
+import { sendWebsocket } from "../../Sockets/socket";
 import {
   QUEUE_EVENTS,
   startProgressUpdates,
   stopProgressUpdates,
   sendProgressUpdate,
-} from '../generateStory.service';
-import { CLOUDINAT_FOLDERS } from '../../Constants/cloud';
-import { randomBytes } from 'crypto';
-import { UploadApiResponse } from 'cloudinary';
-import { SFXService } from '../sfx.service';
+} from "../generateStory.service";
+import { CLOUDINAT_FOLDERS } from "../../Constants/cloud";
+import { randomBytes } from "crypto";
+import { UploadApiResponse } from "cloudinary";
+import { SFXService } from "../sfx.service";
+import { StoryRepository } from "../../Repositories/StoryRepository";
+import { HTTP_STATUS_CODE } from "../../Enums/error.enum";
 
 export class StoryProcessorService {
-  private imageGenerationService: ImageGenerationService;
-  private videoGenerationService: VideoGenerationService;
-  private voiceGenerationService: VoiceGenerationService;
-  private sfxService: SFXService;
-
-  constructor() {
-    this.imageGenerationService = new ImageGenerationService(true);
-    this.videoGenerationService = new VideoGenerationService();
-    this.voiceGenerationService = new VoiceGenerationService();
-    this.sfxService = new SFXService();
-  }
+  constructor(
+    private imageGenerationService: ImageGenerationService,
+    private videoGenerationService: VideoGenerationService,
+    private voiceGenerationService: VoiceGenerationService,
+    private sfxService: SFXService
+  ) {}
 
   public async processStory(
     job: Job,
@@ -56,25 +53,45 @@ export class StoryProcessorService {
         jobData.userId,
         jobData.jobId,
         0,
-        'Starting story processing'
+        "Starting story processing"
       );
 
       await this.validateJobData(job, jobData);
+
+      if (jobData.voiceOver || jobData.audio) {
+        const initialVoiceOver = {
+          voiceOverLyrics: jobData.voiceOver?.voiceOverLyrics ?? null,
+          voiceLanguage: jobData.voiceOver?.voiceLanguage ?? null,
+          voiceAccent: jobData.voiceOver?.voiceAccent ?? null,
+          voiceGender: jobData.voiceOver?.voiceGender ?? null,
+          sound: jobData.audio ?? jobData.voiceOver?.sound ?? null,
+          text: jobData.voiceOver?.text ?? null,
+        } as any;
+
+        const isUpdated = await StoryRepository.getInstance().updateVoiceOver(
+          jobData.jobId,
+          initialVoiceOver
+        );
+        if (!isUpdated) {
+          throw new AppError("Failed to update voice over", HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR);
+        }
+      }
 
       startProgressUpdates(
         jobData.userId,
         jobData.jobId,
         0,
         10,
-        'Generating story'
+        "Generating story"
       );
+
       const { story, seedreamPrompt, toVoiceGenerationText } =
         await this.generateStory(job, jobData);
       stopProgressUpdates(jobData.jobId);
-      sendProgressUpdate(jobData.userId, jobData.jobId, 10, 'Story generated');
+      sendProgressUpdate(jobData.userId, jobData.jobId, 10, "Story generated");
 
       console.log(
-        '🚀 Starting parallel processing: Voice Over + Image Generation'
+        "🚀 Starting parallel processing: Voice Over + Image Generation"
       );
       logger.info({ seedreamPrompt });
       let [voiceOver, imageUrls]: [
@@ -88,7 +105,7 @@ export class StoryProcessorService {
           jobData.jobId,
           10,
           40,
-          'Generating voice over and images'
+          "Generating voice over and images"
         );
         [voiceOver, imageUrls] = await Promise.all([
           this.processVoiceOverWithProgress(
@@ -103,7 +120,7 @@ export class StoryProcessorService {
           jobData.userId,
           jobData.jobId,
           40,
-          'Voice over and images generated'
+          "Voice over and images generated"
         );
       } else {
         startProgressUpdates(
@@ -111,7 +128,7 @@ export class StoryProcessorService {
           jobData.jobId,
           10,
           35,
-          'Generating images'
+          "Generating images"
         );
         imageUrls = await this.generateImagesWithProgress(
           job,
@@ -123,12 +140,12 @@ export class StoryProcessorService {
           jobData.userId,
           jobData.jobId,
           35,
-          'Images generated'
+          "Images generated"
         );
       }
 
       console.log(
-        '✅ Parallel processing completed: Voice Over + Image Generation'
+        "✅ Parallel processing completed: Voice Over + Image Generation"
       );
       const updatedStory = this.updateStoryWithImages(story, imageUrls ?? []);
 
@@ -139,7 +156,7 @@ export class StoryProcessorService {
         jobData.jobId,
         videoStartProgress,
         videoEndProgress,
-        'Generating videos'
+        "Generating videos"
       );
       const videoUrls = await this.generateVideos(job, imageUrls ?? []);
       stopProgressUpdates(jobData.jobId);
@@ -147,11 +164,11 @@ export class StoryProcessorService {
         jobData.userId,
         jobData.jobId,
         videoEndProgress,
-        'Videos generated'
+        "Videos generated"
       );
 
       if (jobData.audio) {
-        console.log('⏭️ Using provided audio, skipping voice over generation');
+        console.log("⏭️ Using provided audio, skipping voice over generation");
         voiceOver = {
           url: jobData.audio,
           PID: null,
@@ -172,7 +189,7 @@ export class StoryProcessorService {
         jobData.jobId,
         mergeStartProgress,
         mergeEndProgress,
-        'Merging and composing video'
+        "Merging and composing video"
       );
       const finalVideoUrl = (await this.mergeAndComposeVideo(
         job,
@@ -185,7 +202,7 @@ export class StoryProcessorService {
         jobData.userId,
         jobData.jobId,
         mergeEndProgress,
-        'Video merged and composed'
+        "Video merged and composed"
       );
 
       const uploadStartProgress = jobData.voiceOver ? 85 : 80;
@@ -195,14 +212,14 @@ export class StoryProcessorService {
         jobData.jobId,
         uploadStartProgress,
         uploadEndProgress,
-        'Uploading video'
+        "Uploading video"
       );
       stopProgressUpdates(jobData.jobId);
       sendProgressUpdate(
         jobData.userId,
         jobData.jobId,
         uploadEndProgress,
-        'Video uploaded'
+        "Video uploaded"
       );
 
       // Save to database: 95-100%
@@ -212,7 +229,7 @@ export class StoryProcessorService {
         jobData.jobId,
         saveStartProgress,
         99,
-        'Saving story'
+        "Saving story"
       );
       const completedStory = await this.saveCompletedStory(
         job,
@@ -223,7 +240,7 @@ export class StoryProcessorService {
       );
       stopProgressUpdates(jobData.jobId);
 
-      sendProgressUpdate(jobData.userId, jobData.jobId, 100, 'Story completed');
+      sendProgressUpdate(jobData.userId, jobData.jobId, 100, "Story completed");
       sendWebsocket(
         QUEUE_EVENTS.STORY_COMPLETED,
         {
@@ -253,7 +270,7 @@ export class StoryProcessorService {
         QUEUE_EVENTS.STORY_FAILED,
         {
           jobId: jobData.jobId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         },
         `user:${jobData.userId}`
       );
@@ -268,12 +285,12 @@ export class StoryProcessorService {
   ): Promise<void> {
     if (!jobData.userId || !jobData.jobId) {
       console.log(`❌ VALIDATION FAILED: Missing userId or jobId`);
-      throw new AppError('Missing required job data: userId or jobId', 400);
+      throw new AppError("Missing required job data: userId or jobId", 400);
     }
 
     if (!jobData.prompt) {
       console.log(`❌ VALIDATION FAILED: Missing prompt`);
-      throw new AppError('Missing required job data: prompt', 400);
+      throw new AppError("Missing required job data: prompt", 400);
     }
 
     console.log(`✅ Starting story processing for jobId: ${jobData.jobId}`);
@@ -291,7 +308,7 @@ export class StoryProcessorService {
 
     try {
       const story: IStoryResponse = {
-        title: jobData.title || 'Untitled Story',
+        title: jobData.title || "Untitled Story",
         scenes: Array.from({ length: jobData.numOfScenes }, (_, i) => {
           return {
             sceneNumber: i + 1,
@@ -305,7 +322,7 @@ export class StoryProcessorService {
         }),
       };
 
-      console.log('🎯 Generating Seedream prompt...');
+      console.log("🎯 Generating Seedream prompt...");
       const { narrativeText: seedreamPrompt, toVoiceGenerationText } =
         await openAIService.generateSeedreamPrompt(
           jobData.prompt,
@@ -319,8 +336,8 @@ export class StoryProcessorService {
       );
       return { story, seedreamPrompt, toVoiceGenerationText };
     } catch (openAIError) {
-      console.error('❌ OpenAI service error:', openAIError);
-      throw new AppError('Failed to generate story scenes with OpenAI', 500);
+      console.error("❌ OpenAI service error:", openAIError);
+      throw new AppError("Failed to generate story scenes with OpenAI", 500);
     }
   }
 
@@ -329,7 +346,7 @@ export class StoryProcessorService {
     imageUrls: string[]
   ): Promise<{ video: string; PID: string }[]> {
     console.log(
-      '🎬 Generating videos from images using parallel processing...'
+      "🎬 Generating videos from images using parallel processing..."
     );
 
     try {
@@ -355,12 +372,12 @@ export class StoryProcessorService {
       //? Cloudinary Uploads
       let returnedVideosUrls: string[] = [];
       const uploadPromises = videosWithSFX.map(async (url, index) => {
-        const videoHash = randomBytes(8).toString('hex');
+        const videoHash = randomBytes(8).toString("hex");
         const result = await cloudUploadURL(
           url,
           `user_${job.data.userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
           videoHash,
-          'video'
+          "video"
         );
         returnedVideosUrls[index] = result.secure_url;
         return result;
@@ -375,10 +392,10 @@ export class StoryProcessorService {
 
       return videosUrls;
     } catch (videoGenError) {
-      console.error('❌ Parallel video generation error:', videoGenError);
+      console.error("❌ Parallel video generation error:", videoGenError);
 
       // Fallback to sequential processing if parallel fails
-      console.log('🔄 Falling back to sequential video generation...');
+      console.log("🔄 Falling back to sequential video generation...");
       try {
         const fallbackVideoUrls =
           await this.videoGenerationService.generateVideos(imageUrls);
@@ -390,12 +407,12 @@ export class StoryProcessorService {
         //? Cloudinary Uploads
         const uploadPromises: Promise<UploadApiResponse>[] =
           fallbackVideoUrls.map(async (url, index) => {
-            const videoHash = randomBytes(8).toString('hex');
+            const videoHash = randomBytes(8).toString("hex");
             return await cloudUploadURL(
               url,
               `user_${job.data.userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
               videoHash,
-              'video'
+              "video"
             );
           });
         const results = await Promise.all<UploadApiResponse>(uploadPromises);
@@ -408,9 +425,9 @@ export class StoryProcessorService {
 
         return videosUrls;
       } catch (fallbackError) {
-        console.error('❌ Sequential fallback also failed:', fallbackError);
+        console.error("❌ Sequential fallback also failed:", fallbackError);
         throw new AppError(
-          'Failed to generate videos (both parallel and sequential methods failed)',
+          "Failed to generate videos (both parallel and sequential methods failed)",
           500
         );
       }
@@ -423,7 +440,7 @@ export class StoryProcessorService {
     voiceOver: IProcessedVoiceOver | null,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<Buffer | string> {
-    console.log('🎞️ Merging video scenes...');
+    console.log("🎞️ Merging video scenes...");
 
     try {
       // Merge video scenes
@@ -434,7 +451,7 @@ export class StoryProcessorService {
         );
 
       if (voiceOver && voiceOver.url) {
-        console.log('🎵 Composing video with voice over...');
+        console.log("🎵 Composing video with voice over...");
 
         const composedURL =
           await this.videoGenerationService.composeSoundWithCloudinary(
@@ -449,15 +466,15 @@ export class StoryProcessorService {
         );
         return uploadResult.secure_url;
       } else {
-        console.log('⏭️ Skipping audio composition - no voice over provided');
+        console.log("⏭️ Skipping audio composition - no voice over provided");
       }
 
       return mergedVideo.video;
     } catch (mergeError) {
-      console.error('❌ Video merge/composition error:', mergeError);
+      console.error("❌ Video merge/composition error:", mergeError);
       throw new AppError(
         `Failed to merge/compose video: ${
-          mergeError instanceof Error ? mergeError.message : 'Unknown error'
+          mergeError instanceof Error ? mergeError.message : "Unknown error"
         }`,
         500
       );
@@ -477,13 +494,13 @@ export class StoryProcessorService {
       );
 
       if (!uploadResult?.secure_url) {
-        throw new AppError('Failed to upload video - no URL returned', 500);
+        throw new AppError("Failed to upload video - no URL returned", 500);
       }
 
       console.log(`✅ Video uploaded successfully: ${uploadResult.secure_url}`);
       return uploadResult.secure_url;
     } catch (uploadError) {
-      throw new AppError('Failed to upload  video to cloud storage', 500);
+      throw new AppError("Failed to upload  video to cloud storage", 500);
     }
   }
   private async saveCompletedStory(
@@ -493,7 +510,7 @@ export class StoryProcessorService {
     voiceOver: IProcessedVoiceOver | null,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<any> {
-    console.log('💾 Saving completed story to database...');
+    console.log("💾 Saving completed story to database...");
 
     try {
       const storyUpdateData = {
@@ -527,11 +544,11 @@ export class StoryProcessorService {
       );
 
       if (!updatedStory) {
-        throw new AppError('Failed to update story in database', 500);
+        throw new AppError("Failed to update story in database", 500);
       }
 
       if (updatedStory && voiceOver) {
-        console.log('🔄 Updating complete voice over object in story...');
+        console.log("🔄 Updating complete voice over object in story...");
         await Story.findByIdAndUpdate(updatedStory._id, {
           voiceOver: {
             voiceOverLyrics: voiceOver.data.voiceOverLyrics || null,
@@ -542,7 +559,7 @@ export class StoryProcessorService {
           },
         });
       } else if (updatedStory && !voiceOver) {
-        console.log('🔄 Setting voiceOver field to null...');
+        console.log("🔄 Setting voiceOver field to null...");
         await Story.findByIdAndUpdate(updatedStory._id, {
           voiceOver: null,
         });
@@ -551,15 +568,15 @@ export class StoryProcessorService {
       console.log(`✅ Story saved to database with ID: ${updatedStory._id}`);
       return updatedStory;
     } catch (dbError) {
-      console.error('❌ Database save error:', dbError);
-      throw new AppError('Failed to save completed story to database', 500);
+      console.error("❌ Database save error:", dbError);
+      throw new AppError("Failed to save completed story to database", 500);
     }
   }
   private updateStoryWithImages(
     story: IStoryResponse,
     imageUrls: string[]
   ): IStoryResponse {
-    console.log('🔗 Updating story scenes with generated images...');
+    console.log("🔗 Updating story scenes with generated images...");
 
     return {
       ...story,
@@ -575,23 +592,23 @@ export class StoryProcessorService {
     toVoiceGenerationPrompt: string
   ): Promise<IProcessedVoiceOver | null> {
     if (!jobData.voiceOver) {
-      console.log('⏭️ No voice over requested, skipping...');
+      console.log("⏭️ No voice over requested, skipping...");
       return null;
     }
 
-    console.log('🎙️ Processing voice over in parallel...');
+    console.log("🎙️ Processing voice over in parallel...");
 
     try {
       let voiceOverText: string;
 
       if (
         jobData.voiceOver.voiceOverLyrics &&
-        jobData.voiceOver.voiceOverLyrics !== 'null'
+        jobData.voiceOver.voiceOverLyrics !== "null"
       ) {
         voiceOverText = jobData.voiceOver.voiceOverLyrics;
-        console.log('📝 Using provided voice over lyrics');
+        console.log("📝 Using provided voice over lyrics");
       } else {
-        console.log('🤖 Generating narrative text with OpenAI...');
+        console.log("🤖 Generating narrative text with OpenAI...");
         const openAIService = new OpenAIService();
         const generationInfo = await StoryGenerationInfo.findOne().lean();
 
@@ -607,7 +624,7 @@ export class StoryProcessorService {
         }
         voiceOverText = await openAIService.generateNarrativeText(
           toVoiceGenerationPrompt,
-          language?.name.split(' ')[1] || 'English',
+          language?.name.split(" ")[1] || "English",
           accent?.name || null,
           jobData.numOfScenes
         );
@@ -621,7 +638,7 @@ export class StoryProcessorService {
       );
 
       if (!voiceOverUrl) {
-        throw new AppError('Failed to generate voice over audio', 500);
+        throw new AppError("Failed to generate voice over audio", 500);
       }
       return {
         url: voiceOverUrl.url,
@@ -630,8 +647,8 @@ export class StoryProcessorService {
         data: voiceOverData,
       };
     } catch (voiceError) {
-      console.error('❌ Voice over generation error:', voiceError);
-      throw new AppError('Failed to generate voice over', 500);
+      console.error("❌ Voice over generation error:", voiceError);
+      throw new AppError("Failed to generate voice over", 500);
     }
   }
   private async generateImagesWithProgress(
@@ -639,19 +656,19 @@ export class StoryProcessorService {
     jobData: IStoryProcessingDTO & { userId: string; jobId: string },
     seedreamPrompt: string
   ): Promise<string[]> {
-    console.log('🎨 Generating images for story scenes in parallel...');
+    console.log("🎨 Generating images for story scenes in parallel...");
 
     try {
       let imageUrls: string[];
 
       if (!jobData.image) {
-        console.log('🖼️ No reference image provided, generating from prompt');
+        console.log("🖼️ No reference image provided, generating from prompt");
         imageUrls = await this.imageGenerationService.generateSeedreamImages(
           seedreamPrompt,
           jobData.numOfScenes
         );
       } else {
-        console.log('🖼️ Using reference image for generation');
+        console.log("🖼️ Using reference image for generation");
         imageUrls = await this.imageGenerationService.generateSeedreamImages(
           seedreamPrompt,
           jobData.numOfScenes,
@@ -670,7 +687,7 @@ export class StoryProcessorService {
 
       const invalidImages = imageUrls.filter(
         (url: string) =>
-          !url || typeof url !== 'string' || !url.startsWith('http')
+          !url || typeof url !== "string" || !url.startsWith("http")
       );
 
       if (invalidImages.length > 0) {
@@ -685,7 +702,7 @@ export class StoryProcessorService {
       );
       return imageUrls;
     } catch (imageGenError) {
-      throw new AppError('Failed to generate images for the story scenes', 500);
+      throw new AppError("Failed to generate images for the story scenes", 500);
     }
   }
 }

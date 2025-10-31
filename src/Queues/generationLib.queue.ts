@@ -6,44 +6,53 @@ import {
   QUEUE_SETTINGS,
 } from "./Constants/queueConstants";
 import { GenerationLibQueueHandler } from "./Handlers/generationLibHandlers";
+import { ImageGenerationService } from "../Services/imageGeneration.service";
+import { VideoGenerationService } from "../Services/videoGeneration.service";
 
-const redisConfig = getRedisConfig();
-
-export const generationLibQueue = new Queue(QUEUE_NAMES.GENERATION_LIB, {
-  redis: redisConfig,
-  defaultJobOptions: JOB_OPTIONS,
-  settings: QUEUE_SETTINGS,
-});
-
-let generationLibQueueHandlers: GenerationLibQueueHandler | null = null;
-
-function getGenerationLibQueueHandlers(): GenerationLibQueueHandler {
-  if (!generationLibQueueHandlers) {
-    generationLibQueueHandlers = new GenerationLibQueueHandler();
-  }
-  return generationLibQueueHandlers;
+export interface IGenerationLibQueueHandler {
+  processGenerationLib(job: any): Promise<any>;
+  onCompleted(job: any, result: any): void;
+  onFailed(job: any, error: any): void;
 }
 
-generationLibQueue.process(async (job) => {
-  const handlers = getGenerationLibQueueHandlers();
-  const data = await handlers.processGenerationLib(job);
-  return data;
+export class GenerationLibQueue {
+  public readonly queue: Queue.Queue;
+  constructor(
+    deps: {
+      redisConfig?: ReturnType<typeof getRedisConfig>;
+      handlers: IGenerationLibQueueHandler;
+    }
+  ) {
+    const { redisConfig = getRedisConfig(), handlers } = deps;
+
+    this.queue = new Queue(QUEUE_NAMES.GENERATION_LIB, {
+      redis: redisConfig,
+      defaultJobOptions: JOB_OPTIONS,
+      settings: QUEUE_SETTINGS,
+    });
+
+    this.queue.process(async (job) => {
+      const data = await handlers.processGenerationLib(job);
+      return data;
+    });
+
+    this.queue.on("completed", (job, result) => {
+      handlers.onCompleted(job, result);
+    });
+
+    this.queue.on("failed", (job, error) => {
+      handlers.onFailed(job, error);
+    });
+  }
+}
+
+const generationLibQueueInstance = new GenerationLibQueue({
+  redisConfig: getRedisConfig(),
+  handlers: new GenerationLibQueueHandler(
+    new ImageGenerationService(),
+    new VideoGenerationService()
+  ),
 });
 
-generationLibQueue.on(
-  "completed",
-  (job, result) => {
-    const handlers = getGenerationLibQueueHandlers();
-    handlers.onCompleted(job, result);
-  }
-);
-
-generationLibQueue.on(
-  "failed",
-  (job, error) => {
-    const handlers = getGenerationLibQueueHandlers();
-    handlers.onFailed(job, error);
-  }
-);
-
+export const generationLibQueue = generationLibQueueInstance.queue;
 export default generationLibQueue;

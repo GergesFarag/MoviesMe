@@ -28,23 +28,23 @@ export class StoryQueueHandlers {
         console.log(`📤 All completion notifications sent for job ${job.id}`);
       } else {
         console.warn(
-          '⚠️ Missing userId or story data, skipping completion notifications'
+          'Missing userId or story data, skipping completion notifications'
         );
       }
     } catch (error) {
-      console.error('❌ Error in completion handler:', error);
+      console.error('Error in completion handler:', error);
     } finally {
       try {
         await job.remove();
-        console.log(`🗑️ Job ${job.id} removed from queue`);
+        console.log(`Job ${job.id} removed from queue`);
       } catch (removeError) {
-        console.error('❌ Failed to remove completed job:', removeError);
+        console.error('Failed to remove completed job:', removeError);
       }
     }
   }
 
   async onFailed(job: Job, err: Error | AppError) {
-    console.log(`❌ Story job with ID ${job?.id} has failed.`);
+    console.log(`Story job with ID ${job?.id} has failed.`);
     console.log('Error:', err);
 
     // Check if this job was already handled by server restart cleanup
@@ -52,7 +52,7 @@ export class StoryQueueHandlers {
 
     if (isServerRestartCleanup) {
       console.log(
-        `ℹ️ Story job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`
+        `Story job ${job.id} already handled by server restart cleanup. Skipping refund and DB update.`
       );
       await storyQueue.removeJobs(job.data.jobId);
       return;
@@ -64,7 +64,7 @@ export class StoryQueueHandlers {
       Number(job.data.credits)
     );
     if (!refund) {
-      console.error(`❌ Failed to refund credits for user ${job.data.userId}`);
+      console.error(`Failed to refund credits for user ${job.data.userId}`);
     }
     const transactionNotificationData = {
       userCredits: await this.creditService.getCredits(job.data.userId),
@@ -84,18 +84,18 @@ export class StoryQueueHandlers {
           err,
           job.data.storyId
         );
-        console.log(`📤 All failure notifications sent for job ${job?.id}`);
+        console.log(`All failure notifications sent for job ${job?.id}`);
       } else {
-        console.warn('⚠️ Missing userId, skipping failure notifications');
+        console.warn('Missing userId, skipping failure notifications');
       }
     } catch (error) {
-      console.error('❌ Error in failure handler:', error);
+      console.error('Error in failure handler:', error);
     }
   }
 
   private async updateFailedJobStatus(job: Job): Promise<void> {
     if (!job?.opts?.jobId) {
-      console.log('⚠️ No jobId found, skipping database status update');
+      console.log('No jobId found, skipping database status update');
       return;
     }
 
@@ -121,11 +121,11 @@ export class StoryQueueHandlers {
       );
 
       console.log(
-        `✅ Updated job and story status to failed for jobId: ${job.opts.jobId}`
+        `Updated job and story status to failed for jobId: ${job.opts.jobId}`
       );
     } catch (dbError) {
       console.error(
-        '❌ Failed to update job/story status in database:',
+        'Failed to update job/story status in database:',
         dbError
       );
     }
@@ -141,10 +141,10 @@ export class StoryQueueHandlers {
       ]);
 
       console.log(
-        `📈 Queue Stats - Waiting: ${waiting.length}, Active: ${active.length}, Completed: ${completed.length}, Failed: ${failed.length}`
+        `Queue Stats - Waiting: ${waiting.length}, Active: ${active.length}, Completed: ${completed.length}, Failed: ${failed.length}`
       );
     } catch (error) {
-      console.error('❌ Failed to get queue statistics:', error);
+      console.error('Failed to get queue statistics:', error);
     }
   }
 }
