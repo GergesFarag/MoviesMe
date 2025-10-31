@@ -73,14 +73,12 @@ export class EffectProcessorService {
         duration: modelData.duration,
       };
       const payload = PayloadBuilder.buildEffectsPayload(params);
-      console.log('Model DData', modelData);
       let modelType = filterModelType(modelData as IAiModel);
       modelType = reverseModelTypeMapper[modelType];
-      console.log('Model Type', modelType);
       if (!modelType) {
         throw new AppError('Invalid model type', 400);
       }
-      console.log('PAYLOAD:', payload);
+      logger.info({ payload });
       const result = await wavespeedBase(url, headers, payload);
       clearInterval(intervalId);
       if (!result) {

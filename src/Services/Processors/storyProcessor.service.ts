@@ -516,6 +516,8 @@ export class StoryProcessorService {
           : null,
         refImage: jobData.image || null,
         credits: jobData.credits,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       const orchestrationService = RepositoryOrchestrationService.getInstance();
