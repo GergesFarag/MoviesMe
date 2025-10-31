@@ -18,6 +18,8 @@ import { cleanupRedisJobs } from './Utils/Cache/redisCleanup';
 import './Queues/generationLib.queue';
 import './Queues/story.queue';
 import './Queues/model.queue';
+import cloudinary from './Config/cloudinary';
+import { composeVideoWithAudio } from './Utils/APIs/cloudinary';
 const app = express();
 dotenv.config({ quiet: true });
 app.use(express.json());
@@ -30,6 +32,10 @@ const API_VERSION = process.env.API_VERSION || '/v1';
 const prefix = process.env.API_PREFIX || '/api';
 const basePath = `${prefix}${API_VERSION}`;
 
+app.post(`${basePath}/custom`, async (req, res) => {
+  const url = composeVideoWithAudio("my_video2" , "بسيشبسيب");
+  res.end();
+});
 app.get(`/`, async (req, res) => {
   res.status(200).json({ message: 'API is running' });
 });

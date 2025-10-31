@@ -11,6 +11,7 @@ import { IStoryResponse } from '../../Interfaces/storyResponse.interface';
 import { IProcessedVoiceOver } from '../../Interfaces/audioModel.interface';
 import { RepositoryOrchestrationService } from '../../Services/repositoryOrchestration.service';
 import {
+  cloudUploadURL,
   cloudUploadVideo,
   generateHashFromBuffer,
 } from '../../Utils/APIs/cloudinary';
@@ -24,16 +25,22 @@ import {
   stopProgressUpdates,
   sendProgressUpdate,
 } from '../generateStory.service';
+import { CLOUDINAT_FOLDERS } from '../../Constants/cloud';
+import { randomBytes } from 'crypto';
+import { UploadApiResponse } from 'cloudinary';
+import { SFXService } from '../sfx.service';
 
 export class StoryProcessorService {
   private imageGenerationService: ImageGenerationService;
   private videoGenerationService: VideoGenerationService;
   private voiceGenerationService: VoiceGenerationService;
+  private sfxService: SFXService;
 
   constructor() {
     this.imageGenerationService = new ImageGenerationService(true);
     this.videoGenerationService = new VideoGenerationService();
     this.voiceGenerationService = new VoiceGenerationService();
+    this.sfxService = new SFXService();
   }
 
   public async processStory(
@@ -147,6 +154,7 @@ export class StoryProcessorService {
         console.log('⏭️ Using provided audio, skipping voice over generation');
         voiceOver = {
           url: jobData.audio,
+          PID: null,
           text: null,
           data: {
             voiceOverLyrics: null,
@@ -166,12 +174,12 @@ export class StoryProcessorService {
         mergeEndProgress,
         'Merging and composing video'
       );
-      const finalVideoBuffer = await this.mergeAndComposeVideo(
+      const finalVideoUrl = (await this.mergeAndComposeVideo(
         job,
         videoUrls,
         voiceOver,
         jobData
-      );
+      )) as string;
       stopProgressUpdates(jobData.jobId);
       sendProgressUpdate(
         jobData.userId,
@@ -188,11 +196,6 @@ export class StoryProcessorService {
         uploadStartProgress,
         uploadEndProgress,
         'Uploading video'
-      );
-      const finalVideoUrl = await this.uploadVideo(
-        job,
-        finalVideoBuffer,
-        jobData.jobId
       );
       stopProgressUpdates(jobData.jobId);
       sendProgressUpdate(
@@ -320,10 +323,11 @@ export class StoryProcessorService {
       throw new AppError('Failed to generate story scenes with OpenAI', 500);
     }
   }
+
   private async generateVideos(
     job: Job,
     imageUrls: string[]
-  ): Promise<string[]> {
+  ): Promise<{ video: string; PID: string }[]> {
     console.log(
       '🎬 Generating videos from images using parallel processing...'
     );
@@ -342,22 +346,34 @@ export class StoryProcessorService {
         );
       }
 
-      const invalidUrls = videoUrls.filter(
-        (url: string | null | undefined) =>
-          !url || typeof url !== 'string' || !url.startsWith('http')
-      );
-
-      if (invalidUrls.length > 0) {
-        throw new AppError(
-          `Invalid video URLs generated: ${invalidUrls.length} invalid URLs`,
-          500
-        );
-      }
-
       console.log(
         `✅ Successfully generated ${videoUrls.length} videos in parallel`
       );
-      return videoUrls;
+      const videosWithSFX = await this.sfxService.generateSFXForVideos(
+        videoUrls
+      );
+      //? Cloudinary Uploads
+      let returnedVideosUrls: string[] = [];
+      const uploadPromises = videosWithSFX.map(async (url, index) => {
+        const videoHash = randomBytes(8).toString('hex');
+        const result = await cloudUploadURL(
+          url,
+          `user_${job.data.userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
+          videoHash,
+          'video'
+        );
+        returnedVideosUrls[index] = result.secure_url;
+        return result;
+      });
+      const results = await Promise.all<UploadApiResponse>(uploadPromises);
+      const videosUrls = results.map((result) => {
+        return {
+          video: result.secure_url,
+          PID: result.public_id,
+        };
+      });
+
+      return videosUrls;
     } catch (videoGenError) {
       console.error('❌ Parallel video generation error:', videoGenError);
 
@@ -370,7 +386,27 @@ export class StoryProcessorService {
         console.log(
           `✅ Sequential fallback completed: ${fallbackVideoUrls.length} videos`
         );
-        return fallbackVideoUrls;
+
+        //? Cloudinary Uploads
+        const uploadPromises: Promise<UploadApiResponse>[] =
+          fallbackVideoUrls.map(async (url, index) => {
+            const videoHash = randomBytes(8).toString('hex');
+            return await cloudUploadURL(
+              url,
+              `user_${job.data.userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
+              videoHash,
+              'video'
+            );
+          });
+        const results = await Promise.all<UploadApiResponse>(uploadPromises);
+        const videosUrls = results.map((result) => {
+          return {
+            video: result.secure_url,
+            PID: result.public_id,
+          };
+        });
+
+        return videosUrls;
       } catch (fallbackError) {
         console.error('❌ Sequential fallback also failed:', fallbackError);
         throw new AppError(
@@ -383,51 +419,40 @@ export class StoryProcessorService {
 
   private async mergeAndComposeVideo(
     job: Job,
-    videoUrls: string[],
+    videoUrls: { video: string; PID: string }[],
     voiceOver: IProcessedVoiceOver | null,
     jobData: IStoryProcessingDTO & { userId: string; jobId: string }
-  ): Promise<Buffer> {
+  ): Promise<Buffer | string> {
     console.log('🎞️ Merging video scenes...');
 
     try {
       // Merge video scenes
-      const mergedVideoBuffer = await this.videoGenerationService.mergeScenes(
-        videoUrls
-      );
-
-      if (!mergedVideoBuffer || mergedVideoBuffer.length === 0) {
-        throw new AppError(
-          'Failed to merge video scenes - no buffer returned',
-          500
+      const mergedVideo =
+        await this.videoGenerationService.mergeScenesWithCloudinary(
+          videoUrls,
+          jobData.userId
         );
-      }
 
-      let finalVideoBuffer = mergedVideoBuffer;
-
-      // Compose with audio if voice over exists
       if (voiceOver && voiceOver.url) {
         console.log('🎵 Composing video with voice over...');
 
-        const composedBuffer =
-          await this.videoGenerationService.composeSoundWithVideoBuffer(
-            finalVideoBuffer,
-            voiceOver.url,
-            jobData.numOfScenes
+        const composedURL =
+          await this.videoGenerationService.composeSoundWithCloudinary(
+            mergedVideo,
+            voiceOver.PID as string
           );
-
-        if (!composedBuffer || composedBuffer.length === 0) {
-          throw new AppError('Audio composition returned empty buffer', 500);
-        }
-
-        finalVideoBuffer = composedBuffer;
-        console.log(
-          `✅ Video composed with sound successfully, buffer size: ${finalVideoBuffer.length}`
+        const hashedVideoId = `merged_video_${Date.now()}`;
+        const uploadResult = await cloudUploadURL(
+          composedURL,
+          `user_${jobData.userId}/${CLOUDINAT_FOLDERS.GENERATED_VIDEOS}`,
+          hashedVideoId
         );
+        return uploadResult.secure_url;
       } else {
         console.log('⏭️ Skipping audio composition - no voice over provided');
       }
 
-      return finalVideoBuffer;
+      return mergedVideo.video;
     } catch (mergeError) {
       console.error('❌ Video merge/composition error:', mergeError);
       throw new AppError(
@@ -438,18 +463,16 @@ export class StoryProcessorService {
       );
     }
   }
-  private async uploadVideo(
+  async uploadVideo(
     job: Job,
     videoBuffer: Buffer,
     jobId: string
   ): Promise<string> {
-    console.log('☁️ Uploading final video to cloud storage...');
-
     try {
       const videoHash = generateHashFromBuffer(videoBuffer);
       const uploadResult = await cloudUploadVideo(
         videoBuffer,
-        `user_${job.data.userId}/videos/generated`,
+        `user_${job.data.userId}/${CLOUDINAT_FOLDERS.GENERATED_VIDEOS}`,
         videoHash
       );
 
@@ -460,8 +483,7 @@ export class StoryProcessorService {
       console.log(`✅ Video uploaded successfully: ${uploadResult.secure_url}`);
       return uploadResult.secure_url;
     } catch (uploadError) {
-      console.error('❌ Video upload error:', uploadError);
-      throw new AppError('Failed to upload final video to cloud storage', 500);
+      throw new AppError('Failed to upload  video to cloud storage', 500);
     }
   }
   private async saveCompletedStory(
@@ -591,7 +613,7 @@ export class StoryProcessorService {
       logger.info({ voiceOverText });
       // Generate voice over audio
       const voiceOverData = { ...jobData.voiceOver, text: voiceOverText };
-      const voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
+      let voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
         voiceOverData,
         jobData.userId
       );
@@ -599,16 +621,9 @@ export class StoryProcessorService {
       if (!voiceOverUrl) {
         throw new AppError('Failed to generate voice over audio', 500);
       }
-
-      console.log(
-        `✅ Voice over generated successfully: ${voiceOverUrl.substring(
-          0,
-          50
-        )}...`
-      );
-
       return {
-        url: voiceOverUrl,
+        url: voiceOverUrl.url,
+        PID: voiceOverUrl.PID,
         text: voiceOverText,
         data: voiceOverData,
       };
