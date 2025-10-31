@@ -374,11 +374,17 @@ export class VideoGenerationService {
       return {
         overlay: `video:${PID.split('/').join(':')}`,
         flags: 'splice' as const,
+        width: 960,
+        height: 960,
+        crop: 'fill' as const,
       };
     });
     transformationObjects.push({
       overlay: `video:${OUTRO_VIDEO_PID}`,
       flags: 'splice' as const,
+      width: 960,
+      height: 960,
+      crop: 'fill' as const,
     });
     console.log('Transformation Objects: ', transformationObjects);
 
@@ -390,8 +396,8 @@ export class VideoGenerationService {
         eager: [
           {
             transformation: [
+              { width: 960, height: 960, crop: 'fill' as const },
               ...transformationObjects,
-              { height: 640, width: 640, crop: 'fill' },
               { flags: 'layer_apply' },
             ],
           },
