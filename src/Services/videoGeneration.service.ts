@@ -390,7 +390,7 @@ export class VideoGenerationService {
       {
         resource_type: 'video',
         type: 'upload',
-        eager_async: true,
+        eager_async: true, //! VERY IMPORTANT TO SET ASYNC [NO MEM LEAKS]
         eager: [
           {
             transformation: [
@@ -420,7 +420,7 @@ export class VideoGenerationService {
       const result = await cloudinary.uploader.explicit(mergedVideo.PID, {
         resource_type: 'video',
         type: 'upload',
-        eager_async: true,
+        eager_async: true, //! VERY IMPORTANT TO SET ASYNC [NO MEM LEAKS]
         eager: [
           {
             transformation: [
