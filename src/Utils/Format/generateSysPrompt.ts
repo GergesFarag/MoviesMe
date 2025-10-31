@@ -1,9 +1,9 @@
-import { mapLanguageAccent } from './languageUtils';
+import { mapLanguageAccent } from "./languageUtils";
 
 export const generateSysPrompt = (
   scenesNumber: number,
-  storyTitle: string = 'Generated Story Title',
-  storyStyle: string = 'realistic',
+  storyTitle: string = "Generated Story Title",
+  storyStyle: string = "realistic",
   storyGenre?: string,
   storyLocation?: string
 ): string => {
@@ -47,7 +47,7 @@ ${
 OUTPUT FORMAT:
 {
   "title": "${
-    storyTitle ? storyTitle.replace(/"/g, '\\"') : 'Generated Story Title'
+    storyTitle ? storyTitle.replace(/"/g, '\\"') : "Generated Story Title"
   }",
   "scenes": [
     {
@@ -69,9 +69,9 @@ Follow all instructions precisely. Ensure seamless narrative flow and visual con
 
 export const generateSystemSeedreamPrompt = (
   scenesNumber: number,
-  storyStyle: string = 'realistic',
-  storyGenre: string = '',
-  storyLocation: string = 'auto'
+  storyStyle: string = "realistic",
+  storyGenre: string = "",
+  storyLocation: string = "auto"
 ): string => {
   const prompt = `
 You are a Storyboard Generator AI.
@@ -100,6 +100,25 @@ ${rejectionJSON}
 `;
   return prompt;
 };
+export const generateSystemTitlePrompt = (
+  language: string
+): string => {
+  const prompt = `
+You are a Story Title Generator AI.
+Your task is to take the storyboard prompt and generate a title for the story.
+
+Always generate the title in ${language} language.
+
+title: <generate a title for the story here>
+
+Validation:
+- Consider the input invalid if:
+  * it's consists of greetings or silly talk or sexual content
+
+- respond directly with the title in ${language} language.
+`;
+  return prompt;
+};
 
 export const generateVoiceSysPrompt = (
   language: string,
@@ -112,7 +131,7 @@ export const generateVoiceSysPrompt = (
   return `You are a cinematic narrator and translator.
 TASK:
 Convert the provided story prompt into a narrative suitable for voice narration in the ${language} language ${
-    voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ''
+    voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ""
   }. The narration must be precise and fluent, adhering to the following time constraints and guidelines:
 
 CRITICAL CONSTRAINTS:

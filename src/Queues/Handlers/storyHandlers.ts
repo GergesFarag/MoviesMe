@@ -115,7 +115,6 @@ export class StoryQueueHandlers {
         { jobId: job.opts.jobId as string },
         {
           status: 'failed',
-          title: 'Failed Story Generation',
           updatedAt: new Date(),
         }
       );
