@@ -45,7 +45,6 @@ export class VideoGenerationService {
       prompt: videoPrompt,
       negative_prompt: videoNegativePrompt,
     };
-    console.log('Payload for video generation:', payload);
     try {
       console.log(`🎥 Starting optimized video generation from image...`);
 
@@ -57,13 +56,6 @@ export class VideoGenerationService {
           500
         );
       }
-
-      console.log(
-        `✅ Video generated successfully with optimized polling: ${resultUrl.substring(
-          0,
-          50
-        )}...`
-      );
       return resultUrl;
     } catch (error) {
       console.error('❌ Optimized video generation failed:', error);
