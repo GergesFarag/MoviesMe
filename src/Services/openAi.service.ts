@@ -1,26 +1,25 @@
-import OpenAI from "openai";
-import AppError from "../Utils/Errors/AppError";
-import { IStoryResponse } from "../Interfaces/storyResponse.interface";
+import OpenAI from 'openai';
+import AppError from '../Utils/Errors/AppError';
+import { IStoryResponse } from '../Interfaces/storyResponse.interface';
 import {
   generateSysPrompt,
   generateSystemSeedreamPrompt,
   generateSystemTitlePrompt,
   generateVoiceSysPrompt,
   rejectionJSON,
-} from "../Utils/Format/generateSysPrompt";
-import { Validator } from "./validation.service";
-import { mapLanguageAccent } from "../Utils/Format/languageUtils";
-import { HTTP_STATUS_CODE } from "../Enums/error.enum";
-import GenerationInfo from "../Models/generation.model";
-import { GenerationInfoRepository } from "../Repositories/GenerationInfoRepository";
-import { StoryGenerationInfoRepository } from "../Repositories/StoryGenerationInfoRepository";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+} from '../Utils/Format/generateSysPrompt';
+import { Validator } from './validation.service';
+import { mapLanguageAccent } from '../Utils/Format/languageUtils';
+import { HTTP_STATUS_CODE } from '../Enums/error.enum';
+import GenerationInfo from '../Models/generation.model';
+import { GenerationInfoRepository } from '../Repositories/GenerationInfoRepository';
+import { StoryGenerationInfoRepository } from '../Repositories/StoryGenerationInfoRepository';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 export class OpenAIService {
   private client: OpenAI;
   // private SYSTEM_PROMPT: string;
   // private validator: Validator;
-  constructor() // storyGenere?: string, // storyStyle?: string, // storyTitle?: string, // numOfScenes: number,
-  // storyLocation?: string
+  constructor() // storyLocation?: string // storyGenere?: string, // storyStyle?: string, // storyTitle?: string, // numOfScenes: number,
   {
     this.client = new OpenAI({ apiKey: OPENAI_API_KEY });
     // this.SYSTEM_PROMPT = generateSysPrompt(
@@ -196,7 +195,7 @@ export class OpenAIService {
     voiceAccent: string | null,
     numOfScenes: number
   ): Promise<string> {
-    console.log("language:", language);
+    console.log('language:', language);
 
     const targetWordsPerScene = 7;
     const totalTargetWords = (numOfScenes - 1) * targetWordsPerScene;
@@ -208,16 +207,16 @@ export class OpenAIService {
     );
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-5",
+        model: 'gpt-5',
         messages: [
           {
-            role: "system",
+            role: 'system',
             content: SYSTEM_PROMPT,
           },
           {
-            role: "user",
+            role: 'user',
             content: `${prompt}\nIMPORTANT: Generate exactly ${totalTargetWords} words (±${tolerance} words tolerance) for ${numOfScenes} scenes. Each scene should be approximately ${targetWordsPerScene} words.\nEnsure that the narration is in ${language} ${
-              voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ""
+              voiceAccent ? `with ${mapLanguageAccent(voiceAccent)} accent` : ''
             }.`,
           },
         ],
@@ -226,7 +225,7 @@ export class OpenAIService {
       const narrativeText = response.choices[0]?.message?.content;
 
       if (!narrativeText) {
-        throw new AppError("No narrative text generated from OpenAI", 500);
+        throw new AppError('No narrative text generated from OpenAI', 500);
       }
       return narrativeText;
     } catch (err: any) {
@@ -237,16 +236,16 @@ export class OpenAIService {
   async generateSeedreamPrompt(
     prompt: string,
     numOfScenes: number,
-    storyStyle: string = "realistic",
+    storyStyle: string = 'realistic',
     storyGenre?: string,
     storyLocation?: string
-  ): Promise<{ narrativeText: string; toVoiceGenerationText: string }> {
+  ): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4.1-mini",
+        model: 'gpt-4.1-mini',
         messages: [
           {
-            role: "system",
+            role: 'system',
             content: generateSystemSeedreamPrompt(
               numOfScenes,
               storyStyle,
@@ -255,7 +254,7 @@ export class OpenAIService {
             ),
           },
           {
-            role: "user",
+            role: 'user',
             content: prompt,
           },
         ],
@@ -263,18 +262,11 @@ export class OpenAIService {
         temperature: 0.7,
       });
       const responseContent = response.choices[0]?.message?.content as string;
-      console.log("Content Response:", responseContent);
+      console.log('Content Response:', responseContent);
       if (responseContent.includes(`"error": "Invalid input"`)) {
-        throw new AppError("Invalid input", HTTP_STATUS_CODE.BAD_REQUEST);
+        throw new AppError('Invalid input', HTTP_STATUS_CODE.BAD_REQUEST);
       }
-      const toVoiceGenerationText = responseContent;
-      let narrativeText = `GENERATE ${numOfScenes} SEPARATE IMAGES !!DO NOT MIX IMAGES IN ONE IMAGE!! ${responseContent}`;
-      console.log("Narrative Text: ", narrativeText);
-      if (!narrativeText) {
-        throw new AppError("No narrative text generated from OpenAI", 500);
-      }
-
-      return { narrativeText, toVoiceGenerationText };
+      return responseContent;
     } catch (err: any) {
       throw new AppError(err.message, err.status || 500);
     }
@@ -285,18 +277,18 @@ export class OpenAIService {
         languageId
       );
     if (!language) {
-      throw new AppError("Language not found", HTTP_STATUS_CODE.NOT_FOUND);
+      throw new AppError('Language not found', HTTP_STATUS_CODE.NOT_FOUND);
     }
     try {
       const response = await this.client.chat.completions.create({
-        model: "gpt-4.1-mini",
+        model: 'gpt-4.1-mini',
         messages: [
           {
-            role: "system",
+            role: 'system',
             content: generateSystemTitlePrompt(language),
           },
           {
-            role: "user",
+            role: 'user',
             content: prompt,
           },
         ],
