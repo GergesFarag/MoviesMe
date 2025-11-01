@@ -1,17 +1,17 @@
 import admin from "firebase-admin";
-import { validateFirebaseCredentials } from "../Utils/Auth/timeCheck";
+import { validateFirebaseCredentials } from "../Utils/Auth/firebaseValidation";
 
 if (!admin.apps.length) {
   try {
     validateFirebaseCredentials();
-    
+
     if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
       let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-      
+
       if (privateKey.includes('\\n')) {
         privateKey = privateKey.replace(/\\n/g, '\n');
       }
-      
+
       if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
         throw new Error('Invalid private key format: missing BEGIN marker');
       }

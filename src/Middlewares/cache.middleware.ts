@@ -7,7 +7,10 @@ export const cacheMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  const cacheKey = `${req.method}:${req.originalUrl}`;
+  const userId = req.user ? req.user.uid || req.user.id : null;
+  const cacheKey = userId
+    ? `${userId}:${req.method}:${req.originalUrl}`
+    : `${req.method}:${req.originalUrl}`;
   const cachedData = appCache.get(cacheKey);
   if (cachedData) {
     console.log('cache hit');
@@ -20,4 +23,4 @@ export const cacheMiddleware = (
     return res.sendResponse(body);
   };
   next();
-}
+};
