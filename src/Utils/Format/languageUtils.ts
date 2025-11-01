@@ -7,28 +7,8 @@ export function extractLanguageFromRequest(req: Request): string {
   if (!acceptLanguage) {
     return "en";
   }
-
-  const languages = acceptLanguage
-    .split(",")
-    .map((lang) => {
-      const [code, quality] = lang.trim().split(";q=");
-      return {
-        code: code.split("-")[0],
-        quality: quality ? parseFloat(quality) : 1.0,
-      };
-    })
-    .sort((a, b) => b.quality - a.quality); 
-
-  return languages[0]?.code || "en";
+  return acceptLanguage || "en";
 }
-
-export function getUserLanguage(req: Request, userLanguage?: string): string {
-  if (userLanguage) {
-    return userLanguage;
-  }
-  return extractLanguageFromRequest(req);
-}
-
 export const getUserLangFromDB = async function (
   userId: string
 ): Promise<string> {
