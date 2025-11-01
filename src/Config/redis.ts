@@ -28,6 +28,5 @@ export const getRedisConfig = () => {
       HTTP_STATUS_CODE.BAD_REQUEST
     );
   }
-  console.log("REDIS CONFIGS:" , redisHost , "   " , redisPort , "   " , redisPassword)
   return { host: redisHost, port: redisPort, password: redisPassword };
 };
