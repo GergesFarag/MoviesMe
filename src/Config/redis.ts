@@ -2,9 +2,8 @@ import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import AppError from '../Utils/Errors/AppError';
 
 export const getRedisConfig = () => {
-  
-  const app_env = process.env.NODE_ENV;
-  const server_env = process.env.SERVER_ENV;
+  const app_env = process.env.NODE_ENV as string;
+  const server_env = process.env.SERVER_ENV as string;
   let redisPort, redisHost, redisPassword;
   if (app_env === 'production') {
     redisPort = parseInt(process.env.REDIS_PORT as string);
@@ -29,6 +28,6 @@ export const getRedisConfig = () => {
       HTTP_STATUS_CODE.BAD_REQUEST
     );
   }
-
+  console.log("REDIS CONFIGS:" , redisHost , "   " , redisPort , "   " , redisPassword)
   return { host: redisHost, port: redisPort, password: redisPassword };
 };
