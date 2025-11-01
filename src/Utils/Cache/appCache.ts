@@ -49,6 +49,5 @@ class AppCache {
   }
 }
 
-// singleton instance
 const appCache = AppCache.getInstance();
 export default appCache;

@@ -4,7 +4,7 @@ import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import catchError from '../Utils/Errors/catchError';
 import User from '../Models/user.model';
 import Job from '../Models/job.model';
-import { getCachedModel, getCachedUser } from '../Utils/Cache/caching';
+import { getCachedModel, getCachedUser } from '../Utils/Cache/caching.utils';
 import {
   createQueueJobData,
   processModelJobAsync
@@ -256,6 +256,7 @@ const modelsController = {
       getCachedUser(req.user!.id, User),
       getCachedModel(modelId),
     ]);
+
 
     if (!user) {
       throw new AppError('User not found', 404);

@@ -17,7 +17,7 @@ import generationLibRouter from './Routes/generationLib.routes';
 import './Queues/generationLib.queue';
 import './Queues/story.queue';
 import './Queues/model.queue';
-import responseTime from "response-time";
+import responseTime from 'response-time';
 import { composeVideoWithAudio } from './Utils/APIs/cloudinary';
 
 const app = express();
@@ -32,18 +32,19 @@ const API_VERSION = process.env.API_VERSION || '/v1';
 const prefix = process.env.API_PREFIX || '/api';
 const basePath = `${prefix}${API_VERSION}`;
 
-app.use(responseTime());
-
 app.post(`${basePath}/custom`, async (req, res) => {
-  const url = composeVideoWithAudio("my_video2" , "بسيشبسيب");
   res.end();
 });
+
+//*HERE IS CUSTOM SCRIPTS TO RUN ON DB
+app.post(`${basePath}/dbScript`, async (req, res) => {
+  res.end();
+});
+
 app.get(`/`, async (req, res) => {
   res.status(200).json({ message: 'API is running' });
 });
 
-//*HERE IS CUSTOM SCRIPTS TO RUN ON DB
-app.post(`${basePath}/dbScript`, async (req, res) => {});
 app.use(`${basePath}/auth`, authRouter);
 app.use(`${basePath}/admin`, adminRouter);
 app.use(`${basePath}/user`, userRouter);
@@ -54,8 +55,9 @@ app.use(`${basePath}/payment`, paymentRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use(ErrorHandler);
+
 app.use(/\/(.*)/, (req, res, next) => {
-  console.log('404 middleware triggered for:', req.originalUrl);
   res.status(404).json({ message: 'Route not found' });
 });
+
 export default app;
