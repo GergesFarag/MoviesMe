@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../Models/user.model';
 import { extractLanguageFromRequest } from '../Utils/Format/languageUtils';
-
 export const updateUserLanguagePreference = async (
   req: Request,
   res: Response,
@@ -13,7 +12,7 @@ export const updateUserLanguagePreference = async (
       const user = await User.findById(req.user.id).select('preferredLanguage');
       if (user && user.preferredLanguage !== preferredLanguage) {
         await User.findByIdAndUpdate(
-          req.user.id, 
+          req.user.id,
           { preferredLanguage },
           { new: true }
         );
@@ -23,7 +22,7 @@ export const updateUserLanguagePreference = async (
   } catch (error) {
     console.error('Error updating user language preference:', error);
   }
-  
+
   next();
 };
 

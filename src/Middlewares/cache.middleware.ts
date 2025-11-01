@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { HTTP_STATUS_CODE } from '../Enums/error.enum';
 import appCache from '../Utils/Cache/appCache';
+import { getCurrentUserLanguage } from './language.middleware';
+import { extractLanguageFromRequest } from '../Utils/Format/languageUtils';
 
 export const cacheMiddleware = (
   req: Request,
@@ -8,9 +10,10 @@ export const cacheMiddleware = (
   next: NextFunction
 ) => {
   const userId = req.user ? req.user.uid || req.user.id : null;
-  const cacheKey = userId
-    ? `${userId}:${req.method}:${req.originalUrl}`
-    : `${req.method}:${req.originalUrl}`;
+  const cacheKey = `${userId}:${req.method}:${
+    req.originalUrl
+  }:${extractLanguageFromRequest(req)}`;
+
   const cachedData = appCache.get(cacheKey);
   if (cachedData) {
     console.log('cache hit');
