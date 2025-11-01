@@ -14,12 +14,12 @@ import storyRouter from './Routes/story.routes';
 import modelsRouter from './Routes/models.routes';
 import paymentRouter from './Routes/purchasing.routes';
 import generationLibRouter from './Routes/generationLib.routes';
-import { cleanupRedisJobs } from './Utils/Cache/redisCleanup';
 import './Queues/generationLib.queue';
 import './Queues/story.queue';
 import './Queues/model.queue';
-import cloudinary from './Config/cloudinary';
+import responseTime from "response-time";
 import { composeVideoWithAudio } from './Utils/APIs/cloudinary';
+
 const app = express();
 dotenv.config({ quiet: true });
 app.use(express.json());
@@ -31,6 +31,8 @@ app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 const API_VERSION = process.env.API_VERSION || '/v1';
 const prefix = process.env.API_PREFIX || '/api';
 const basePath = `${prefix}${API_VERSION}`;
+
+app.use(responseTime());
 
 app.post(`${basePath}/custom`, async (req, res) => {
   const url = composeVideoWithAudio("my_video2" , "بسيشبسيب");

@@ -2,11 +2,12 @@ import { Router } from 'express';
 import userController from '../Controllers/user.controller';
 import { authMiddle, optionalAuth } from '../Middlewares/auth.middleware';
 import { imageUpload, upload } from '../Config/multer';
+import { cacheMiddleware } from '../Middlewares/cache.middleware';
 const userRouter = Router();
 
 userRouter
   .route('/')
-  .get(authMiddle, userController.getProfile)
+  .get(authMiddle, cacheMiddleware, userController.getProfile)
   .patch(
     authMiddle,
     imageUpload.single('profilePicture'),
@@ -55,5 +56,5 @@ userRouter
   .route('/lib/generations/:id')
   .get(authMiddle, userController.getGenerationById)
   .delete(authMiddle, userController.deleteGeneration);
-  
+
 export default userRouter;

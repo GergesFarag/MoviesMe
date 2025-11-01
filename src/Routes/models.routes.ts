@@ -3,15 +3,17 @@ import modelsController from "../Controllers/models.controller";
 import { authMiddle } from "../Middlewares/auth.middleware";
 import { upload } from "../Config/multer";
 import { updateUserLanguagePreference } from "../Middlewares/language.middleware";
+import { cacheMiddleware } from "../Middlewares/cache.middleware";
+
 const modelsRouter = Router();
-modelsRouter.get("/videoEffects", modelsController.getVideoModels);
-modelsRouter.get("/imageEffects", modelsController.getImageModels);
-modelsRouter.get("/characterEffects", modelsController.getCharacterEffects);
-modelsRouter.get("/aiTools", modelsController.getAITools);
-modelsRouter.get("/ai3dTools", modelsController.getAI3DTools);
-modelsRouter.get("/marketingTools", modelsController.getMarketingTools);
-modelsRouter.get("/trending", modelsController.getTrendingModels);
-modelsRouter.get("/categories", modelsController.getModelsCategories);
+modelsRouter.get("/videoEffects", cacheMiddleware, modelsController.getVideoModels);
+modelsRouter.get("/imageEffects", cacheMiddleware, modelsController.getImageModels);
+modelsRouter.get("/characterEffects", cacheMiddleware, modelsController.getCharacterEffects);
+modelsRouter.get("/aiTools", cacheMiddleware, modelsController.getAITools);
+modelsRouter.get("/ai3dTools", cacheMiddleware, modelsController.getAI3DTools);
+modelsRouter.get("/marketingTools", cacheMiddleware, modelsController.getMarketingTools);
+modelsRouter.get("/trending", cacheMiddleware, modelsController.getTrendingModels);
+modelsRouter.get("/categories", cacheMiddleware, modelsController.getModelsCategories);
 modelsRouter.post("/", modelsController.addModel);
 modelsRouter.post(
   "/applyModel",

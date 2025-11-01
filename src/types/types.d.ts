@@ -10,4 +10,7 @@ declare namespace Express {
     t: (key: string, options?: any) => string;
     rawBody?: string; // For webhook signature verification
   }
+  interface Response {
+    sendResponse?: any;
+  }
 }
