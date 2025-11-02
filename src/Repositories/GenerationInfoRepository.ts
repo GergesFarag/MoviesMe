@@ -27,6 +27,7 @@ export class GenerationInfoRepository extends BaseRepository<IGenerationInfo> {
     if (!info) {
       return null;
     }
+    console.log('Updates:', update);
     return this.model.findByIdAndUpdate(info._id, update, {
       new: true,
       runValidators: true,

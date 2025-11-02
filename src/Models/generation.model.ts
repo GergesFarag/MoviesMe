@@ -1,9 +1,9 @@
-import mongoose, { Schema } from "mongoose";
-import { IGenerationInfo } from "../Interfaces/generationInfo.interface";
+import mongoose, { Schema } from 'mongoose';
+import { IGenerationInfo } from '../Interfaces/generationInfo.interface';
 import {
   IGenerationImageLibModel,
   IGenerationVideoLibModel,
-} from "../Interfaces/aiModel.interface";
+} from '../Interfaces/aiModel.interface';
 
 const baseGenerationSchema = {
   name: { type: String, required: true },
@@ -28,8 +28,8 @@ const generationVideoModelSchema: Schema = new Schema<IGenerationVideoLibModel>(
     credits: {
       type: [
         {
-          type: Map,
-          of: Number,
+          duration: { type: Number, required: true },
+          credits: { type: Number, required: true },
         },
       ],
       required: true,
@@ -51,7 +51,7 @@ const generationInfoSchema = new Schema<IGenerationInfo>(
   }
 );
 const GenerationInfo = mongoose.model<IGenerationInfo>(
-  "GenerationInfo",
+  'GenerationInfo',
   generationInfoSchema
 );
 export default GenerationInfo;

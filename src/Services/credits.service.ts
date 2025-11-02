@@ -103,7 +103,7 @@ export class CreditService implements ICreditService {
   async getGenerationModelCredits(
     modelId: string,
     isVideo: boolean = false
-  ): Promise<number | Map<string, number>[]> {
+  ): Promise<number | { duration: number; credits: number }[]> {
     const generationInfo =
       await this.generationInfoRepository.getGenerationInfo();
     if (!generationInfo || !generationInfo.videoModels) {
@@ -119,12 +119,7 @@ export class CreditService implements ICreditService {
       if (!videoModel) {
         throw new AppError('Video Model not found', HTTP_STATUS_CODE.NOT_FOUND);
       }
-      const credits: Map<string, number>[] = videoModel.credits.map(
-        (creditMap) => {
-          return new Map(Object.entries(creditMap));
-        }
-      );
-      return credits;
+      return videoModel.credits;
     } else {
       const imageModel = generationInfo.imageModels.find(
         (m) => m._id.toString() === modelId.toString()
