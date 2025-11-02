@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Login - Client Token Test</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+      }
+      .login-section {
+        margin-bottom: 2rem;
+      }
+      .login-btn {
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 1rem;
+        cursor: pointer;
+        width: 100%;
+        transition: background 0.3s ease;
+      }
+      .login-btn:hover {
+        background: #357ae8;
+      }
+      .login-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .logout-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-top: 1rem;
+      }
+      .logout-btn:hover {
+        background: #c82333;
+      }
+      .token-section {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-top: 1.5rem;
+        text-align: left;
+      }
+      .token-label {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+      }
+      .token-display {
+        background: #ffffff;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        word-break: break-all;
+        max-height: 150px;
+        overflow-y: auto;
+        color: #495057;
+      }
+      .copy-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+      .copy-btn:hover {
+        background: #218838;
+      }
+      .status {
+        margin-top: 1rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status.info {
+        background: #cce7ff;
+        color: #004085;
+        border: 1px solid #b3d7ff;
+      }
+      .user-info {
+        background: #e9ecef;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-top: 1rem;
+        text-align: left;
+      }
+      .user-info h3 {
+        margin-top: 0;
+        color: #495057;
+      }
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔥 Firebase Login Test</h1>
+
+      <div class="login-section">
+        <button id="login-btn" class="login-btn">
+          <span id="login-text">Login with Google</span>
+        </button>
+        <button id="logout-btn" class="logout-btn" style="display: none">
+          Logout
+        </button>
+      </div>
+
+      <div id="user-info" class="user-info" style="display: none">
+        <h3>User Information</h3>
+        <p><strong>Name:</strong> <span id="user-name"></span></p>
+        <p><strong>Email:</strong> <span id="user-email"></span></p>
+        <p><strong>UID:</strong> <span id="user-uid"></span></p>
+      </div>
+
+      <div id="token-section" class="token-section" style="display: none">
+        <label class="token-label">Client Token (ID Token):</label>
+        <div class="token-display" id="token-display">No token available</div>
+        <button id="copy-btn" class="copy-btn">Copy Token</button>
+      </div>
+
+      <div id="status" class="status info">Ready to login</div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+      import {
+        getAuth,
+        signInWithPopup,
+        signOut,
+        onAuthStateChanged,
+        GoogleAuthProvider,
+      } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+      let firebaseConfig = null;
+      let auth = null;
+      let currentToken = null;
+
+      // Function to load Firebase configuration from server
+      async function loadFirebaseConfig() {
+        try {
+          const response = await fetch('/api/v1/config/firebase');
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return await response.json();
+        } catch (error) {
+          console.error('Failed to load Firebase config from server:', error);
+          // Fallback to hardcoded config
+          return {
+            apiKey: 'AIzaSyAVdx4hQAviTmiE7_vVmoaSyb3lx1hachY',
+            authDomain: 'ttov-a9677.firebaseapp.com',
+            projectId: 'ttov-a9677',
+            appId: '1:57747989938:web:e4af38b054fd30014130ab',
+          };
+        }
+      }
+
+      // Initialize Firebase
+      async function initFirebase() {
+        try {
+          updateStatus('Loading Firebase configuration...', 'info');
+          firebaseConfig = await loadFirebaseConfig();
+          console.log('Firebase config loaded:', firebaseConfig);
+
+          const app = initializeApp(firebaseConfig);
+          auth = getAuth(app);
+
+          // Listen for authentication state changes
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              handleUserSignedIn(user);
+            } else {
+              handleUserSignedOut();
+            }
+          });
+
+          updateStatus('Firebase initialized successfully', 'success');
+          console.log('Firebase initialized successfully');
+        } catch (error) {
+          console.error('Error initializing Firebase:', error);
+          updateStatus(
+            `Failed to initialize Firebase: ${error.message}`,
+            'error'
+          );
+        }
+      }
+
+      // Handle user signed in
+      async function handleUserSignedIn(user) {
+        console.log('User signed in:', user);
+
+        // Update UI
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'block';
+        document.getElementById('user-info').style.display = 'block';
+        document.getElementById('token-section').style.display = 'block';
+
+        // Display user info
+        document.getElementById('user-name').textContent =
+          user.displayName || 'N/A';
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-uid').textContent = user.uid;
+
+        // Get and display ID token
+        try {
+          const idToken = await user.getIdToken();
+          currentToken = idToken;
+          document.getElementById('token-display').textContent = idToken;
+          updateStatus('Login successful! Token retrieved.', 'success');
+
+          console.log('Client Token (ID Token):', idToken);
+          console.log('Token length:', idToken.length);
+
+          // Auto-copy token to clipboard for convenience
+          navigator.clipboard
+            .writeText(idToken)
+            .then(() => {
+              console.log('Token copied to clipboard automatically');
+            })
+            .catch((err) => {
+              console.error('Failed to copy token to clipboard:', err);
+            });
+        } catch (error) {
+          console.error('Error getting ID token:', error);
+          updateStatus(`Failed to get token: ${error.message}`, 'error');
+        }
+      }
+
+      // Handle user signed out
+      function handleUserSignedOut() {
+        console.log('User signed out');
+
+        // Reset UI
+        document.getElementById('login-btn').style.display = 'block';
+        document.getElementById('logout-btn').style.display = 'none';
+        document.getElementById('user-info').style.display = 'none';
+        document.getElementById('token-section').style.display = 'none';
+
+        currentToken = null;
+        updateStatus('Logged out successfully', 'info');
+      }
+
+      // Google Login Function
+      async function handleGoogleLogin() {
+        if (!auth) {
+          updateStatus('Firebase not initialized', 'error');
+          return;
+        }
+
+        try {
+          updateStatus('Signing in...', 'info');
+          setLoginButtonLoading(true);
+
+          const provider = new GoogleAuthProvider();
+          provider.addScope('email');
+          provider.addScope('profile');
+
+          const result = await signInWithPopup(auth, provider);
+          // Auth state change will handle the UI update
+        } catch (error) {
+          console.error('Error during login:', error);
+          updateStatus(`Login failed: ${error.message}`, 'error');
+          setLoginButtonLoading(false);
+        }
+      }
+
+      // Logout Function
+      async function handleLogout() {
+        try {
+          updateStatus('Signing out...', 'info');
+          await signOut(auth);
+          // Auth state change will handle the UI update
+        } catch (error) {
+          console.error('Error during logout:', error);
+          updateStatus(`Logout failed: ${error.message}`, 'error');
+        }
+      }
+
+      // Copy token to clipboard
+      function copyToken() {
+        if (currentToken) {
+          navigator.clipboard
+            .writeText(currentToken)
+            .then(() => {
+              updateStatus('Token copied to clipboard!', 'success');
+              setTimeout(() => {
+                updateStatus('Token ready', 'success');
+              }, 2000);
+            })
+            .catch((err) => {
+              console.error('Failed to copy token:', err);
+              updateStatus('Failed to copy token', 'error');
+            });
+        } else {
+          updateStatus('No token available to copy', 'error');
+        }
+      }
+
+      // Utility functions
+      function updateStatus(message, type) {
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`;
+      }
+
+      function setLoginButtonLoading(loading) {
+        const btn = document.getElementById('login-btn');
+        const text = document.getElementById('login-text');
+
+        if (loading) {
+          btn.disabled = true;
+          text.innerHTML = '<span class="loading"></span>Signing in...';
+        } else {
+          btn.disabled = false;
+          text.textContent = 'Login with Google';
+        }
+      }
+
+      // Event listeners
+      document
+        .getElementById('login-btn')
+        .addEventListener('click', handleGoogleLogin);
+      document
+        .getElementById('logout-btn')
+        .addEventListener('click', handleLogout);
+      document.getElementById('copy-btn').addEventListener('click', copyToken);
+
+      // Initialize when page loads
+      document.addEventListener('DOMContentLoaded', initFirebase);
+    </script>
+  </body>
+</html>

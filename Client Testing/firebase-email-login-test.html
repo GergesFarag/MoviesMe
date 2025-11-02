@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Email/Password Login - Client Token Test</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+      }
+      .auth-section {
+        margin-bottom: 2rem;
+      }
+      .form-group {
+        margin-bottom: 1rem;
+        text-align: left;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #555;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e1e5e9;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+        box-sizing: border-box;
+      }
+      .form-group input:focus {
+        outline: none;
+        border-color: #4285f4;
+      }
+      .auth-btn {
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 1rem;
+        cursor: pointer;
+        width: 100%;
+        transition: background 0.3s ease;
+        margin-bottom: 0.5rem;
+      }
+      .auth-btn:hover {
+        background: #357ae8;
+      }
+      .auth-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .secondary-btn {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+      .secondary-btn:hover {
+        background: #5a6268;
+      }
+      .logout-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-top: 1rem;
+        width: 100%;
+      }
+      .logout-btn:hover {
+        background: #c82333;
+      }
+      .toggle-auth {
+        margin-top: 1rem;
+        color: #4285f4;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .token-section {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-top: 1.5rem;
+        text-align: left;
+      }
+      .token-label {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+      }
+      .token-display {
+        background: #ffffff;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        word-break: break-all;
+        max-height: 150px;
+        overflow-y: auto;
+        color: #495057;
+      }
+      .copy-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+      .copy-btn:hover {
+        background: #218838;
+      }
+      .status {
+        margin-top: 1rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status.info {
+        background: #cce7ff;
+        color: #004085;
+        border: 1px solid #b3d7ff;
+      }
+      .user-info {
+        background: #e9ecef;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-top: 1rem;
+        text-align: left;
+      }
+      .user-info h3 {
+        margin-top: 0;
+        color: #495057;
+      }
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .auth-forms {
+        display: none;
+      }
+      .auth-forms.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📧 Firebase Email/Password Login</h1>
+
+      <!-- Login Form -->
+      <div id="login-form" class="auth-forms active">
+        <div class="auth-section">
+          <h2>Sign In</h2>
+          <div class="form-group">
+            <label for="login-email">Email:</label>
+            <input
+              type="email"
+              id="login-email"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input
+              type="password"
+              id="login-password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <button id="login-btn" class="auth-btn">
+            <span id="login-text">Sign In</span>
+          </button>
+          <div class="toggle-auth" onclick="showRegisterForm()">
+            Don't have an account? Sign Up
+          </div>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" class="auth-forms">
+        <div class="auth-section">
+          <h2>Sign Up</h2>
+          <div class="form-group">
+            <label for="register-email">Email:</label>
+            <input
+              type="email"
+              id="register-email"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="register-password">Password:</label>
+            <input
+              type="password"
+              id="register-password"
+              placeholder="Enter your password (min 6 chars)"
+              required
+              minlength="6"
+            />
+          </div>
+          <button id="register-btn" class="auth-btn">
+            <span id="register-text">Sign Up</span>
+          </button>
+          <div class="toggle-auth" onclick="showLoginForm()">
+            Already have an account? Sign In
+          </div>
+        </div>
+      </div>
+
+      <!-- User Info (shown when logged in) -->
+      <div id="user-info" class="user-info" style="display: none">
+        <h3>User Information</h3>
+        <p><strong>Name:</strong> <span id="user-name"></span></p>
+        <p><strong>Email:</strong> <span id="user-email"></span></p>
+        <p><strong>UID:</strong> <span id="user-uid"></span></p>
+        <p><strong>Email Verified:</strong> <span id="user-verified"></span></p>
+        <button id="logout-btn" class="logout-btn">Logout</button>
+      </div>
+
+      <!-- Token Section (shown when logged in) -->
+      <div id="token-section" class="token-section" style="display: none">
+        <label class="token-label">Client Token (ID Token):</label>
+        <div class="token-display" id="token-display">No token available</div>
+        <button id="copy-btn" class="copy-btn">Copy Token</button>
+      </div>
+
+      <div id="status" class="status info">Ready for authentication</div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
+        signOut,
+        onAuthStateChanged,
+        sendEmailVerification,
+      } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+      let firebaseConfig = null;
+      let auth = null;
+      let currentToken = null;
+
+      // Function to load Firebase configuration from server
+      async function loadFirebaseConfig() {
+        try {
+          const response = await fetch('/api/v1/config/firebase');
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return await response.json();
+        } catch (error) {
+          console.error('Failed to load Firebase config from server:', error);
+          // Fallback to hardcoded config
+          return {
+            apiKey: 'AIzaSyAVdx4hQAviTmiE7_vVmoaSyb3lx1hachY',
+            authDomain: 'ttov-a9677.firebaseapp.com',
+            projectId: 'ttov-a9677',
+            appId: '1:57747989938:web:e4af38b054fd30014130ab',
+          };
+        }
+      }
+
+      // Initialize Firebase
+      async function initFirebase() {
+        try {
+          updateStatus('Loading Firebase configuration...', 'info');
+          firebaseConfig = await loadFirebaseConfig();
+          console.log('Firebase config loaded:', firebaseConfig);
+
+          const app = initializeApp(firebaseConfig);
+          auth = getAuth(app);
+
+          // Listen for authentication state changes
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              handleUserSignedIn(user);
+            } else {
+              handleUserSignedOut();
+            }
+          });
+
+          updateStatus('Firebase initialized successfully', 'success');
+          console.log('Firebase initialized successfully');
+        } catch (error) {
+          console.error('Error initializing Firebase:', error);
+          updateStatus(
+            `Failed to initialize Firebase: ${error.message}`,
+            'error'
+          );
+        }
+      }
+
+      // Handle user signed in
+      async function handleUserSignedIn(user) {
+        console.log('User signed in:', user);
+
+        // Update UI
+        document
+          .querySelectorAll('.auth-forms')
+          .forEach((form) => (form.style.display = 'none'));
+        document.getElementById('user-info').style.display = 'block';
+        document.getElementById('token-section').style.display = 'block';
+
+        // Display user info
+        document.getElementById('user-name').textContent =
+          user.displayName || 'N/A';
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-uid').textContent = user.uid;
+        document.getElementById('user-verified').textContent =
+          user.emailVerified ? 'Yes' : 'No';
+
+        // Get and display ID token
+        try {
+          const idToken = await user.getIdToken();
+          currentToken = idToken;
+          document.getElementById('token-display').textContent = idToken;
+          updateStatus('Login successful! Token retrieved.', 'success');
+
+          console.log('Client Token (ID Token):', idToken);
+          console.log('Token length:', idToken.length);
+
+          // Auto-copy token to clipboard for convenience
+          navigator.clipboard
+            .writeText(idToken)
+            .then(() => {
+              console.log('Token copied to clipboard automatically');
+            })
+            .catch((err) => {
+              console.error('Failed to copy token to clipboard:', err);
+            });
+        } catch (error) {
+          console.error('Error getting ID token:', error);
+          updateStatus(`Failed to get token: ${error.message}`, 'error');
+        }
+      }
+
+      // Handle user signed out
+      function handleUserSignedOut() {
+        console.log('User signed out');
+
+        // Reset UI
+        document
+          .querySelectorAll('.auth-forms')
+          .forEach((form) => (form.style.display = 'none'));
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('user-info').style.display = 'none';
+        document.getElementById('token-section').style.display = 'none';
+
+        // Clear forms
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+        document.getElementById('register-email').value = '';
+        document.getElementById('register-password').value = '';
+
+        currentToken = null;
+        updateStatus('Logged out successfully', 'info');
+      }
+
+      // Email/Password Sign In
+      async function handleEmailSignIn() {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!email || !password) {
+          updateStatus('Please fill in all fields', 'error');
+          return;
+        }
+
+        try {
+          updateStatus('Signing in...', 'info');
+          setAuthButtonLoading('login-btn', 'login-text', true);
+
+          const userCredential = await signInWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
+          // Auth state change will handle the UI update
+        } catch (error) {
+          console.error('Error during sign in:', error);
+          updateStatus(`Sign in failed: ${error.message}`, 'error');
+          setAuthButtonLoading('login-btn', 'login-text', false);
+        }
+      }
+
+      // Email/Password Sign Up
+      async function handleEmailSignUp() {
+        const email = document.getElementById('register-email').value.trim();
+        const password = document.getElementById('register-password').value;
+
+        if (!email || !password) {
+          updateStatus('Please fill in all fields', 'error');
+          return;
+        }
+
+        if (password.length < 6) {
+          updateStatus('Password must be at least 6 characters', 'error');
+          return;
+        }
+
+        try {
+          updateStatus('Creating account...', 'info');
+          setAuthButtonLoading('register-btn', 'register-text', true);
+
+          const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
+
+          // Send email verification
+          try {
+            await sendEmailVerification(userCredential.user);
+            updateStatus(
+              'Account created! Please check your email to verify your account.',
+              'success'
+            );
+          } catch (verificationError) {
+            console.error(
+              'Error sending verification email:',
+              verificationError
+            );
+            updateStatus('Account created successfully!', 'success');
+          }
+        } catch (error) {
+          console.error('Error during sign up:', error);
+          updateStatus(`Sign up failed: ${error.message}`, 'error');
+          setAuthButtonLoading('register-btn', 'register-text', false);
+        }
+      }
+
+      // Logout Function
+      async function handleLogout() {
+        try {
+          updateStatus('Signing out...', 'info');
+          await signOut(auth);
+          // Auth state change will handle the UI update
+        } catch (error) {
+          console.error('Error during logout:', error);
+          updateStatus(`Logout failed: ${error.message}`, 'error');
+        }
+      }
+
+      // Copy token to clipboard
+      function copyToken() {
+        if (currentToken) {
+          navigator.clipboard
+            .writeText(currentToken)
+            .then(() => {
+              updateStatus('Token copied to clipboard!', 'success');
+              setTimeout(() => {
+                updateStatus('Token ready', 'success');
+              }, 2000);
+            })
+            .catch((err) => {
+              console.error('Failed to copy token:', err);
+              updateStatus('Failed to copy token', 'error');
+            });
+        } else {
+          updateStatus('No token available to copy', 'error');
+        }
+      }
+
+      // UI Helper Functions
+      function showLoginForm() {
+        document.getElementById('login-form').classList.add('active');
+        document.getElementById('register-form').classList.remove('active');
+        updateStatus('Ready for authentication', 'info');
+      }
+
+      function showRegisterForm() {
+        document.getElementById('register-form').classList.add('active');
+        document.getElementById('login-form').classList.remove('active');
+        updateStatus('Ready for registration', 'info');
+      }
+
+      function updateStatus(message, type) {
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`;
+      }
+
+      function setAuthButtonLoading(buttonId, textId, loading) {
+        const btn = document.getElementById(buttonId);
+        const text = document.getElementById(textId);
+
+        if (loading) {
+          btn.disabled = true;
+          text.innerHTML = '<span class="loading"></span>Processing...';
+        } else {
+          btn.disabled = false;
+          text.textContent = buttonId === 'login-btn' ? 'Sign In' : 'Sign Up';
+        }
+      }
+
+      // Event listeners
+      document
+        .getElementById('login-btn')
+        .addEventListener('click', handleEmailSignIn);
+      document
+        .getElementById('register-btn')
+        .addEventListener('click', handleEmailSignUp);
+      document
+        .getElementById('logout-btn')
+        .addEventListener('click', handleLogout);
+      document.getElementById('copy-btn').addEventListener('click', copyToken);
+
+      // Enter key support for forms
+      document
+        .getElementById('login-password')
+        .addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') handleEmailSignIn();
+        });
+      document
+        .getElementById('register-password')
+        .addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') handleEmailSignUp();
+        });
+
+      // Initialize when page loads
+      document.addEventListener('DOMContentLoaded', initFirebase);
+    </script>
+  </body>
+</html>

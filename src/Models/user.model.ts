@@ -46,8 +46,18 @@ const userSchema = new Schema<IUser>({
   preferredLanguage: { type: String, default: 'en' },
 });
 
-userSchema.on('delete', async (doc: HydratedDocument<IUser>) => {
-  await UserEvents.onUserDeleted(doc);
+// Pre middleware for findOneAndDelete
+userSchema.pre('findOneAndDelete', async function (next) {
+  try {
+    const docToDelete = await this.model.findOne(this.getQuery());
+    if (docToDelete) {
+      await UserEvents.onUserDeleted(docToDelete);
+    }
+  } catch (error) {
+    console.error('Error in user deletion middleware:', error);
+  } finally {
+    next();
+  }
 });
 
 const User = model<IUser>('User', userSchema);

@@ -26,6 +26,7 @@ import { UserRepository } from '../Repositories/UserRepository';
 import { StoryRepository } from '../Repositories/StoryRepository';
 import { JobRepository } from '../Repositories/JobRepository';
 import { user } from '@elevenlabs/elevenlabs-js/api';
+import { CLOUDINAT_FOLDERS } from '../Constants/cloud';
 
 const generationLibService = new GenerationLibService();
 const userRepository = UserRepository.getInstance();
@@ -75,8 +76,8 @@ const userController = {
       if (profilePicture) {
         const result = (await cloudUpload(
           profilePicture.buffer,
-          `user_${id}/images/profile`,
-          'profile_picture',
+          `user_${id}/${CLOUDINAT_FOLDERS.UPLOADED_IMAGES}/profile`,
+          `${id}-profile_picture`,
           { overwrite: true, invalidate: true }
         )) as UploadApiResponse;
         req.body.profilePicture = result.secure_url;
@@ -107,6 +108,16 @@ const userController = {
     }
   }),
 
+  deleteUser: catchError(async (req, res) => {
+    const userId = req.user!.id;
+    const user = await User.findOneAndDelete({ _id: userId });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    res.status(200).json({
+      message: 'User deleted successfully',
+    });
+  }),
   getUserEffectsLib: catchError(async (req, res) => {
     const userId = req.user!.id;
     const query: TUserLibraryQuery = req.query;
@@ -630,11 +641,7 @@ const userController = {
     const userId = req.user!.id;
     const { ids } = req.body;
 
-    if (
-      !ids ||
-      !Array.isArray(ids) ||
-      ids.length === 0
-    ) {
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
       throw new AppError('ids array is required', 400);
     }
 
@@ -676,10 +683,7 @@ const userController = {
       throw new AppError('ids array is required', 400);
     }
 
-    const effectsToDelete = await userRepository.getEffectsByIds(
-      userId,
-      ids
-    );
+    const effectsToDelete = await userRepository.getEffectsByIds(userId, ids);
 
     if (effectsToDelete.length === 0) {
       throw new AppError('No matching effects found for deletion', 404);

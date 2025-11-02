@@ -12,7 +12,8 @@ userRouter
     authMiddle,
     imageUpload.single('profilePicture'),
     userController.updateProfile
-  );
+  )
+  .delete(authMiddle, userController.deleteUser);
 
 userRouter
   .route('/effect/fav')
