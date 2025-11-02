@@ -67,10 +67,19 @@ const generationLibController = {
         if (model.requirePrompt && !requestData.prompt) {
           throw new AppError('Prompt is Required!');
         }
+<<<<<<< HEAD
         const creditMap = model.credits.find((element: Map<string, number>) => {
           return +element.get('duration')! === +requestData.duration!;
         });
         if (!creditMap) {
+=======
+        const creditObj = model.credits.find(
+          (element: { duration: number; credits: number }) => {
+            return element.duration === +requestData.duration!;
+          }
+        );
+        if (!creditObj) {
+>>>>>>> 8f82d62 (adding new video models)
           throw new AppError('Invalid duration for the selected model', 400);
         }
         requestData.credits = +creditMap.get('credits')!;

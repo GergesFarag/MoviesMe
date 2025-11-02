@@ -76,7 +76,7 @@ export class CreditService implements ICreditService {
   }
 
   async getCredits(userId: string): Promise<number> {
-    console.log("UserId" , userId);
+    console.log('UserId', userId);
     const user = await this.userRepository.findById(userId, 'credits');
     if (!user) {
       throw new AppError('User not found', HTTP_STATUS_CODE.NOT_FOUND);
