@@ -69,9 +69,11 @@ const generationLibController = {
         if (model.requirePrompt && !requestData.prompt) {
           throw new AppError('Prompt is Required!');
         }
-        const creditObj = model.credits.find((element: { duration: number; credits: number }) => {
-          return element.duration === +requestData.duration!;
-        });
+        const creditObj = model.credits.find(
+          (element: { duration: number; credits: number }) => {
+            return element.duration === +requestData.duration!;
+          }
+        );
         if (!creditObj) {
           throw new AppError('Invalid duration for the selected model', 400);
         }
