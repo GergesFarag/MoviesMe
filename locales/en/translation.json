@@ -168,8 +168,8 @@
   "generationModels": {
     "68dd4fe53afd0524a0a0ee79": "seedream v4(text to image)",
     "68dd4fe53afd0524a0a0ee78": "seedream v4(image to image)",
-    "68dd62a4ee374a8e2e8247f8": "seedance v1(image to video)",
-    "68dd62a4ee374a8e2e8247f9": "seedance v1(text to video)",
+    "690779c658ce8ee0285220d5": "seedance v1(image to video)",
+    "690779c658ce8ee0285220d8": "seedance v1(text to video)",
     "690779c658ce8ee0285220db": "Midjourney",
     "690779c658ce8ee0285220dd": "Veo 3.1"
   },
