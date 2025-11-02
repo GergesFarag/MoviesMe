@@ -9,7 +9,7 @@ export const cacheMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  const userId = req.user ? req.user.uid || req.user.id : null;
+  const userId = req.user ? req.user.id : null;
   const cacheKey = `${userId}:${req.method}:${
     req.originalUrl
   }:${extractLanguageFromRequest(req)}`;

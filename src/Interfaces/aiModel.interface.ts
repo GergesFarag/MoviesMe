@@ -1,19 +1,19 @@
-import mongoose, { Document } from "mongoose";
+import mongoose, { Document } from 'mongoose';
 
 export type TModelCategory =
-  | "fashion"
-  | "fantasy"
-  | "gaming"
-  | "romance"
-  | "sports"
-  | "cinematic"
-  | "ai tools"
-  | "artistic"
-  | "character"
-  | "lifestyle"
-  | "unknown";
+  | 'fashion'
+  | 'fantasy'
+  | 'gaming'
+  | 'romance'
+  | 'sports'
+  | 'cinematic'
+  | 'ai tools'
+  | 'artistic'
+  | 'character'
+  | 'lifestyle'
+  | 'unknown';
 interface IGeneralModel extends Document {
-  _id:mongoose.Types.ObjectId;
+  _id: mongoose.Types.ObjectId;
   name: string;
   thumbnail: string;
   isVideo: boolean;
@@ -45,5 +45,5 @@ export interface IGenerationVideoLibModel extends IGeneralModel {
   minImages: number;
   maxImages: number;
   requirePrompt: boolean;
-  credits: Map<string, number>[];
+  credits: { duration: number; credits: number }[];
 }

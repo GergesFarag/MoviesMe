@@ -16,6 +16,8 @@ import { NotificationService } from '../Services/notification.service';
 import logger from '../Config/logger';
 import { UserRepository } from '../Repositories/UserRepository';
 import { GenerationInfoRepository } from '../Repositories/GenerationInfoRepository';
+import appCache from '../Utils/Cache/appCache';
+import { extractLanguageFromRequest } from '../Utils/Format/languageUtils';
 
 const generationLibService = new GenerationLibService();
 const userRepository = UserRepository.getInstance();
@@ -67,22 +69,15 @@ const generationLibController = {
         if (model.requirePrompt && !requestData.prompt) {
           throw new AppError('Prompt is Required!');
         }
-<<<<<<< HEAD
-        const creditMap = model.credits.find((element: Map<string, number>) => {
-          return +element.get('duration')! === +requestData.duration!;
-        });
-        if (!creditMap) {
-=======
         const creditObj = model.credits.find(
           (element: { duration: number; credits: number }) => {
             return element.duration === +requestData.duration!;
           }
         );
         if (!creditObj) {
->>>>>>> 8f82d62 (adding new video models)
           throw new AppError('Invalid duration for the selected model', 400);
         }
-        requestData.credits = +creditMap.get('credits')!;
+        requestData.credits = creditObj.credits;
       }
       const creditService = CreditService.getInstance();
       const notificationService = NotificationService.getInstance();
@@ -200,6 +195,9 @@ const generationLibController = {
       const updateData = req.body;
       const updatedInfo = await generationLibService.updateGenerationInfo(
         updateData
+      );
+      appCache.del(
+        `${req.user?.id}:GET:/generation:${extractLanguageFromRequest(req)}`
       );
       res.status(200).json({
         message: 'Generation info updated successfully',
