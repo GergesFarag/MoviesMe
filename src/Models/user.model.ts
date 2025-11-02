@@ -1,9 +1,10 @@
-import { model, Schema, Types } from "mongoose";
-import { IUser } from "../Interfaces/user.interface";
-import effectItemSchema from "./effectItem.model";
-import generationLibSchema from "./generationLib.model";
-import notificationSchema from "./notification.model";
-import { HydratedDocument } from "mongoose";
+import { model, Schema, Types } from 'mongoose';
+import { IUser } from '../Interfaces/user.interface';
+import effectItemSchema from './effectItem.model';
+import generationLibSchema from './generationLib.model';
+import notificationSchema from './notification.model';
+import { HydratedDocument } from 'mongoose';
+import UserEvents from '../Utils/Events/userEvents';
 
 const userSchema = new Schema<IUser>({
   username: { type: String, select: true },
@@ -30,23 +31,25 @@ const userSchema = new Schema<IUser>({
     type: [generationLibSchema],
     default: [],
   },
-  storiesLib: [{ type: Schema.Types.ObjectId, ref: "Story" }],
+  storiesLib: [{ type: Schema.Types.ObjectId, ref: 'Story' }],
   isVerified: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
   firebaseUid: { type: String, unique: true },
-  jobs: [{ type: { _id: Schema.Types.ObjectId, jobId: String }, ref: "Job" }],
+  jobs: [{ type: { _id: Schema.Types.ObjectId, jobId: String }, ref: 'Job' }],
   FCMToken: { type: String, default: null },
   notifications: {
     type: [notificationSchema],
     default: [],
   },
-  preferredLanguage: { type: String, default: "en" },
+  preferredLanguage: { type: String, default: 'en' },
 });
-userSchema.on("delete", (doc: HydratedDocument<IUser>) => {
-  
+
+userSchema.on('delete', async (doc: HydratedDocument<IUser>) => {
+  await UserEvents.onUserDeleted(doc);
 });
-const User = model<IUser>("User", userSchema);
+
+const User = model<IUser>('User', userSchema);
 export default User;
 export { IUser };

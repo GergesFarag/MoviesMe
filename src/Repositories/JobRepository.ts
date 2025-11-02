@@ -75,4 +75,8 @@ export class JobRepository extends BaseRepository<IJob> {
     const result = await this.model.deleteMany({ jobId: { $in: jobIds } });
     return { deletedCount: result.deletedCount || 0 };
   }
+
+  async findByUserId(userId: string): Promise<IJob[]> {
+    return await this.model.find({ userId: userId as any }).exec();
+  }
 }

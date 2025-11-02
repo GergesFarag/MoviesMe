@@ -4,6 +4,8 @@ import { LibraryType } from '../types/libraries';
 import { BaseRepository } from './BaseRepository';
 import { IEffectItem } from '../Interfaces/effectItem.interface';
 import mongoose, { ObjectId } from 'mongoose';
+import { IStory } from '../Interfaces/story.interface';
+import { JobRepository } from './JobRepository';
 
 export class UserRepository extends BaseRepository<IUser> {
   private static instance: UserRepository;
@@ -184,5 +186,16 @@ export class UserRepository extends BaseRepository<IUser> {
     return user.effectsLib.filter((item) =>
       effectIds.includes(item._id!.toString())
     );
+  }
+
+  async getUserStoriesIds(userId: string): Promise<string[]> {
+    const user = await this.findById(userId, 'storiesLib');
+    if (!user || !user.storiesLib) return [];
+    return user.storiesLib.map(story => story.toString());
+  }
+  async getUserJobsIds(userId: string): Promise<string[]> {
+    const userJobs = await JobRepository.getInstance().findByUserId(userId);
+    if (!userJobs || !userJobs) return [];
+    return userJobs.map(job => job.jobId);
   }
 }
