@@ -27,6 +27,8 @@ import { StoryRepository } from '../Repositories/StoryRepository';
 import { JobRepository } from '../Repositories/JobRepository';
 import { user } from '@elevenlabs/elevenlabs-js/api';
 import { CLOUDINAT_FOLDERS } from '../Constants/cloud';
+import appCache from '../Utils/Cache/appCache';
+import { getCacheKey } from '../Utils/Cache/caching.utils';
 
 const generationLibService = new GenerationLibService();
 const userRepository = UserRepository.getInstance();
@@ -100,7 +102,8 @@ const userController = {
         }
       });
       await user.save();
-
+      const cacheKey = getCacheKey(id, 'GET', '/user', req);
+      appCache.del(cacheKey);
       res.status(200).json({
         message: 'User profile updated successfully',
         data: user,

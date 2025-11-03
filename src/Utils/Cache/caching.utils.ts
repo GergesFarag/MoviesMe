@@ -5,6 +5,8 @@ import { IUser } from '../../Interfaces/user.interface';
 import { UserWithId } from '../../types/modelProcessing.types';
 import { aiModelKeys } from '../../Constants/modelConstants';
 import appCache from './appCache';
+import { Request } from 'express';
+import { extractLanguageFromRequest } from '../Format/languageUtils';
 
 export const getCachedModel = async (
   modelId: string
@@ -47,3 +49,11 @@ export const getCachedUser = async (
   return user || null;
 };
 
+export const getCacheKey = (
+  userId: string,
+  reqMethod: string,
+  reqUrl: string,
+  req: Request
+) => {
+  return `${userId}:${reqMethod}:${reqUrl}:${extractLanguageFromRequest(req)}`;
+};
