@@ -12,10 +12,10 @@ import { ModelType, modelTypeMapper } from '../Utils/Format/filterModelType';
 import paginator from '../Utils/Pagination/paginator';
 import Job from '../Models/job.model';
 import { UploadApiResponse } from 'cloudinary';
-import { cloudUpload, generateHashFromBuffer } from '../Utils/APIs/cloudinary';
+import { cloudUpload } from '../Utils/APIs/cloudinary';
 import { ItemDTO } from '../DTOs/item.dto';
-import { IStoryDTO, StoryDTO } from '../DTOs/story.dto';
-import { TPaginationQuery, TSort, TUserLibraryQuery } from '../types';
+import {  StoryDTO } from '../DTOs/story.dto';
+import { TSort, TUserLibraryQuery } from '../types';
 import { Sorting } from '../Utils/Sorting/sorting';
 import mongoose, { ObjectId } from 'mongoose';
 import { IStory } from '../Interfaces/story.interface';
@@ -25,7 +25,6 @@ import { NotificationService } from '../Services/notification.service';
 import { UserRepository } from '../Repositories/UserRepository';
 import { StoryRepository } from '../Repositories/StoryRepository';
 import { JobRepository } from '../Repositories/JobRepository';
-import { user } from '@elevenlabs/elevenlabs-js/api';
 import { CLOUDINAT_FOLDERS } from '../Constants/cloud';
 import appCache from '../Utils/Cache/appCache';
 import { getCacheKey } from '../Utils/Cache/caching.utils';
@@ -102,8 +101,6 @@ const userController = {
         }
       });
       await user.save();
-      const cacheKey = getCacheKey(id, 'GET', '/user', req);
-      appCache.del(cacheKey);
       res.status(200).json({
         message: 'User profile updated successfully',
         data: user,

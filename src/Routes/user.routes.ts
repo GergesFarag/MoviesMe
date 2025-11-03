@@ -7,7 +7,7 @@ const userRouter = Router();
 
 userRouter
   .route('/')
-  .get(authMiddle, cacheMiddleware, userController.getProfile)
+  .get(authMiddle, userController.getProfile)
   .patch(
     authMiddle,
     imageUpload.single('profilePicture'),
