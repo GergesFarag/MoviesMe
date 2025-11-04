@@ -1,6 +1,10 @@
-import { ITranslationService } from "../Interfaces/translation.interface";
-import { I18nService } from "../Config/i18next";
-import { language } from "@elevenlabs/elevenlabs-js/api/resources/dubbing/resources/resource";
+import { ITranslationService } from '../Interfaces/translation.interface';
+import { I18nService } from '../Config/i18next';
+import enTranslations from '../../locales/en/translation.json';
+import arTranslations from '../../locales/ar/translation.json';
+import { writeFile } from 'fs/promises';
+import path from 'path';
+import { cwd } from 'process';
 
 export class TranslationService implements ITranslationService {
   private static instance: TranslationService;
@@ -108,6 +112,38 @@ export class TranslationService implements ITranslationService {
         name: translatedName,
       };
     });
+  }
+
+  public async addNewModelTranslation(
+    modelId: string,
+    ar_translation: string,
+    en_translation: string
+  ): Promise<void> {
+    const enModels = enTranslations.models as Record<string, string>;
+    const arModels = arTranslations.models as Record<string, string>;
+    arModels[modelId] = ar_translation;
+
+    enModels[modelId] = en_translation;
+
+    let newEnTranslations = {
+      ...enTranslations,
+      models: enModels,
+    };
+
+    let newArTranslations = {
+      ...arTranslations,
+      models: arModels,
+    };
+    await Promise.all([
+      writeFile(
+        path.join(cwd(), '/locales/en/translation.json'),
+        JSON.stringify(newEnTranslations, null, 2)
+      ),
+      writeFile(
+        path.join(cwd(), '/locales/ar/translation.json'),
+        JSON.stringify(newArTranslations, null, 2)
+      ),
+    ]);
   }
 
   private translateItem(

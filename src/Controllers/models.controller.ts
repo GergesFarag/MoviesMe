@@ -7,7 +7,7 @@ import Job from '../Models/job.model';
 import { getCachedModel, getCachedUser } from '../Utils/Cache/caching.utils';
 import {
   createQueueJobData,
-  processModelJobAsync
+  processModelJobAsync,
 } from '../Services/applyModel.service';
 import {
   getModelsByType,
@@ -15,7 +15,10 @@ import {
 } from '../Services/modelFetch.service';
 import { TModelFetchQuery } from '../types';
 import IAiModel from '../Interfaces/aiModel.interface';
-import { translationService } from '../Services/translation.service';
+import {
+  TranslationService,
+  translationService,
+} from '../Services/translation.service';
 import {
   MODEL_FILTER_TYPE,
   QUERY_TYPE_TO_FILTER,
@@ -211,7 +214,19 @@ const modelsController = {
   }),
 
   addModel: catchError(async (req, res) => {
+    const { ar_name, ...rest } = req.body;
+    if(!ar_name) {
+      throw new AppError('Arabic name (ar_name) is required', 400);
+    }
+    req.body = rest;
     const newModel = await modelRepository.create(req.body);
+
+    await TranslationService.getInstance().addNewModelTranslation(
+      String(newModel._id),
+      ar_name,
+      newModel.name
+    );
+
     res
       .status(201)
       .json({ message: 'Model added successfully', data: newModel });
@@ -256,7 +271,6 @@ const modelsController = {
       getCachedUser(req.user!.id, User),
       getCachedModel(modelId),
     ]);
-
 
     if (!user) {
       throw new AppError('User not found', 404);
@@ -308,9 +322,9 @@ const modelsController = {
         modelId: modelId,
         payload,
         images: files,
-        jobId
+        jobId,
       });
-      console.log(`Model processing initiated for job ${jobId}:`, {result});
+      console.log(`Model processing initiated for job ${jobId}:`, { result });
     } catch (error) {
       console.error(`Unexpected error in model processing:`, error);
     }

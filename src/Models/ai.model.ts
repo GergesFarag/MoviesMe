@@ -8,11 +8,10 @@ const modelSchema = new mongoose.Schema<IAiModel>({
   isVideo: { type: Boolean, required: true },
   credits: { type: Number, required: true },
   wavespeedCall: { type: String, default: null, required: true, select: true },
-  category: { 
-    type: String, 
+  category: {
+    type: String,
     enum: ["fashion", "fantasy", "gaming", "romance", "sports", "cinematic", "ai tools", "artistic", "character", "lifestyle", "unknown"],
     required: true,
-    default: "unknown"
   },
   prompt: { type: String, required: false, default: null },
   minImages: { type: Number, required: false, min: 1 },
