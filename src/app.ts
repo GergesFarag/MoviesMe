@@ -17,9 +17,13 @@ import generationLibRouter from './Routes/generationLib.routes';
 import './Queues/generationLib.queue';
 import './Queues/story.queue';
 import './Queues/model.queue';
-import responseTime from 'response-time';
-import { composeVideoWithAudio } from './Utils/APIs/cloudinary';
-import { firebaseAdmin } from './Config/firebase';
+import {
+  authLimiter,
+  limiter,
+  standardLimiter,
+  webhookLimiter,
+} from './Middlewares/rateLimiter.middleware';
+
 const app = express();
 dotenv.config({ quiet: true });
 app.use(express.json());
@@ -32,7 +36,11 @@ const API_VERSION = process.env.API_VERSION || '/v1';
 const prefix = process.env.API_PREFIX || '/api';
 const basePath = `${prefix}${API_VERSION}`;
 
-app.post(`${basePath}/custom`, async (req, res) => {});
+app.use(limiter);
+
+app.post(`${basePath}/custom`, async (req, res) => {
+  res.status(200).json({ message: 'Custom script executed' });
+});
 
 //*HERE IS CUSTOM SCRIPTS TO RUN ON DB
 app.post(`${basePath}/dbScript`, async (req, res) => {
@@ -43,34 +51,13 @@ app.get(`/`, async (req, res) => {
   res.status(200).json({ message: 'API is running' });
 });
 
-// Firebase config endpoint for client
-app.get(`${basePath}/config/firebase`, async (req, res) => {
-  try {
-    const firebaseConfig = {
-      apiKey:
-        process.env.FIREBASE_CLIENT_API_KEY ||
-        'AIzaSyAVdx4hQAviTmiE7_vVmoaSyb3lx1hachY',
-      authDomain:
-        process.env.FIREBASE_AUTH_DOMAIN || 'ttov-a9677.firebaseapp.com',
-      projectId: process.env.FIREBASE_PROJECT_ID || 'ttov-a9677',
-      appId:
-        process.env.FIREBASE_APP_ID ||
-        '1:57747989938:web:e4af38b054fd30014130ab',
-    };
-    res.status(200).json(firebaseConfig);
-  } catch (error) {
-    console.error('Error serving Firebase config:', error);
-    res.status(500).json({ error: 'Failed to load Firebase configuration' });
-  }
-});
-
-app.use(`${basePath}/auth`, authRouter);
-app.use(`${basePath}/admin`, adminRouter);
-app.use(`${basePath}/user`, userRouter);
+app.use(`${basePath}/auth`, authLimiter, authRouter);
+app.use(`${basePath}/admin`, standardLimiter, adminRouter);
+app.use(`${basePath}/user`, standardLimiter, userRouter);
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`${basePath}/generation`, generationLibRouter);
-app.use(`${basePath}/payment`, paymentRouter);
+app.use(`${basePath}/payment`, webhookLimiter, paymentRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use(ErrorHandler);
