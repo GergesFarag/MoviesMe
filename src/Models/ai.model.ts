@@ -1,5 +1,6 @@
-import mongoose from "mongoose";
-import IAiModel from "../Interfaces/aiModel.interface";
+import mongoose from 'mongoose';
+import IAiModel from '../Interfaces/aiModel.interface';
+import { CATEGORIES } from '../Constants/modelConstants';
 
 const modelSchema = new mongoose.Schema<IAiModel>({
   name: { type: String, required: true },
@@ -10,7 +11,12 @@ const modelSchema = new mongoose.Schema<IAiModel>({
   wavespeedCall: { type: String, default: null, required: true, select: true },
   category: {
     type: String,
-    enum: ["fashion", "fantasy", "gaming", "romance", "sports", "cinematic", "ai tools", "artistic", "character", "lifestyle", "unknown"],
+    enum: {
+      values: CATEGORIES,
+      message:
+        '{VALUE} is not a valid category Please select from: ' +
+        CATEGORIES.join(', '),
+    },
     required: true,
   },
   prompt: { type: String, required: false, default: null },
@@ -26,5 +32,5 @@ const modelSchema = new mongoose.Schema<IAiModel>({
   isMarketingTool: { type: Boolean, default: false, select: false },
 });
 
-const Model = mongoose.model<IAiModel>("Model", modelSchema);
+const Model = mongoose.model<IAiModel>('Model', modelSchema);
 export default Model;

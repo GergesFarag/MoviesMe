@@ -68,6 +68,19 @@ export const aiModelKeys = [
   '+prompt',
 ] as const;
 
+export const CATEGORIES = [
+  'fashion',
+  'fantasy',
+  'gaming',
+  'romance',
+  'sports',
+  'cinematic',
+  'ai tools',
+  'artistic',
+  'character',
+  'lifestyle'
+];
+
 export type JobStatus = (typeof JOB_STATUS)[keyof typeof JOB_STATUS];
 export type ModelType = (typeof MODEL_TYPE)[keyof typeof MODEL_TYPE];
 export type ModelFilterType =
