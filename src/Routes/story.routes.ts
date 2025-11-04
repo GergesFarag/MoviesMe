@@ -1,23 +1,27 @@
-import { Router } from "express";
-import storyController from "../Controllers/story.controller";
-import { authMiddle } from "../Middlewares/auth.middleware";
-import { upload } from "../Config/multer";
-import { updateUserLanguagePreference } from "../Middlewares/language.middleware";
+import { Router } from 'express';
+import storyController from '../Controllers/story.controller';
+import { authMiddle } from '../Middlewares/auth.middleware';
+import { upload } from '../Config/multer';
+import { updateUserLanguagePreference } from '../Middlewares/language.middleware';
+import { expensiveOperationLimiter } from '../Middlewares/rateLimiter.middleware';
 const storyRouter = Router();
-storyRouter.route("/").post(
+storyRouter.route('/').post(
   authMiddle,
+  expensiveOperationLimiter,
   upload.fields([
-    { name: "image", maxCount: 1 },
-    { name: "audio", maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'audio', maxCount: 1 },
   ]),
   updateUserLanguagePreference,
   storyController.generateStory
 );
 
-storyRouter.route("/retry/:jobId").post(authMiddle, storyController.retryFailedJob);
-storyRouter.route("/:storyID").delete(authMiddle, storyController.deleteStory);
 storyRouter
-  .route("/generationData")
+  .route('/retry/:jobId')
+  .post(authMiddle, expensiveOperationLimiter, storyController.retryFailedJob);
+storyRouter.route('/:storyID').delete(authMiddle, storyController.deleteStory);
+storyRouter
+  .route('/generationData')
   .get(storyController.getGenerationData)
   .put(storyController.updateGenerationData);
 export default storyRouter;

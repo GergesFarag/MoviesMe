@@ -17,6 +17,7 @@ import { UserRepository } from '../Repositories/UserRepository';
 import { JobRepository } from '../Repositories/JobRepository';
 import { GenerationInfoRepository } from '../Repositories/GenerationInfoRepository';
 import appCache from '../Utils/Cache/appCache';
+import { cwd } from 'process';
 
 export class GenerationLibService {
   private userRepository: UserRepository;
