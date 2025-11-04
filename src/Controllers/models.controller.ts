@@ -32,6 +32,7 @@ import { NotificationService } from '../Services/notification.service';
 import { ModelRepository } from '../Repositories/ModelRepository';
 import { UserRepository } from '../Repositories/UserRepository';
 import { JobRepository } from '../Repositories/JobRepository';
+import appCache from '../Utils/Cache/appCache';
 
 const modelRepository = ModelRepository.getInstance();
 const userRepository = UserRepository.getInstance();
@@ -215,7 +216,7 @@ const modelsController = {
 
   addModel: catchError(async (req, res) => {
     const { ar_name, ...rest } = req.body;
-    if(!ar_name) {
+    if (!ar_name) {
       throw new AppError('Arabic name (ar_name) is required', 400);
     }
     req.body = rest;
@@ -226,7 +227,7 @@ const modelsController = {
       ar_name,
       newModel.name
     );
-
+    appCache.flushAll();
     res
       .status(201)
       .json({ message: 'Model added successfully', data: newModel });
@@ -241,6 +242,7 @@ const modelsController = {
     if (!deletedModel) {
       throw new AppError('Model not found', 404);
     }
+    appCache.flushAll();
     res
       .status(200)
       .json({ message: 'Model deleted successfully', data: deletedModel });
@@ -254,6 +256,7 @@ const modelsController = {
     }
     const model = { ...existingModel, ...req.body };
     const updatedModel = await modelRepository.updateModel(id, model);
+    appCache.flushAll();
     res
       .status(200)
       .json({ message: 'Model updated successfully', data: updatedModel });

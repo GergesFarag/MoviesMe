@@ -12,7 +12,6 @@ import {
   INotification,
   TransactionNotificationData,
 } from '../Interfaces/notification.interface';
-import logger from '../Config/logger';
 import { CREDITS_AD_AWARD } from '../Constants/credits';
 
 const revenueCatConfig: RevenueCatConfig = {
