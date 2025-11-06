@@ -61,13 +61,6 @@ export const stopProgressUpdates = (jobId: string): void => {
   }
 };
 
-/**
- * Send immediate progress update
- * @param userId - The user ID to send updates to
- * @param jobId - The job ID
- * @param progress - Current progress percentage
- * @param step - The step name/description
- */
 export const sendProgressUpdate = (
   userId: string,
   jobId: string,
