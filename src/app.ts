@@ -23,6 +23,8 @@ import {
   standardLimiter,
   webhookLimiter,
 } from './Middlewares/rateLimiter.middleware';
+import cloudinary from './Config/cloudinary';
+import { cloudUploadURL, deleteCloudinaryFolder } from './Utils/APIs/cloudinary';
 
 const app = express();
 dotenv.config({ quiet: true });

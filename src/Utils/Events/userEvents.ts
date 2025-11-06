@@ -5,6 +5,7 @@ import { UserRepository } from '../../Repositories/UserRepository';
 import { JobRepository } from '../../Repositories/JobRepository';
 import cloudinary from '../../Config/cloudinary';
 import { firebaseAdmin } from '../../Config/firebase';
+import { deleteCloudinaryFolder } from '../APIs/cloudinary';
 
 export class UserEvents {
   public static async onUserDeleted(user: HydratedDocument<IUser>) {
@@ -25,9 +26,13 @@ export class UserEvents {
         JobRepository.getInstance().deleteManyByJobIds(userJobsIds),
       ]);
       try {
-        const folderPrefix = `user_${userId}`;
-        await cloudinary.api.delete_resources_by_prefix(folderPrefix);
-        await cloudinary.api.delete_folder(folderPrefix);
+        const folderPrefix = `user_${userId}/`;
+        const isDeleted = await deleteCloudinaryFolder(folderPrefix);
+        if (!isDeleted) {
+          console.warn(
+            `Warning: Cloudinary folder deletion returned with false for user ${userId}`
+          );
+        }
       } catch (cloudinaryError) {
         console.error(
           `Error deleting Cloudinary folder for user ${userId}:`,

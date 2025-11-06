@@ -25,7 +25,7 @@ import { NotificationService } from '../Services/notification.service';
 import { UserRepository } from '../Repositories/UserRepository';
 import { StoryRepository } from '../Repositories/StoryRepository';
 import { JobRepository } from '../Repositories/JobRepository';
-import { CLOUDINAT_FOLDERS } from '../Constants/cloud';
+import { CLOUDINARY_FOLDERS } from '../Constants/cloud';
 import appCache from '../Utils/Cache/appCache';
 import { getCacheKey } from '../Utils/Cache/caching.utils';
 
@@ -77,7 +77,7 @@ const userController = {
       if (profilePicture) {
         const result = (await cloudUpload(
           profilePicture.buffer,
-          `user_${id}/${CLOUDINAT_FOLDERS.UPLOADED_IMAGES}/profile`,
+          `user_${id}/${CLOUDINARY_FOLDERS.PROFILE}/p_image`,
           `${id}-profile_picture`,
           { overwrite: true, invalidate: true }
         )) as UploadApiResponse;

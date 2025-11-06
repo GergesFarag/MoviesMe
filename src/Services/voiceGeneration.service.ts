@@ -9,7 +9,7 @@ import {
 } from '../Utils/APIs/cloudinary';
 import { streamToBuffer } from '../Utils/Format/streamToBuffer';
 import { TextToSpeechRequest } from '@elevenlabs/elevenlabs-js/api';
-import { CLOUDINAT_FOLDERS } from '../Constants/cloud';
+import { CLOUDINARY_FOLDERS } from '../Constants/cloud';
 
 const ELEVENLABS_API_KEY = (process.env.ELEVENLABS_API_KEY as string) || '';
 export class VoiceGenerationService {
@@ -46,7 +46,8 @@ export class VoiceGenerationService {
 
   async generateVoiceOver(
     data: IStoryRequest['voiceOver'],
-    userId: string
+    userId: string,
+    jobId: string
   ): Promise<{ url: string; PID: string }> {
     let voiceId: string | null = null;
     console.log('voiceOverData: ', data);
@@ -91,7 +92,7 @@ export class VoiceGenerationService {
       const audioHash = generateHashFromBuffer(audioBuffer);
       const audioUrl = await cloudUploadAudio(
         audioBuffer,
-        `user_${userId}/${CLOUDINAT_FOLDERS.GENERATED_VOICE}`,
+        `user_${userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${jobId}`,
         audioHash
       );
       return { url: audioUrl.secure_url, PID: audioUrl.public_id };

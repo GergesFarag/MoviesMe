@@ -19,7 +19,9 @@ export class GenerationInfoRepository extends BaseRepository<IGenerationInfo> {
   async getGenerationInfo(): Promise<IGenerationInfo | null> {
     return this.findOne({});
   }
-
+  async getGenerationInfoDocs() {
+    return this.model.findOne();
+  }
   async updateGenerationInfo(
     update: Partial<IGenerationInfo>
   ): Promise<IGenerationInfo | null> {
