@@ -35,7 +35,6 @@ export class StoryQueue {
     });
 
     this.queue.process(async (job) => {
-      console.log(`QUEUE ENTRY: Processing job ${job.id}`);
       try {
         return await processor.processStory(job, job.data);
       } catch (error) {

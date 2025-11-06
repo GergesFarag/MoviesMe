@@ -25,7 +25,7 @@ import {
   stopProgressUpdates,
   sendProgressUpdate,
 } from '../generateStory.service';
-import { CLOUDINAT_FOLDERS } from '../../Constants/cloud';
+import { CLOUDINARY_FOLDERS } from '../../Constants/cloud';
 import { randomBytes } from 'crypto';
 import { UploadApiResponse } from 'cloudinary';
 import { SFXService } from '../sfx.service';
@@ -374,7 +374,7 @@ export class StoryProcessorService {
         const videoHash = randomBytes(8).toString('hex');
         const result = await cloudUploadURL(
           url,
-          `user_${job.data.userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
+          `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}`,
           videoHash,
           'video'
         );
@@ -409,7 +409,7 @@ export class StoryProcessorService {
             const videoHash = randomBytes(8).toString('hex');
             return await cloudUploadURL(
               url,
-              `user_${job.data.userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
+              `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}`,
               videoHash,
               'video'
             );
@@ -446,7 +446,8 @@ export class StoryProcessorService {
       const mergedVideo =
         await this.videoGenerationService.mergeScenesWithCloudinary(
           videoUrls,
-          jobData.userId
+          jobData.userId,
+          jobData.jobId
         );
 
       if (voiceOver && voiceOver.url) {
@@ -460,7 +461,7 @@ export class StoryProcessorService {
         const hashedVideoId = `merged_video_${Date.now()}`;
         const uploadResult = await cloudUploadURL(
           composedURL,
-          `user_${jobData.userId}/${CLOUDINAT_FOLDERS.GENERATED_VIDEOS}`,
+          `user_${jobData.userId}/${CLOUDINARY_FOLDERS.STORIES}/S_${job.id}`,
           hashedVideoId
         );
         return uploadResult.secure_url;
@@ -488,7 +489,7 @@ export class StoryProcessorService {
       const videoHash = generateHashFromBuffer(videoBuffer);
       const uploadResult = await cloudUploadVideo(
         videoBuffer,
-        `user_${job.data.userId}/${CLOUDINAT_FOLDERS.GENERATED_VIDEOS}`,
+        `user_${job.data.userId}/${CLOUDINARY_FOLDERS.STORIES}`,
         videoHash
       );
 
@@ -631,7 +632,8 @@ export class StoryProcessorService {
       const voiceOverData = { ...jobData.voiceOver, text: voiceOverText };
       let voiceOverUrl = await this.voiceGenerationService.generateVoiceOver(
         voiceOverData,
-        jobData.userId
+        jobData.userId,
+        jobData.jobId
       );
 
       if (!voiceOverUrl) {

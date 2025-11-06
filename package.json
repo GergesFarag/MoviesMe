@@ -50,6 +50,7 @@
     "twilio": "^5.10.3"
   },
   "devDependencies": {
+    "@express-rate-limit/tsconfig": "^1.0.2",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",

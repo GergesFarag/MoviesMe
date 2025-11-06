@@ -13,7 +13,7 @@ import {
 import { PayloadBuilder } from '../Utils/Model/payloadBuilder';
 import cloudinary from '../Config/cloudinary';
 import { cloudUploadURL } from '../Utils/APIs/cloudinary';
-import { CLOUDINAT_FOLDERS, OUTRO_VIDEO_PID } from '../Constants/cloud';
+import { CLOUDINARY_FOLDERS, OUTRO_VIDEO_PID } from '../Constants/cloud';
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY || '';
 const baseURL = 'https://api.wavespeed.ai/api/v3';
@@ -371,10 +371,11 @@ export class VideoGenerationService {
 
   async mergeScenesWithCloudinary(
     sceneVideosWithPID: { video: string; PID: string }[],
-    userId: string
+    userId: string,
+    jobId: string
   ): Promise<{ video: string; PID: string }> {
     console.log('Scene Videos PIDs : ', sceneVideosWithPID);
-    let transformationObjects = sceneVideosWithPID.slice(1).map(({ PID }) => {
+    let transformationObjects = sceneVideosWithPID.splice(1).map(({ PID }) => {
       return {
         overlay: `video:${PID.split('/').join(':')}`,
         flags: 'splice' as const,
@@ -412,7 +413,7 @@ export class VideoGenerationService {
     const hashedVideoId = `merged_video_${Date.now()}`;
     const uploadResult = await cloudUploadURL(
       result.eager[0].secure_url,
-      `user_${userId}/${CLOUDINAT_FOLDERS.PROCESSING_VIDEOS}`,
+      `user_${userId}/${CLOUDINARY_FOLDERS.STORIES}/S_${jobId}`,
       hashedVideoId
     );
     return { video: uploadResult.secure_url, PID: uploadResult.public_id };

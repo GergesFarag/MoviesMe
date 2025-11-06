@@ -27,17 +27,8 @@ import { QUEUE_NAMES } from '../Queues/Constants/queueConstants';
 import { StoryProcessingDTO } from '../DTOs/storyRequest.dto';
 import { CreditService } from '../Services/credits.service';
 import { NotificationService } from '../Services/notification.service';
-const validKeys: IStoryRequestKeys[] = [
-  'prompt',
-  'storyDuration',
-  'voiceOver',
-  'storyLocationId',
-  'storyStyleId',
-  'storyTitle',
-  'genere',
-  'image',
-  'credits',
-];
+import { validKeys } from '../Constants/story';
+import { CLOUDINARY_FOLDERS } from '../Constants/cloud';
 
 const storyController = {
   generateStory: catchError(
@@ -70,9 +61,8 @@ const storyController = {
         credits,
         calculatedCredits
       );
-      console.log(verifyCorrectCredits);
+
       if (!verifyCorrectCredits) {
-        console.log('GONE IN ERROR');
         throw new AppError(
           `Incorrect credits provided. Required credits for the story is ${calculatedCredits}`,
           400
@@ -118,7 +108,6 @@ const storyController = {
         throw new AppError('Prompt and story duration are required', 400);
       }
       let storyData: IStoryRequest = { ...req.body } as IStoryRequest;
-      console.log('Story Data: ', storyData);
       const lang = extractLanguageFromRequest(req);
       const translation = require(path.join(
         __dirname,
@@ -148,7 +137,7 @@ const storyController = {
         const imageHash = generateHashFromBuffer(image.buffer);
         const imageRes = (await cloudUpload(
           image?.buffer,
-          `user_${userId}/images/uploaded`,
+          `user_${userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${jobId}`,
           imageHash
         )) as UploadApiResponse;
         storyData.image = imageRes.secure_url;
@@ -157,7 +146,7 @@ const storyController = {
         const audioHash = generateHashFromBuffer(audio.buffer);
         const audioRes = (await cloudUpload(
           audio?.buffer,
-          `user_${userId}/audio/uploaded`,
+          `user_${userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${jobId}`,
           audioHash
         )) as UploadApiResponse;
         storyData.audio = audioRes.secure_url;

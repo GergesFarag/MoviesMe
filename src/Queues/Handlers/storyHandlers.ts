@@ -6,6 +6,8 @@ import Story from '../../Models/story.model';
 import storyQueue from '../story.queue';
 import AppError from '../../Utils/Errors/AppError';
 import { CreditService } from '../../Services/credits.service';
+import { deleteCloudinaryFolder } from '../../Utils/APIs/cloudinary';
+import { CLOUDINARY_FOLDERS } from '../../Constants/cloud';
 
 export class StoryQueueHandlers {
   private notificationService;
@@ -15,7 +17,6 @@ export class StoryQueueHandlers {
     this.creditService = CreditService.getInstance();
   }
   async onCompleted(job: Job, result: any) {
-    console.log('Result:', result);
     await storyQueue.removeJobs(job.data.jobId);
     try {
       if (job.data.userId && result?.story) {
@@ -35,6 +36,9 @@ export class StoryQueueHandlers {
       console.error('Error in completion handler:', error);
     } finally {
       try {
+        // await deleteCloudinaryFolder(
+        //   `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}/`
+        // );
         await job.remove();
         console.log(`Job ${job.id} removed from queue`);
       } catch (removeError) {
@@ -57,7 +61,9 @@ export class StoryQueueHandlers {
       await storyQueue.removeJobs(job.data.jobId);
       return;
     }
-
+    await deleteCloudinaryFolder(
+      `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}/`
+    );
     await storyQueue.removeJobs(job.data.jobId);
     const refund = await this.creditService.addCredits(
       job.data.userId,
@@ -123,10 +129,7 @@ export class StoryQueueHandlers {
         `Updated job and story status to failed for jobId: ${job.opts.jobId}`
       );
     } catch (dbError) {
-      console.error(
-        'Failed to update job/story status in database:',
-        dbError
-      );
+      console.error('Failed to update job/story status in database:', dbError);
     }
   }
 
