@@ -26,17 +26,6 @@ export const authLimiter = rateLimit({
   },
 });
 
-export const otpLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 3,
-  keyGenerator: (req) => req.body.phoneNumber || req.ip,
-  handler: (req, res) => {
-    res.status(HttpStatusCode.TooManyRequests).json({
-      message: 'Too many OTP requests. Please try again after 1 hour.',
-    });
-  },
-});
-
 export const expensiveOperationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 20,
