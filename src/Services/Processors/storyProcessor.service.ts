@@ -587,7 +587,7 @@ export class StoryProcessorService {
     };
   }
   private async processVoiceOverWithProgress(
-    jobData: IStoryProcessingDTO & { userId: string; jobId: string },
+    jobData: IStoryProcessingDTO & { userId: string; jobId: string }
   ): Promise<IProcessedVoiceOver | null> {
     if (!jobData.voiceOver) {
       console.log('⏭️ No voice over requested, skipping...');
@@ -699,7 +699,23 @@ export class StoryProcessorService {
       console.log(
         `✅ Successfully generated ${imageUrls.length} images in parallel`
       );
-      return imageUrls;
+      const finalImagesPromises = Promise.allSettled(
+        imageUrls.map(async (url, index) => {
+          const imageHash = randomBytes(8).toString('hex');
+          const result = await cloudUploadURL(
+            url,
+            `user_${job.data.userId}/${CLOUDINARY_FOLDERS.STORIES}/S_${job.id}`,
+            imageHash,
+            'image'
+          );
+          return result.secure_url;
+        })
+      );
+      const finalImagesUrls = (await finalImagesPromises).map((p) =>
+        p.status === 'fulfilled' ? p.value : null
+      ) as string[];
+
+      return finalImagesUrls;
     } catch (imageGenError) {
       throw new AppError('Failed to generate images for the story scenes', 500);
     }

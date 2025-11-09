@@ -92,7 +92,7 @@ export class VoiceGenerationService {
       const audioHash = generateHashFromBuffer(audioBuffer);
       const audioUrl = await cloudUploadAudio(
         audioBuffer,
-        `user_${userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${jobId}`,
+        `user_${userId}/${CLOUDINARY_FOLDERS.STORIES}/S_${jobId}`,
         audioHash
       );
       return { url: audioUrl.secure_url, PID: audioUrl.public_id };
