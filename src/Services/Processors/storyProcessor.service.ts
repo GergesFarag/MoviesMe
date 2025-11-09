@@ -442,7 +442,7 @@ export class StoryProcessorService {
     console.log('🎞️ Merging video scenes...');
 
     try {
-      // Merge video scenes
+      let video = '';
       const mergedVideo =
         await this.videoGenerationService.mergeScenesWithCloudinary(
           videoUrls,
@@ -452,24 +452,25 @@ export class StoryProcessorService {
 
       if (voiceOver && voiceOver.url) {
         console.log('🎵 Composing video with voice over...');
-
         const composedURL =
           await this.videoGenerationService.composeSoundWithCloudinary(
             mergedVideo,
             voiceOver.PID as string
           );
-        const hashedVideoId = `merged_video_${Date.now()}`;
-        const uploadResult = await cloudUploadURL(
-          composedURL,
-          `user_${jobData.userId}/${CLOUDINARY_FOLDERS.STORIES}/S_${job.id}`,
-          hashedVideoId
-        );
-        return uploadResult.secure_url;
+        video = composedURL;
       } else {
+        video = mergedVideo.video;
         console.log('⏭️ Skipping audio composition - no voice over provided');
+        return video;
       }
+      const hashedVideoId = `merged_video_${Date.now()}`;
+      const uploadResult = await cloudUploadURL(
+        video,
+        `user_${jobData.userId}/${CLOUDINARY_FOLDERS.STORIES}/S_${job.id}`,
+        hashedVideoId
+      );
 
-      return mergedVideo.video;
+      return uploadResult.secure_url;
     } catch (mergeError) {
       console.error('❌ Video merge/composition error:', mergeError);
       throw new AppError(
