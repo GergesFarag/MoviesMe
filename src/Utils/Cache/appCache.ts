@@ -10,7 +10,6 @@ class AppCache {
       checkperiod: 60,
       useClones: false,
     });
-    console.log('AppCache singleton initialized');
   }
 
   public static getInstance(): AppCache {

@@ -9,22 +9,19 @@ import adminRouter from './Routes/admin.routes';
 import ErrorHandler from './Middlewares/error.middleware';
 import userRouter from './Routes/user.routes';
 import swaggerUi from 'swagger-ui-express';
-import swaggerDoc from './swagger';
+import { getSwaggerDoc } from './swagger';
 import storyRouter from './Routes/story.routes';
 import modelsRouter from './Routes/models.routes';
 import paymentRouter from './Routes/purchasing.routes';
 import generationLibRouter from './Routes/generationLib.routes';
-import './Queues/generationLib.queue';
-import './Queues/story.queue';
-import './Queues/model.queue';
+
 import {
   authLimiter,
   limiter,
   standardLimiter,
   webhookLimiter,
 } from './Middlewares/rateLimiter.middleware';
-import cloudinary from './Config/cloudinary';
-import { cloudUploadURL, deleteCloudinaryFolder } from './Utils/APIs/cloudinary';
+
 
 const app = express();
 dotenv.config({ quiet: true });
@@ -60,7 +57,13 @@ app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`${basePath}/generation`, generationLibRouter);
 app.use(`${basePath}/payment`, webhookLimiter, paymentRouter);
-app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+app.use(
+  `/api-docs`,
+  swaggerUi.serve,
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    swaggerUi.setup(getSwaggerDoc())(req, res, next);
+  }
+);
 
 app.use(ErrorHandler);
 

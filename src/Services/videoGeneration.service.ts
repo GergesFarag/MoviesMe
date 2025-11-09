@@ -47,7 +47,9 @@ export class VideoGenerationService {
       duration,
       image: refImageUrl,
       prompt: videoPrompt,
-      ...(environment === 'production' ? { negative_prompt: videoNegativePrompt } : {}),
+      ...(environment === 'production'
+        ? { negative_prompt: videoNegativePrompt, guidance_scale: 0.9 }
+        : {}),
     };
     try {
       console.log(`🎥 Starting optimized video generation from image...`);
