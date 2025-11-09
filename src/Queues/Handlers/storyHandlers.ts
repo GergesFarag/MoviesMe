@@ -36,9 +36,9 @@ export class StoryQueueHandlers {
       console.error('Error in completion handler:', error);
     } finally {
       try {
-        // await deleteCloudinaryFolder(
-        //   `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}/`
-        // );
+        await deleteCloudinaryFolder(
+          `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}/`
+        );
         await job.remove();
         console.log(`Job ${job.id} removed from queue`);
       } catch (removeError) {
@@ -61,9 +61,6 @@ export class StoryQueueHandlers {
       await storyQueue.removeJobs(job.data.jobId);
       return;
     }
-    await deleteCloudinaryFolder(
-      `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}/`
-    );
     await storyQueue.removeJobs(job.data.jobId);
     const refund = await this.creditService.addCredits(
       job.data.userId,
@@ -96,6 +93,10 @@ export class StoryQueueHandlers {
       }
     } catch (error) {
       console.error('Error in failure handler:', error);
+    } finally {
+      await deleteCloudinaryFolder(
+        `user_${job.data.userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${job.id}/`
+      );
     }
   }
 
