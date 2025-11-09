@@ -413,7 +413,7 @@ export class VideoGenerationService {
     const hashedVideoId = `merged_video_${Date.now()}`;
     const uploadResult = await cloudUploadURL(
       result.eager[0].secure_url,
-      `user_${userId}/${CLOUDINARY_FOLDERS.STORIES}/S_${jobId}`,
+      `user_${userId}/${CLOUDINARY_FOLDERS.TEMP}/S_${jobId}`,
       hashedVideoId
     );
     return { video: uploadResult.secure_url, PID: uploadResult.public_id };
