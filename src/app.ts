@@ -17,15 +17,6 @@ import generationLibRouter from './Routes/generationLib.routes';
 import './Queues/generationLib.queue';
 import './Queues/story.queue';
 import './Queues/model.queue';
-import {
-  authLimiter,
-  limiter,
-  standardLimiter,
-  webhookLimiter,
-} from './Middlewares/rateLimiter.middleware';
-import cloudinary from './Config/cloudinary';
-import { cloudUploadURL, deleteCloudinaryFolder } from './Utils/APIs/cloudinary';
-
 const app = express();
 dotenv.config({ quiet: true });
 app.use(express.json());
@@ -38,7 +29,6 @@ const API_VERSION = process.env.API_VERSION || '/v1';
 const prefix = process.env.API_PREFIX || '/api';
 const basePath = `${prefix}${API_VERSION}`;
 
-app.use(limiter);
 
 app.post(`${basePath}/custom`, async (req, res) => {
   res.status(200).json({ message: 'Custom script executed' });
