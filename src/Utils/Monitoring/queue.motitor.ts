@@ -8,6 +8,7 @@ import Job from '../../Models/job.model';
 import Story from '../../Models/story.model';
 import User from '../../Models/user.model';
 import { Job as BullJob } from 'bull';
+import AppError from '../Errors/AppError';
 
 export class QueueMonitor {
   private effectQueue;
@@ -22,10 +23,20 @@ export class QueueMonitor {
     this.generationQueue = generationLibQueue;
     this.creditService = CreditService.getInstance();
     this.notificationService = NotificationService.getInstance();
-    this.failActiveJobs();
-    this.logActiveJobs();
+    this.initializeAsync();
   }
-  
+
+  private async initializeAsync() {
+    try {
+      console.log('QueueMonitor: Starting background initialization...');
+      await this.failActiveJobs();
+      await this.logActiveJobs();
+      console.log('QueueMonitor: Initialization complete');
+    } catch (error) {
+      console.log('QueueMonitor: Initialization failed:', error);
+    }
+  }
+
   private async logActiveJobs() {
     const activeJobs = await this.getActiveJobsLength();
     logger.info({ 'Active Jobs:': activeJobs });
@@ -57,56 +68,67 @@ export class QueueMonitor {
   }
 
   private async failActiveJobs() {
-    await this.failActiveStoryJobs();
-    await this.failActiveEffectJobs();
-    await this.failActiveGenerationJobs();
+    await Promise.allSettled([
+      this.failActiveStoryJobs(),
+      this.failActiveEffectJobs(),
+      this.failActiveGenerationJobs(),
+    ]);
   }
 
   private async failActiveStoryJobs() {
     const { stories } = await this.getActiveJobs();
-    for (const job of stories) {
-      try {
-        // Update DB and refund credits - this handles everything
-        await this.handleStoryJobFailure(job);
-
-        // Safely remove job from queue
-        await this.safeJobRemoval(job, 'story');
-      } catch (error) {
-        logger.error(`Failed to handle story job ${job.id} failure: ${error}`);
-      }
-    }
+    await Promise.allSettled(
+      stories.map(async (job) => {
+        try {
+          // Update DB and refund credits - this handles everything
+          await this.handleStoryJobFailure(job);
+          // Safely remove job from queue
+          await this.safeJobRemoval(job, 'story');
+        } catch (error) {
+          logger.error(
+            `Failed to handle story job ${job.id} failure: ${error}`
+          );
+        }
+      })
+    );
   }
 
   private async failActiveEffectJobs() {
     const { effects } = await this.getActiveJobs();
-    for (const job of effects) {
-      try {
-        // Update DB and refund credits - this handles everything
-        await this.handleEffectJobFailure(job);
+    await Promise.allSettled(
+      effects.map(async (job) => {
+        try {
+          // Update DB and refund credits - this handles everything
+          await this.handleEffectJobFailure(job);
 
-        // Safely remove job from queue
-        await this.safeJobRemoval(job, 'effect');
-      } catch (error) {
-        logger.error(`Failed to handle effect job ${job.id} failure: ${error}`);
-      }
-    }
+          // Safely remove job from queue
+          await this.safeJobRemoval(job, 'effect');
+        } catch (error) {
+          logger.error(
+            `Failed to handle effect job ${job.id} failure: ${error}`
+          );
+        }
+      })
+    );
   }
 
   private async failActiveGenerationJobs() {
     const { generations } = await this.getActiveJobs();
-    for (const job of generations) {
-      try {
-        // Update DB and refund credits - this handles everything
-        await this.handleGenerationJobFailure(job);
+    await Promise.allSettled(
+      generations.map(async (job) => {
+        try {
+          // Update DB and refund credits - this handles everything
+          await this.handleGenerationJobFailure(job);
 
-        // Safely remove job from queue
-        await this.safeJobRemoval(job, 'generation');
-      } catch (error) {
-        logger.error(
-          `Failed to handle generation job ${job.id} failure: ${error}`
-        );
-      }
-    }
+          // Safely remove job from queue
+          await this.safeJobRemoval(job, 'generation');
+        } catch (error) {
+          logger.error(
+            `Failed to handle generation job ${job.id} failure: ${error}`
+          );
+        }
+      })
+    );
   }
 
   private async handleStoryJobFailure(job: BullJob): Promise<void> {
@@ -312,22 +334,14 @@ export class QueueMonitor {
             { message: 'Server restarted - job interrupted' },
             true // ignoreLock - allows failing active jobs
           );
-          logger.info(
-            `✅ Moved active ${jobType} job ${job.id} to failed state.`
-          );
           try {
             await job.remove();
-            logger.info(
-              `✅ Removed ${jobType} job ${job.id} from queue to allow retry.`
-            );
           } catch (removeErr) {
-            logger.info(
-              `ℹ️ ${jobType} job ${job.id} in failed state. Retry should still work by overwriting.`
-            );
+            console.log('Error While Removing Job', job.id);
           }
         } catch (error: any) {
           logger.warn(
-            `⚠️ Could not cleanup active ${jobType} job ${job.id}: ${error?.message}. Job may block retry temporarily.`
+            `Could not cleanup active ${jobType} job ${job.id}: ${error?.message}. Job may block retry temporarily.`
           );
         }
       } else {
@@ -340,21 +354,19 @@ export class QueueMonitor {
         if (jobExists) {
           try {
             await job.remove();
-            logger.info(
-              `✅ Removed non-active ${jobType} job ${job.id} from queue.`
+            console.log(
+              `Removed non-active ${jobType} job ${job.id} from queue.`
             );
           } catch (removeErr: any) {
-            logger.info(
-              `ℹ️ Could not remove ${jobType} job ${job.id}. Will be cleaned up automatically.`
+            console.log(
+              `Could not remove ${jobType} job ${job.id}. Will be cleaned up automatically.`
             );
           }
-        } else {
-          logger.info(`ℹ️ ${jobType} job ${job.id} no longer in queue.`);
         }
       }
     } catch (error: any) {
-      logger.warn(
-        `⚠️ ${jobType} job ${job.id} queue cleanup error: ${error?.message}. DB and credits already handled.`
+      console.log(
+        `${jobType} job ${job.id} queue cleanup error: ${error?.message}. DB and credits already handled.`
       );
     }
   }

@@ -4,8 +4,6 @@ import { authMiddle } from '../Middlewares/auth.middleware';
 import { upload } from '../Config/multer';
 import { updateUserLanguagePreference } from '../Middlewares/language.middleware';
 import { cacheMiddleware } from '../Middlewares/cache.middleware';
-import { expensiveOperationLimiter } from '../Middlewares/rateLimiter.middleware';
-
 const modelsRouter = Router();
 modelsRouter.get(
   '/videoEffects',
@@ -43,7 +41,6 @@ modelsRouter.post('/', modelsController.addModel);
 modelsRouter.post(
   '/applyModel',
   authMiddle,
-  expensiveOperationLimiter,
   upload.array('payload[image]'),
   updateUserLanguagePreference,
   modelsController.applyModel
@@ -51,7 +48,6 @@ modelsRouter.post(
 modelsRouter.post(
   '/retry/:jobId',
   authMiddle,
-  expensiveOperationLimiter,
   modelsController.retryEffectJob
 );
 modelsRouter

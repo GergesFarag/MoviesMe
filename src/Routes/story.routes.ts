@@ -3,11 +3,9 @@ import storyController from '../Controllers/story.controller';
 import { authMiddle } from '../Middlewares/auth.middleware';
 import { upload } from '../Config/multer';
 import { updateUserLanguagePreference } from '../Middlewares/language.middleware';
-import { expensiveOperationLimiter } from '../Middlewares/rateLimiter.middleware';
 const storyRouter = Router();
 storyRouter.route('/').post(
   authMiddle,
-  expensiveOperationLimiter,
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'audio', maxCount: 1 },
@@ -18,7 +16,7 @@ storyRouter.route('/').post(
 
 storyRouter
   .route('/retry/:jobId')
-  .post(authMiddle, expensiveOperationLimiter, storyController.retryFailedJob);
+  .post(authMiddle, storyController.retryFailedJob);
 storyRouter.route('/:storyID').delete(authMiddle, storyController.deleteStory);
 storyRouter
   .route('/generationData')

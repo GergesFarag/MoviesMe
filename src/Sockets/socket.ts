@@ -183,7 +183,7 @@ export function initSocket(server: http.Server) {
     });
   });
 
-  console.log('🚀 Socket.io server initialized successfully');
+  console.log('Socket.io server initialized successfully');
   return io;
 }
 
