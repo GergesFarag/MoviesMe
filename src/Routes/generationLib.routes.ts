@@ -3,14 +3,12 @@ import generationLibController from '../Controllers/generationLib.controller';
 import { authMiddle } from '../Middlewares/auth.middleware';
 import { imageUpload } from '../Config/multer';
 import { cacheMiddleware } from '../Middlewares/cache.middleware';
-import { expensiveOperationLimiter } from '../Middlewares/rateLimiter.middleware';
 
 const router = Router();
 
 router.post(
   '/',
   authMiddle,
-  expensiveOperationLimiter,
   imageUpload.any(),
   generationLibController.createGeneration
 );

@@ -15,14 +15,6 @@ import modelsRouter from './Routes/models.routes';
 import paymentRouter from './Routes/purchasing.routes';
 import generationLibRouter from './Routes/generationLib.routes';
 
-import {
-  authLimiter,
-  limiter,
-  standardLimiter,
-  webhookLimiter,
-} from './Middlewares/rateLimiter.middleware';
-
-
 const app = express();
 dotenv.config({ quiet: true });
 app.use(express.json());
@@ -49,13 +41,13 @@ app.get(`/`, async (req, res) => {
   res.status(200).json({ message: 'API is running' });
 });
 
-app.use(`${basePath}/auth`, authLimiter, authRouter);
-app.use(`${basePath}/admin`, standardLimiter, adminRouter);
-app.use(`${basePath}/user`, standardLimiter, userRouter);
+app.use(`${basePath}/auth`, authRouter);
+app.use(`${basePath}/admin`, adminRouter);
+app.use(`${basePath}/user`, userRouter);
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`${basePath}/generation`, generationLibRouter);
-app.use(`${basePath}/payment`, webhookLimiter, paymentRouter);
+app.use(`${basePath}/payment`, paymentRouter);
 app.use(
   `/api-docs`,
   swaggerUi.serve,
