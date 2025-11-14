@@ -27,7 +27,6 @@ const API_VERSION = process.env.API_VERSION || '/v1';
 const prefix = process.env.API_PREFIX || '/api';
 const basePath = `${prefix}${API_VERSION}`;
 
-
 app.post(`${basePath}/custom`, async (req, res) => {
   res.status(200).json({ message: 'Custom script executed' });
 });
