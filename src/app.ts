@@ -53,13 +53,13 @@ app.get(`/`, async (req, res) => {
   res.status(200).json({ message: 'API is running' });
 });
 
-app.use(`${basePath}/auth`, authLimiter, authRouter);
-app.use(`${basePath}/admin`, standardLimiter, adminRouter);
-app.use(`${basePath}/user`, standardLimiter, userRouter);
+app.use(`${basePath}/auth`, authRouter);
+app.use(`${basePath}/admin`, adminRouter);
+app.use(`${basePath}/user`, userRouter);
 app.use(`${basePath}/story`, storyRouter);
 app.use(`${basePath}/models`, modelsRouter);
 app.use(`${basePath}/generation`, generationLibRouter);
-app.use(`${basePath}/payment`, webhookLimiter, paymentRouter);
+app.use(`${basePath}/payment`, paymentRouter);
 app.use(`/api-docs`, swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use(ErrorHandler);

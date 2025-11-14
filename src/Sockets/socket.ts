@@ -22,11 +22,10 @@ export function initSocket(server: http.Server) {
 
   io.on('connection', (socket) => {
     console.log(`✅ New client connected: ${socket.id}`);
-    console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
 
     socket.on('join:user', (userId: string) => {
       socket.join(`user:${userId}`);
-      console.log(`🔗 Socket ${socket.id} joined user room: user:${userId}`);
+      console.log(`Socket ${socket.id} joined user room: user:${userId}`);
 
       socket.emit('connection:confirmed', {
         socketId: socket.id,
@@ -38,8 +37,7 @@ export function initSocket(server: http.Server) {
 
     socket.on('disconnect', (reason: string) => {
 
-      console.log(`❌ Socket ${socket.id} disconnected. Reason: ${reason}`);
-      console.log(`📊 Total connected clients: ${io!.engine.clientsCount}`);
+      console.log(`Socket ${socket.id} disconnected. Reason: ${reason}`);
 
       if (reason === 'transport close') {
         console.warn(`⚠️ Transport closed for socket ${socket.id}`);
