@@ -31,6 +31,7 @@ import { UploadApiResponse } from 'cloudinary';
 import { SFXService } from '../sfx.service';
 import { StoryRepository } from '../../Repositories/StoryRepository';
 import { HTTP_STATUS_CODE } from '../../Enums/error.enum';
+import LANGUAGES_IDS from '../../Constants/languages';
 
 export class StoryProcessorService {
   constructor(
@@ -307,7 +308,7 @@ export class StoryProcessorService {
       const story: IStoryResponse = {
         title: await openAIService.generateTitle(
           jobData.prompt,
-          jobData.voiceOver?.voiceLanguage || 'English'
+          jobData.voiceOver?.voiceLanguage || LANGUAGES_IDS.ENGLISH
         ),
         scenes: Array.from({ length: jobData.numOfScenes }, (_, i) => {
           return {
