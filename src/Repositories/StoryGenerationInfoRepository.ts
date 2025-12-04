@@ -1,6 +1,6 @@
-import { IStoryGenerationInfo } from "../Interfaces/storyGenerationInfo.interface";
-import StoryGenerationInfo from "../Models/storyGenerationInfo.model";
-import { BaseRepository } from "./BaseRepository";
+import { IStoryGenerationInfo } from '../Interfaces/storyGenerationInfo.interface';
+import StoryGenerationInfo from '../Models/storyGenerationInfo.model';
+import { BaseRepository } from './BaseRepository';
 
 export class StoryGenerationInfoRepository extends BaseRepository<IStoryGenerationInfo> {
   private static instance: StoryGenerationInfoRepository;
@@ -57,6 +57,9 @@ export class StoryGenerationInfoRepository extends BaseRepository<IStoryGenerati
   async getLanguageName(languageId: string) {
     const generationData = await this.getStoryGenerationInfo();
     if (!generationData || !generationData.languages) return undefined;
-    return generationData.languages.filter((lang) => lang._id.toString() === languageId)[0].name;
+    console.log('LangID', languageId);
+    return generationData.languages.filter(
+      (lang) => lang._id.toString() === languageId
+    )[0].name;
   }
 }
