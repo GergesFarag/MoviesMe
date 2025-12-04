@@ -462,7 +462,6 @@ export class StoryProcessorService {
       } else {
         video = mergedVideo.video;
         console.log('⏭️ Skipping audio composition - no voice over provided');
-        return video;
       }
       const hashedVideoId = `merged_video_${Date.now()}`;
       const uploadResult = await cloudUploadURL(
